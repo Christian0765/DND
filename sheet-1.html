@@ -299,7 +299,8 @@
 <div class="top-bar">
   <a class="back-link" href="index.html">← Party Overview</a>
   <div class="sync-bar">
-    <span class="sync-status offline" id="sync-status">Connecting…</span>
+    <span class="sync-status offline" id="sync-status">Connecting...</span>
+    <button class="save-btn" onclick="saveToFirestore()">Save</button>
   </div>
 </div>
 
@@ -514,8 +515,15 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const CHAR_ID = '1';
+const PLAYER_ID = 'player1';
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
   'f-ac','f-init','f-speed','f-curhp','f-maxhp','f-hd','f-pp','f-gold','f-carry',
@@ -523,6 +531,49 @@ const FIELDS = [
   'f-int','f-intmod','f-wis','f-wismod','f-cha','f-chamod',
   'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2'
 ];
+
+function setStatus(type, text) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + type;
+  el.textContent = text;
+}
+
+async function saveToFirestore() {
+  setStatus('saving', 'Saving...');
+  const data = {};
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value || '';
+  });
+  try {
+    await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    setStatus('ok', 'Saved ✓');
+    setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
+  } catch (e) {
+    setStatus('error', 'Save Failed');
+  }
+}
+
+function loadFromFirestore() {
+  setStatus('saving', 'Connecting...');
+  db.collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+    if (!doc.exists) { setStatus('ok', 'Ready'); return; }
+    const data = doc.data();
+    FIELDS.forEach(id => {
+      if (data[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el) el.value = data[id];
+      }
+    });
+    setStatus('ok', 'Live ✓');
+  }, () => setStatus('error', 'Connection error'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromFirestore();
+  renderHistory();
+});
+
 const FIELD_LABELS = {
   'f-name':'Character Name','f-class':'Class & Level','f-race':'Race',
   'f-bg':'Background','f-align':'Alignment','f-player':'Player',

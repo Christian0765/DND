@@ -662,7 +662,7 @@
 <div class="party-grid" id="party-grid">
 
   <!-- PLAYER 1: DRACULA -->
-  <a class="player-card" href="sheet-1.html" id="card-p1">
+  <a class="player-card" href="sheet-1.html" id="card-1">
     <div class="card-role">Player 1</div>
     <div class="card-name" id="p1-name">Dracula</div>
     <div class="card-class" id="p1-class">Dragonborn Fighter · Lv 3</div>
@@ -671,12 +671,12 @@
       <div class="stat-box"><span class="sv" id="p1-ac">12</span><span class="sl">AC</span></div>
       <div class="stat-box"><span class="sv gp" id="p1-gp">82</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p1-hpbar" style="width:100%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p1-bar" style="width:100%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
   <!-- PLAYER 2 -->
-  <a class="player-card empty" href="sheet-2.html" id="card-p2">
+  <a class="player-card empty" href="sheet-2.html" id="card-2">
     <div class="card-role">Player 2</div>
     <div class="card-name" id="p2-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
     <div class="card-class" id="p2-class">— awaiting character —</div>
@@ -686,12 +686,12 @@
       <div class="stat-box"><span class="sv" id="p2-ac">—</span><span class="sl">AC</span></div>
       <div class="stat-box"><span class="sv gp" id="p2-gp">—</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p2-hpbar" style="width:0%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p2-bar" style="width:0%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
   <!-- PLAYER 3 -->
-  <a class="player-card empty" href="sheet-3.html" id="card-p3">
+  <a class="player-card empty" href="sheet-3.html" id="card-3">
     <div class="card-role">Player 3</div>
     <div class="card-name" id="p3-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
     <div class="card-class" id="p3-class">— awaiting character —</div>
@@ -701,12 +701,12 @@
       <div class="stat-box"><span class="sv" id="p3-ac">—</span><span class="sl">AC</span></div>
       <div class="stat-box"><span class="sv gp" id="p3-gp">—</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p3-hpbar" style="width:0%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p3-bar" style="width:0%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
   <!-- PLAYER 4 -->
-  <a class="player-card empty" href="sheet-4.html" id="card-p4">
+  <a class="player-card empty" href="sheet-4.html" id="card-4">
     <div class="card-role">Player 4</div>
     <div class="card-name" id="p4-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
     <div class="card-class" id="p4-class">— awaiting character —</div>
@@ -716,7 +716,7 @@
       <div class="stat-box"><span class="sv" id="p4-ac">—</span><span class="sl">AC</span></div>
       <div class="stat-box"><span class="sv gp" id="p4-gp">—</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p4-hpbar" style="width:0%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p4-bar" style="width:0%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
@@ -983,6 +983,44 @@ window.addEventListener('DOMContentLoaded', () => {
   if (name) document.getElementById('site-title').textContent = name;
   if (banner) applyBanner(banner);
 });
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+(function() {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    [1,2,3,4].forEach(n => {
+      db.collection('characters').doc('player'+n).onSnapshot(doc => {
+        if (!doc.exists) return;
+        const d = doc.data();
+        if (d['f-name'] && d['f-name'].trim()) {
+          const nameEl = document.getElementById('p'+n+'-name');
+          nameEl.textContent = d['f-name'];
+          nameEl.style.cssText = '';
+          document.getElementById('card-'+n).classList.remove('empty');
+          const badge = document.getElementById('p'+n+'-badge');
+          if (badge) badge.style.display = 'none';
+        }
+        if (d['f-class']) document.getElementById('p'+n+'-class').textContent = d['f-class'];
+        const curhp = d['f-curhp'] || '—';
+        const maxhp = d['f-maxhp'] || '';
+        document.getElementById('p'+n+'-hp').textContent = curhp;
+        document.getElementById('p'+n+'-ac').textContent = d['f-ac'] || '—';
+        document.getElementById('p'+n+'-gp').textContent = d['f-gold'] || '—';
+        if (curhp !== '—' && maxhp) {
+          const pct = Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0;
+          const bar = document.getElementById('p'+n+'-bar');
+          bar.style.width = pct + '%';
+          bar.className = 'hp-bar' + (pct < 25 ? ' low' : pct < 50 ? ' mid' : '');
+        }
+      });
+    });
+  } catch(e) { /* Firebase unavailable — cards show static defaults */ }
+})();
 </script>
 </body>
 </html>
