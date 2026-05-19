@@ -520,6 +520,36 @@
     </div>
 
     <div class="dm-section">
+      <div class="dm-section-title">DM Broadcast</div>
+      <div style="font-size:0.72rem;color:var(--border-light);margin-bottom:12px;font-style:italic;">Push content to all players' screens in real time.</div>
+
+      <div class="dm-field">
+        <label>Text Announcement</label>
+        <textarea class="dm-notes-area" id="dm-broadcast-text" style="min-height:60px;" placeholder="Message to all players..."></textarea>
+        <div style="text-align:right;margin-top:4px;"><button class="dm-btn" onclick="broadcastText()">Send Announcement</button></div>
+      </div>
+
+      <div class="dm-field" style="margin-top:10px;">
+        <label>Image / Map</label>
+        <input type="text" id="dm-broadcast-img-title" placeholder="Title (e.g. City of Vorn)">
+        <input type="text" id="dm-broadcast-img" placeholder="Paste image URL (Imgur, etc.)" style="margin-top:4px;">
+        <div style="text-align:right;margin-top:4px;"><button class="dm-btn" onclick="broadcastImage()">Show Image</button></div>
+      </div>
+
+      <div class="dm-field" style="margin-top:10px;">
+        <label>Shop</label>
+        <input type="text" id="dm-broadcast-shop-title" placeholder="Shop name (e.g. Merchant Greta)">
+        <textarea class="dm-notes-area" id="dm-broadcast-shop" style="min-height:80px;margin-top:4px;" placeholder="One item per line:&#10;Healing Potion: 50gp - Restores 2d4+2 HP&#10;Rope 50ft: 1gp - Hempen rope"></textarea>
+        <div style="text-align:right;margin-top:4px;"><button class="dm-btn" onclick="broadcastShop()">Open Shop</button></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="dm-btn" onclick="broadcastCombat()">⚔ Start Combat</button>
+        <button class="dm-btn danger" onclick="closeBroadcast()">✕ Close All Panels</button>
+      </div>
+    </div>
+
+    <div class="dm-section">
       <div class="dm-section-title">Passcode</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input class="dm-input" type="password" id="dm-new-passcode" placeholder="New passcode" style="width:180px;">
@@ -727,6 +757,7 @@ function doPost(e) {
 </div>
 
 <script>
+let db; // shared Firebase db reference — set after Firebase init below
 const DEFAULT_PASSCODE = "dm1234";
 
 function toggleDMPanel() {
@@ -768,6 +799,7 @@ function updateCampaignName() {
   if (name) title.textContent = name;
   else title.textContent = 'Campaign Tracker';
   localStorage.setItem('campaign-name', name);
+  if (db) db.collection('campaign').doc('settings').set({ campaignName: name }, { merge: true });
 }
 
 function handleImageUpload(event) {
@@ -798,6 +830,7 @@ function applyBanner(src) {
 function saveDMNotes() {
   const notes = document.getElementById('dm-notes').value;
   localStorage.setItem('dm-notes', notes);
+  if (db) db.collection('campaign').doc('settings').set({ dmNotes: notes }, { merge: true });
   const btn = event.target;
   btn.textContent = 'Saved ✓';
   setTimeout(() => btn.textContent = 'Save Notes', 2000);
@@ -807,24 +840,34 @@ function loadDMData() {
   const name = localStorage.getItem('campaign-name');
   const banner = localStorage.getItem('campaign-banner');
   const notes = localStorage.getItem('dm-notes');
-  if (name) {
-    document.getElementById('dm-campaign-name').value = name;
-    document.getElementById('site-title').textContent = name;
-  }
-  if (banner) {
-    document.getElementById('banner-preview').src = banner;
-    document.getElementById('banner-preview').style.display = 'block';
-    applyBanner(banner);
-  }
+  if (name) { document.getElementById('dm-campaign-name').value = name; document.getElementById('site-title').textContent = name; }
+  if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
   if (notes) document.getElementById('dm-notes').value = notes;
+  if (db) {
+    db.collection('campaign').doc('settings').get().then(doc => {
+      if (!doc.exists) return;
+      const d = doc.data();
+      if (d.campaignName) document.getElementById('dm-campaign-name').value = d.campaignName;
+      if (d.dmNotes) document.getElementById('dm-notes').value = d.dmNotes;
+    });
+  }
 }
 
-// Load campaign name and banner on page load (visible to everyone)
 window.addEventListener('DOMContentLoaded', () => {
   const name = localStorage.getItem('campaign-name');
   const banner = localStorage.getItem('campaign-banner');
   if (name) document.getElementById('site-title').textContent = name;
   if (banner) applyBanner(banner);
+  // Fetch from Firestore — overwrites localStorage value for all players
+  setTimeout(() => {
+    if (db) {
+      db.collection('campaign').doc('settings').get().then(doc => {
+        if (!doc.exists) return;
+        const d = doc.data();
+        if (d.campaignName) document.getElementById('site-title').textContent = d.campaignName;
+      });
+    }
+  }, 600);
 });
 
 function addPlayer() {
@@ -849,6 +892,50 @@ function copyScript() {
     setTimeout(() => btn.textContent = 'Copy Script', 2000);
   });
 }
+
+// DM Broadcast functions
+function broadcastText() {
+  const text = document.getElementById('dm-broadcast-text').value.trim();
+  if (!text || !db) return;
+  db.collection('campaign').doc('broadcast').set({
+    active: true, type: 'text', title: 'DM Announcement', text,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.getElementById('dm-broadcast-text').value = '';
+}
+
+function broadcastImage() {
+  const url = document.getElementById('dm-broadcast-img').value.trim();
+  const title = document.getElementById('dm-broadcast-img-title').value.trim() || 'DM Image';
+  if (!url || !db) return;
+  db.collection('campaign').doc('broadcast').set({
+    active: true, type: 'image', title, imageUrl: url,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function broadcastShop() {
+  const shopItems = document.getElementById('dm-broadcast-shop').value.trim();
+  const title = document.getElementById('dm-broadcast-shop-title').value.trim() || 'The Shop';
+  if (!shopItems || !db) return;
+  db.collection('campaign').doc('broadcast').set({
+    active: true, type: 'shop', title, shopItems,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function broadcastCombat() {
+  if (!db) return;
+  db.collection('campaign').doc('broadcast').set({
+    active: true, type: 'combat', title: 'Combat Begins', text: 'Roll for initiative!',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function closeBroadcast() {
+  if (!db) return;
+  db.collection('campaign').doc('broadcast').set({ active: false });
+}
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -858,7 +945,7 @@ function copyScript() {
 (function() {
   try {
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    db = firebase.firestore();
     [1,2,3,4].forEach(n => {
       db.collection('characters').doc('player'+n).onSnapshot(doc => {
         if (!doc.exists) return;
@@ -888,5 +975,6 @@ function copyScript() {
   } catch(e) { /* Firebase unavailable — cards show static defaults */ }
 })();
 </script>
+<script src="broadcast.js"></script>
 </body>
 </html>
