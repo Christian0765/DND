@@ -475,22 +475,17 @@
   <div class="divider"></div>
 </div>
 
-<button class="dm-toggle" onclick="toggleDMPanel()">🔐 DM Panel</button>
+<div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;">
+  <button class="dm-toggle" style="margin:0;" onclick="toggleDMPanel()">🔐 DM Panel</button>
+  <a class="dm-toggle" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" href="combat.html">⚔ Combat Tracker</a>
+</div>
 
 <!-- DM PANEL -->
 <div class="dm-panel" id="dm-panel">
   <div class="dm-panel-title">🔐 Dungeon Master Panel</div>
 
-  <!-- LOGIN -->
-  <div class="dm-login" id="dm-login">
-    <p>Enter your DM passcode to access campaign controls</p>
-    <input class="dm-input" type="password" id="dm-passcode" placeholder="Passcode" onkeydown="if(event.key==='Enter')dmLogin()">
-    <button class="dm-btn" onclick="dmLogin()">Enter</button>
-    <div class="dm-error" id="dm-error"></div>
-  </div>
-
-  <!-- CONTROLS (shown after login) -->
-  <div class="dm-controls" id="dm-controls">
+  <!-- CONTROLS -->
+  <div class="dm-controls open" id="dm-controls">
 
     <div class="dm-section">
       <div class="dm-section-title">Campaign Identity</div>
@@ -519,18 +514,6 @@
       </div>
     </div>
 
-    <div class="dm-section">
-      <div class="dm-section-title">Passcode</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="dm-input" type="password" id="dm-new-passcode" placeholder="New passcode" style="width:180px;">
-        <button class="dm-btn" onclick="changePasscode()">Change</button>
-      </div>
-      <div style="font-size:0.72rem;color:var(--border-light);margin-top:5px;font-style:italic;">Leave blank and click Change to remove passcode protection</div>
-    </div>
-
-    <div class="dm-logout">
-      <button class="dm-btn danger" onclick="dmLogout()">Lock DM Panel</button>
-    </div>
 
   </div>
 </div>
@@ -727,39 +710,10 @@ function doPost(e) {
 </div>
 
 <script>
-const DEFAULT_PASSCODE = "dm1234";
-
 function toggleDMPanel() {
   const panel = document.getElementById('dm-panel');
   panel.classList.toggle('open');
-}
-
-function dmLogin() {
-  const input = document.getElementById('dm-passcode').value;
-  const stored = localStorage.getItem('dm-passcode') || DEFAULT_PASSCODE;
-  if (input === stored) {
-    document.getElementById('dm-login').style.display = 'none';
-    document.getElementById('dm-controls').classList.add('open');
-    document.getElementById('dm-error').textContent = '';
-    loadDMData();
-  } else {
-    document.getElementById('dm-error').textContent = 'Incorrect passcode. Try again.';
-  }
-}
-
-function dmLogout() {
-  document.getElementById('dm-login').style.display = 'block';
-  document.getElementById('dm-controls').classList.remove('open');
-  document.getElementById('dm-passcode').value = '';
-}
-
-function changePasscode() {
-  const newCode = document.getElementById('dm-new-passcode').value;
-  if (newCode) {
-    localStorage.setItem('dm-passcode', newCode);
-    document.getElementById('dm-new-passcode').value = '';
-    alert('Passcode updated!');
-  }
+  if (panel.classList.contains('open')) loadDMData();
 }
 
 function updateCampaignName() {
