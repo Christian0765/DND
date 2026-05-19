@@ -460,12 +460,141 @@
 
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 
+  .upload-area.drag-active { border-color: var(--gold); background: rgba(154,112,0,0.1); }
+
   @media (max-width: 500px) {
     .site-title { font-size: 2rem; }
     .party-grid { grid-template-columns: 1fr; }
   }
+
+  /* CREATE CHARACTER MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 3px #1a0e04, 0 20px 60px rgba(0,0,0,0.9);
+    border-radius: 3px;
+    padding: 28px 32px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: fadeIn 0.25s ease;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--border-light);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--red); }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--red);
+    margin-bottom: 4px;
+  }
+  .modal-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--border-light);
+    margin-bottom: 24px;
+    border-bottom: 2px double var(--border);
+    padding-bottom: 14px;
+  }
+  .modal-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px dotted var(--border-light);
+  }
+  .modal-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .step-circle {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--parchment);
+    background: var(--red);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .step-desc {
+    font-size: 0.84rem;
+    color: var(--ink-light);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .modal-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--parchment);
+    background: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 2px;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: inline-block;
+  }
+  .modal-btn:hover { background: #5a0f0f; }
+  .modal-btn.secondary { color: var(--gold-light); background: none; border-color: var(--gold); }
+  .modal-btn.secondary:hover { background: rgba(154,112,0,0.15); }
+  .prompt-preview {
+    background: #1a1208;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px 14px;
+    font-family: 'Crimson Text', serif;
+    font-size: 0.78rem;
+    color: #e8d5a8;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    max-height: 180px;
+    overflow-y: auto;
+    margin-top: 10px;
+  }
 </style>
 </head>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <body>
 
 <div class="site-header">
@@ -514,6 +643,18 @@
       </div>
     </div>
 
+    <div class="dm-section">
+      <div class="dm-section-title">Pending Character Requests</div>
+      <div class="upload-area" id="request-drop-zone"
+           ondragover="event.preventDefault();this.classList.add('drag-active')"
+           ondragleave="this.classList.remove('drag-active')"
+           ondrop="handleRequestDrop(event)">
+        <input type="file" accept=".html" onchange="processRequestFile(event.target.files[0])">
+        <div class="upload-icon">📋</div>
+        <div class="upload-label">Drop player's .html file here<br><span style="font-size:0.5rem;opacity:0.6;">or click to browse</span></div>
+      </div>
+      <div id="request-list" style="margin-top:12px;"></div>
+    </div>
 
   </div>
 </div>
@@ -521,195 +662,164 @@
 <div class="party-grid" id="party-grid">
 
   <!-- PLAYER 1: DRACULA -->
-  <a class="player-card" href="sheet-1.html">
+  <a class="player-card" href="sheet-1.html" id="card-p1">
     <div class="card-role">Player 1</div>
-    <div class="card-name">Dracula</div>
-    <div class="card-class">Dragonborn Fighter · Lv 3</div>
+    <div class="card-name" id="p1-name">Dracula</div>
+    <div class="card-class" id="p1-class">Dragonborn Fighter · Lv 3</div>
     <div class="card-stats">
-      <div class="stat-box"><span class="sv hp">22</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv">12</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp">82</span><span class="sl">GP</span></div>
+      <div class="stat-box"><span class="sv hp" id="p1-hp">22</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv" id="p1-ac">12</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp" id="p1-gp">82</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" style="width:100%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p1-hpbar" style="width:100%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
   <!-- PLAYER 2 -->
-  <a class="player-card empty" href="sheet-2.html">
+  <a class="player-card empty" href="sheet-2.html" id="card-p2">
     <div class="card-role">Player 2</div>
-    <div class="card-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
-    <div class="card-class">— awaiting character —</div>
-    <div class="empty-badge">Sheet not yet filled</div>
+    <div class="card-name" id="p2-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
+    <div class="card-class" id="p2-class">— awaiting character —</div>
+    <div class="empty-badge" id="p2-badge">Sheet not yet filled</div>
     <div class="card-stats">
-      <div class="stat-box"><span class="sv hp">—</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv">—</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp">—</span><span class="sl">GP</span></div>
+      <div class="stat-box"><span class="sv hp" id="p2-hp">—</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv" id="p2-ac">—</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp" id="p2-gp">—</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" style="width:0%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p2-hpbar" style="width:0%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
   <!-- PLAYER 3 -->
-  <a class="player-card empty" href="sheet-3.html">
+  <a class="player-card empty" href="sheet-3.html" id="card-p3">
     <div class="card-role">Player 3</div>
-    <div class="card-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
-    <div class="card-class">— awaiting character —</div>
-    <div class="empty-badge">Sheet not yet filled</div>
+    <div class="card-name" id="p3-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
+    <div class="card-class" id="p3-class">— awaiting character —</div>
+    <div class="empty-badge" id="p3-badge">Sheet not yet filled</div>
     <div class="card-stats">
-      <div class="stat-box"><span class="sv hp">—</span><span class="sv hp">—</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv">—</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp">—</span><span class="sl">GP</span></div>
+      <div class="stat-box"><span class="sv hp" id="p3-hp">—</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv" id="p3-ac">—</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp" id="p3-gp">—</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" style="width:0%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p3-hpbar" style="width:0%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
   <!-- PLAYER 4 -->
-  <a class="player-card empty" href="sheet-4.html">
+  <a class="player-card empty" href="sheet-4.html" id="card-p4">
     <div class="card-role">Player 4</div>
-    <div class="card-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
-    <div class="card-class">— awaiting character —</div>
-    <div class="empty-badge">Sheet not yet filled</div>
+    <div class="card-name" id="p4-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
+    <div class="card-class" id="p4-class">— awaiting character —</div>
+    <div class="empty-badge" id="p4-badge">Sheet not yet filled</div>
     <div class="card-stats">
-      <div class="stat-box"><span class="sv hp">—</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv">—</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp">—</span><span class="sl">GP</span></div>
+      <div class="stat-box"><span class="sv hp" id="p4-hp">—</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv" id="p4-ac">—</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp" id="p4-gp">—</span><span class="sl">GP</span></div>
     </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" style="width:0%"></div></div>
+    <div class="hp-bar-wrap"><div class="hp-bar" id="p4-hpbar" style="width:0%"></div></div>
     <div class="card-link">View Sheet →</div>
   </a>
 
-  <!-- ADD PLAYER (modular) -->
-  <div class="add-player-card" onclick="addPlayer()">
+  <!-- CREATE CHARACTER -->
+  <div class="add-player-card" onclick="openCreateModal()">
     <div class="add-icon">+</div>
-    <div class="add-label">Add Player</div>
+    <div class="add-label">Create Character</div>
   </div>
 
 </div>
 
-<!-- AI CONVERSION PROMPT -->
-<div class="setup-panel" style="margin-bottom:20px;">
-  <div class="setup-title">🤖 New Player? Convert Your Sheet with AI</div>
-  <p style="font-size:0.88rem;line-height:1.6;margin-bottom:16px;color:var(--ink-light);">Got a handwritten or existing sheet? Copy this prompt, paste it into any AI (Claude, ChatGPT, etc.), then upload a photo or describe your character. The AI will extract everything in the right format for your digital sheet.</p>
-  <div style="position:relative;">
-    <strong style="font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-light);display:block;margin-bottom:8px;">AI Conversion Prompt</strong>
-    <button class="copy-btn" id="prompt-copy-btn" onclick="copyPrompt()" style="position:absolute;top:0;right:0;margin-top:0;">Copy Prompt</button>
-    <div class="script-box" id="prompt-box" style="white-space:pre-wrap;font-family:'Crimson Text',serif;font-size:0.82rem;color:#e8d5a8;line-height:1.7;">I have a D&D 5e character sheet I want to digitize. Please extract all the following fields and return them clearly labeled:
-
-- Character Name
-- Class &amp; Level
-- Race
-- Background
-- Alignment
-- Player Name
-- Proficiency Bonus
-- Armor Class, Initiative, Speed
-- Current HP &amp; Max HP
-- Hit Dice, Passive Perception, Gold (GP)
-- All 6 Ability Scores (STR/DEX/CON/INT/WIS/CHA) with modifiers
-- All Saving Throw bonuses — mark proficient ones
-- All Skill bonuses — mark proficient ones
-- All Weapons with attack bonus, damage dice, and type
-- All Class Features and Racial Abilities with full descriptions
-- Subclass and Subclass Features
-- Equipment list
-- Personality Traits, Ideals, Bonds, Flaws
-- Backstory notes
-- Any homebrew abilities or special items with descriptions
-- Any special weapon lore or progression stages
-- Treasure and misc items
-- Proficiencies: Armor, Weapons, Tools, Languages
-
-Format each field exactly like:
-Field Name: Value
-
-If anything is unclear or missing, flag it so the player can fill it in manually. Do not guess stats — note anything uncertain.</div>
-  </div>
-  <div style="margin-top:12px;padding:10px 12px;background:rgba(122,21,21,0.08);border:1px solid rgba(122,21,21,0.2);border-radius:3px;font-size:0.8rem;color:var(--ink-light);line-height:1.6;">
-    <strong style="font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--red);display:block;margin-bottom:4px;">Tips</strong>
-    Upload a clear photo of your sheet for best results. Describe any homebrew items after the prompt. Once the AI returns your data, open your sheet file and fill in each field.
-  </div>
-</div>
-
-<!-- SETUP INSTRUCTIONS -->
-<div class="setup-panel">
-  <div class="setup-title">⚙ Setup Instructions — Google Sheets Integration</div>
-
-  <div class="setup-step">
-    <div class="step-num">1</div>
-    <div class="step-text">
-      <strong>Create a Google Sheet for each player</strong>
-      Go to <a href="https://sheets.google.com" style="color:var(--red);">sheets.google.com</a> and create one sheet per player. Name them <code>Player1</code>, <code>Player2</code>, etc. Share each sheet with everyone in the group (Editor access).
+<!-- CREATE CHARACTER MODAL -->
+<div class="modal-overlay" id="create-modal" onclick="if(event.target===this)closeCreateModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    <div class="modal-title">Create Your Character</div>
+    <div class="modal-sub">Three steps to join the campaign</div>
+    <div class="modal-step">
+      <div class="step-circle">1</div>
+      <div class="step-content">
+        <div class="step-heading">Download Your Sheet</div>
+        <p class="step-desc">This is your personal character sheet — a blank template. Open it in any browser to edit all your stats, inventory, and notes.</p>
+        <button class="modal-btn" onclick="downloadTemplate()">⬇ Download Character Sheet</button>
+      </div>
     </div>
-  </div>
+    <div class="modal-step">
+      <div class="step-circle">2</div>
+      <div class="step-content">
+        <div class="step-heading">Build Your Character with AI</div>
+        <p class="step-desc">Copy this prompt and send it to your AI (Claude, ChatGPT, etc.). It will interview you one question at a time, verify your stats, and end with a full summary you can use to fill in your sheet.</p>
+        <button class="modal-btn secondary" id="ai-copy-btn" onclick="copyAIPrompt()">Copy AI Prompt</button>
+        <div class="prompt-preview" id="ai-prompt-box">You are helping me build my D&amp;D 5e character sheet. Interview me — ask one question at a time to gather everything I need. After each answer, confirm what you've recorded, then ask the next. If any stats seem off (e.g. a modifier that doesn't match the score), flag it and help me fix it.
 
-  <div class="setup-step">
-    <div class="step-num">2</div>
-    <div class="step-text">
-      <strong>Open Apps Script on each sheet</strong>
-      In each Google Sheet go to <code>Extensions → Apps Script</code>. Delete any existing code and paste in the script below. Click Save, then click <code>Deploy → New Deployment → Web App</code>. Set access to <em>Anyone</em>. Copy the deployment URL.
+Work through these in order:
+1. Character name, race, class &amp; level, background, alignment
+2. All 6 ability scores — verify each modifier is correct
+3. Combat stats: AC, Initiative, Speed, Max HP, Hit Dice, Passive Perception, Gold (GP), Carrying Capacity
+4. Saving throw and skill proficiencies
+5. Weapons — name, attack bonus, damage dice, notes
+6. Class features, subclass features, racial abilities — with full descriptions
+7. Equipment and any magic or special items
+8. Personality Traits, Ideals, Bonds, Flaws
+9. Backstory — ask follow-up questions to flesh it out
+
+When done, print a clean summary, one field per line:
+Character Name: ...
+Race: ...
+(every field filled in)
+
+Start by greeting me and asking for my character's name.</div>
+      </div>
     </div>
-  </div>
-
-  <div class="setup-step">
-    <div class="step-num">3</div>
-    <div class="step-text">
-      <strong>Paste the deployment URLs into each character sheet HTML</strong>
-      Each sheet HTML file has a line at the top: <code>const SHEET_URL = "PASTE_YOUR_URL_HERE";</code> Replace it with the URL from step 2.
+    <div class="modal-step">
+      <div class="step-circle">3</div>
+      <div class="step-content">
+        <div class="step-heading">Fill In &amp; Hand Off to the DM</div>
+        <p class="step-desc">Open your downloaded sheet in a browser — all fields are editable, just click and type. Fill everything in using your AI conversation. When done, send the file to the DM and they'll add you to the party.</p>
+      </div>
     </div>
-  </div>
-
-  <div class="setup-step">
-    <div class="step-num">4</div>
-    <div class="step-text">
-      <strong>Host the site on Google Drive</strong>
-      Upload all HTML files to a shared Google Drive folder. Right-click each file → <code>Share → Anyone with link can view</code>. Send the <code>index.html</code> link to all players. Done!
-    </div>
-  </div>
-
-  <div class="setup-step">
-    <div class="step-num">5</div>
-    <div class="step-text">
-      <strong>To add more players</strong>
-      Duplicate any <code>sheet-X.html</code> file, increment the number, add a new card to <code>index.html</code> following the same pattern, and repeat steps 1-3 for the new player.
-    </div>
-  </div>
-
-  <div style="margin-top:16px;">
-    <strong style="font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-light);">Google Apps Script — paste into each sheet</strong>
-    <button class="copy-btn" onclick="copyScript()">Copy Script</button>
-    <div class="script-box" id="script-box">function doGet(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues();
-  const obj = {};
-  data.forEach(row => { if (row[0]) obj[row[0]] = row[1]; });
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const params = JSON.parse(e.postData.contents);
-  Object.entries(params).forEach(([key, value]) => {
-    const data = sheet.getDataRange().getValues();
-    let found = false;
-    for (let i = 0; i < data.length; i++) {
-      if (data[i][0] === key) {
-        sheet.getRange(i + 1, 2).setValue(value);
-        found = true; break;
-      }
-    }
-    if (!found) {
-      sheet.appendRow([key, value]);
-    }
-  });
-  return ContentService.createTextOutput(JSON.stringify({status:"ok"}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</div>
   </div>
 </div>
 
 <script>
+// Firebase init
+let db;
+try {
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  [1,2,3,4].forEach(n => {
+    db.collection('characters').doc(String(n)).onSnapshot(doc => {
+      if (doc.exists) updateCard(n, doc.data());
+    });
+  });
+} catch(e) {
+  console.warn('Firebase not configured — live sync disabled:', e.message);
+}
+
+function updateCard(n, data) {
+  const get = k => data[k] || '';
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const name = get('f-name');
+  setText('p'+n+'-name', name || 'Unnamed');
+  const cls = [get('f-class'), get('f-race')].filter(Boolean).join(' · ');
+  setText('p'+n+'-class', cls || '— awaiting character —');
+  const hp = get('f-curhp'), maxHp = get('f-maxhp');
+  setText('p'+n+'-hp', hp || '—');
+  setText('p'+n+'-ac', get('f-ac') || '—');
+  setText('p'+n+'-gp', get('f-gold') || '—');
+  const bar = document.getElementById('p'+n+'-hpbar');
+  if (bar && hp && maxHp) {
+    const pct = Math.max(0, Math.min(100, parseInt(hp) / parseInt(maxHp) * 100));
+    bar.style.width = pct + '%';
+    bar.className = 'hp-bar' + (pct <= 25 ? ' low' : pct <= 50 ? ' mid' : '');
+  }
+  if (name) {
+    const card = document.getElementById('card-p'+n);
+    if (card) card.classList.remove('empty');
+    const badge = document.getElementById('p'+n+'-badge');
+    if (badge) badge.style.display = 'none';
+  }
+}
+
+// DM Panel
 function toggleDMPanel() {
   const panel = document.getElementById('dm-panel');
   panel.classList.toggle('open');
@@ -718,9 +828,7 @@ function toggleDMPanel() {
 
 function updateCampaignName() {
   const name = document.getElementById('dm-campaign-name').value;
-  const title = document.getElementById('site-title');
-  if (name) title.textContent = name;
-  else title.textContent = 'Campaign Tracker';
+  document.getElementById('site-title').textContent = name || 'Campaign Tracker';
   localStorage.setItem('campaign-name', name);
 }
 
@@ -728,10 +836,9 @@ function handleImageUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e) => {
-    const preview = document.getElementById('banner-preview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
+  reader.onload = e => {
+    document.getElementById('banner-preview').src = e.target.result;
+    document.getElementById('banner-preview').style.display = 'block';
     localStorage.setItem('campaign-banner', e.target.result);
     applyBanner(e.target.result);
   };
@@ -750,8 +857,7 @@ function applyBanner(src) {
 }
 
 function saveDMNotes() {
-  const notes = document.getElementById('dm-notes').value;
-  localStorage.setItem('dm-notes', notes);
+  localStorage.setItem('dm-notes', document.getElementById('dm-notes').value);
   const btn = event.target;
   btn.textContent = 'Saved ✓';
   setTimeout(() => btn.textContent = 'Save Notes', 2000);
@@ -761,48 +867,122 @@ function loadDMData() {
   const name = localStorage.getItem('campaign-name');
   const banner = localStorage.getItem('campaign-banner');
   const notes = localStorage.getItem('dm-notes');
-  if (name) {
-    document.getElementById('dm-campaign-name').value = name;
-    document.getElementById('site-title').textContent = name;
-  }
-  if (banner) {
-    document.getElementById('banner-preview').src = banner;
-    document.getElementById('banner-preview').style.display = 'block';
-    applyBanner(banner);
-  }
+  if (name) { document.getElementById('dm-campaign-name').value = name; document.getElementById('site-title').textContent = name; }
+  if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
   if (notes) document.getElementById('dm-notes').value = notes;
+  renderPendingRequests();
 }
 
-// Load campaign name and banner on page load (visible to everyone)
+// Request Folder
+function handleRequestDrop(event) {
+  event.preventDefault();
+  document.getElementById('request-drop-zone').classList.remove('drag-active');
+  const file = event.dataTransfer.files[0];
+  if (file) processRequestFile(file);
+}
+
+function processRequestFile(file) {
+  if (!file || !file.name.endsWith('.html')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(e.target.result, 'text/html');
+    const get = id => {
+      const el = doc.getElementById(id);
+      return el ? (el.value || el.textContent || '').trim() : '';
+    };
+    const data = {
+      name: get('f-name') || 'Unknown',
+      cls: get('f-class') || '—',
+      race: get('f-race') || '',
+      hp: get('f-curhp') || '—',
+      maxhp: get('f-maxhp') || '—',
+      ac: get('f-ac') || '—',
+      gp: get('f-gold') || '—',
+      filename: file.name,
+      html: e.target.result,
+      ts: Date.now()
+    };
+    const requests = JSON.parse(localStorage.getItem('dm-requests') || '[]');
+    requests.unshift(data);
+    localStorage.setItem('dm-requests', JSON.stringify(requests));
+    renderPendingRequests();
+  };
+  reader.readAsText(file);
+}
+
+function renderPendingRequests() {
+  const requests = JSON.parse(localStorage.getItem('dm-requests') || '[]');
+  const container = document.getElementById('request-list');
+  if (!container) return;
+  if (!requests.length) {
+    container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">No pending requests.</div>';
+    return;
+  }
+  container.innerHTML = requests.map((r, i) => `
+    <div style="border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,0.05);">
+      <div style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--gold-light);margin-bottom:3px;">${r.name}</div>
+      <div style="font-size:0.76rem;color:var(--border-light);margin-bottom:8px;">${r.cls}${r.race ? ' · ' + r.race : ''} | HP ${r.hp}/${r.maxhp} | AC ${r.ac} | ${r.gp} GP</div>
+      <div style="display:flex;gap:6px;">
+        <button class="dm-btn" onclick="downloadRequest(${i})">⬇ Download</button>
+        <button class="dm-btn danger" onclick="removeRequest(${i})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function downloadRequest(idx) {
+  const requests = JSON.parse(localStorage.getItem('dm-requests') || '[]');
+  const r = requests[idx];
+  if (!r) return;
+  const blob = new Blob([r.html], {type: 'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = r.filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function removeRequest(idx) {
+  const requests = JSON.parse(localStorage.getItem('dm-requests') || '[]');
+  requests.splice(idx, 1);
+  localStorage.setItem('dm-requests', JSON.stringify(requests));
+  renderPendingRequests();
+}
+
+// Create Character modal
+function openCreateModal() { document.getElementById('create-modal').classList.add('open'); }
+function closeCreateModal() { document.getElementById('create-modal').classList.remove('open'); }
+
+function copyAIPrompt() {
+  navigator.clipboard.writeText(document.getElementById('ai-prompt-box').innerText).then(() => {
+    const btn = document.getElementById('ai-copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy AI Prompt', 2000);
+  });
+}
+
+function downloadTemplate() {
+  fetch('sheet-template.html')
+    .then(r => r.text())
+    .then(html => {
+      const blob = new Blob([html], {type: 'text/html'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'my-character.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   const name = localStorage.getItem('campaign-name');
   const banner = localStorage.getItem('campaign-banner');
   if (name) document.getElementById('site-title').textContent = name;
   if (banner) applyBanner(banner);
 });
-
-function addPlayer() {
-  const count = document.querySelectorAll('.player-card').length + 1;
-  alert('To add Player ' + count + ':\n1. Duplicate sheet-' + (count-1) + '.html → rename to sheet-' + count + '.html\n2. Add a new card to index.html\n3. Set up a new Google Sheet following the instructions below');
-}
-
-function copyPrompt() {
-  const text = document.getElementById('prompt-box').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('prompt-copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy Prompt', 2000);
-  });
-}
-
-function copyScript() {
-  const text = document.getElementById('script-box').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy Script', 2000);
-  });
-}
 </script>
 </body>
 </html>

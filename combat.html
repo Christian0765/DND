@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Combat Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <style>
   :root {
     --parchment: #f5ead2;
@@ -480,22 +483,31 @@
 
 <script>
 const CONDITIONS = ['Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated','Paralyzed','Poisoned','Prone','Restrained','Stunned','Unconscious'];
-const STORAGE_KEY = 'combat-state';
 
-let state = load();
+let state = { round: 1, combatants: [] };
+let db;
 
-function load() {
-  try {
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (s && Array.isArray(s.combatants)) return s;
-  } catch(e) {}
-  return { round: 1, combatants: [
-    { id: Date.now(), name: 'Dracula', init: 0, hp: 22, maxHp: 22, ac: 12, type: 'player', conditions: [] }
-  ]};
+try {
+  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  db.collection('combat').doc('state').onSnapshot({includeMetadataChanges: true}, doc => {
+    if (doc.metadata.hasPendingWrites) return;
+    if (doc.exists) {
+      const data = doc.data();
+      if (data && Array.isArray(data.combatants)) { state = data; render(); }
+    } else {
+      render();
+    }
+  });
+} catch(e) {
+  console.warn('Firebase not configured — using local state');
+  render();
 }
 
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (db) {
+    db.collection('combat').doc('state').set(JSON.parse(JSON.stringify(state)));
+  }
 }
 
 function changeRound(d) {
@@ -647,8 +659,6 @@ function drop(e, i) {
 }
 
 document.getElementById('add-name').addEventListener('keydown', e => { if (e.key === 'Enter') addCombatant(); });
-
-render();
 </script>
 </body>
 </html>
