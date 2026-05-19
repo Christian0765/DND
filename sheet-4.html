@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player 4 — Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #f5ead2;
+    --parchment-dark: #e8d5a8;
+    --ink: #1a1208;
+    --ink-light: #4a3520;
+    --red: #7a1515;
+    --gold: #9a7000;
+    --gold-light: #c4920a;
+    --border: #7a5a28;
+    --border-light: #b08840;
+    --green: #285a18;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111008;
+    background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
+    font-family: 'Crimson Text', serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 16px 12px 40px;
+  }
+  .top-bar { max-width: 900px; margin: 0 auto 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .back-link { font-family: 'Cinzel', serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--border-light); text-decoration: none; border: 1px solid var(--border); padding: 4px 10px; border-radius: 2px; transition: color 0.15s, border-color 0.15s; }
+  .back-link:hover { color: var(--gold-light); border-color: var(--gold); }
+  .sync-bar { display: flex; align-items: center; gap: 8px; }
+  .sync-status { font-family: 'Cinzel', serif; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 2px; border: 1px solid; }
+  .sync-status.ok { color: #5a9a3a; border-color: #5a9a3a; background: rgba(90,154,58,0.1); }
+  .sync-status.saving { color: var(--gold-light); border-color: var(--gold); background: rgba(154,112,0,0.1); }
+  .sync-status.error { color: var(--red); border-color: var(--red); background: rgba(122,21,21,0.1); }
+  .sync-status.offline { color: var(--border-light); border-color: var(--border); background: rgba(122,90,40,0.1); }
+  .save-btn { font-family: 'Cinzel', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-light); background: none; border: 1px solid var(--gold); border-radius: 2px; padding: 4px 10px; cursor: pointer; transition: background 0.15s; }
+  .save-btn:hover { background: rgba(154,112,0,0.15); }
+  .page { max-width: 900px; margin: 0 auto; background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%); border: 1px solid var(--border); box-shadow: 0 0 0 4px #1a0e04, 0 0 0 6px var(--border), 0 20px 60px rgba(0,0,0,0.8); padding: 24px 24px 32px; animation: fadeIn 0.5s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .editable { background: transparent; border: none; border-bottom: 1px dashed var(--border-light); font-family: 'Crimson Text', serif; font-size: inherit; color: var(--ink); padding: 1px 2px; outline: none; transition: background 0.15s; }
+  .editable:hover { background: rgba(184,134,11,0.07); }
+  .editable:focus { background: rgba(184,134,11,0.13); border-bottom-color: var(--gold); }
+  .editable.big { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 900; color: var(--red); text-align: center; width: 65px; display: block; margin: 0 auto; }
+  .editable.name-field { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 900; color: var(--red); width: 100%; border-bottom: 2px dashed var(--border-light); }
+  textarea.editable { resize: vertical; min-height: 40px; font-size: 0.82rem; font-style: italic; line-height: 1.5; padding: 4px 6px; border: 1px dashed var(--border-light); border-radius: 2px; width: 100%; }
+  .header { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; border-bottom: 3px double var(--border); padding-bottom: 14px; margin-bottom: 18px; }
+  .char-sub { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
+  .meta-table { text-align: right; }
+  .meta-table td { padding: 1px 0 1px 10px; font-size: 0.82rem; }
+  .meta-table td:first-child { font-family: 'Cinzel', serif; font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); }
+  .meta-table .editable { text-align: right; width: 120px; font-weight: 600; }
+  .combat-row { display: flex; border: 2px solid var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 18px; }
+  .cs { flex: 1; text-align: center; padding: 8px 3px; border-right: 1px solid var(--border-light); background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-dark) 100%); }
+  .cs:last-child { border-right: none; }
+  .cs .lbl { font-family: 'Cinzel', serif; font-size: 0.46rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-light); display: block; margin-top: 2px; }
+  .body-grid { display: grid; grid-template-columns: 164px 1fr 194px; gap: 16px; }
+  .st { font-family: 'Cinzel', serif; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--gold-light); border-bottom: 1px solid var(--gold); padding-bottom: 3px; margin-bottom: 7px; margin-top: 12px; }
+  .st:first-child { margin-top: 0; }
+  .ability { border: 1.5px solid var(--border); border-radius: 3px; padding: 5px 6px; margin-bottom: 5px; background: linear-gradient(135deg, var(--parchment) 60%, var(--parchment-dark) 100%); }
+  .ability-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .ability-name { font-family: 'Cinzel', serif; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-light); }
+  .ability-score-ed { font-size: 0.74rem; color: var(--ink-light); width: 24px; text-align: right; }
+  .ability-mod-ed { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 900; color: var(--red); text-align: center; line-height: 1; display: block; width: 100%; }
+  .ability-saves { font-size: 0.61rem; color: var(--ink-light); border-top: 1px dotted var(--border-light); padding-top: 2px; margin-top: 2px; }
+  .trait-label { font-family: 'Cinzel', serif; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 3px; margin-top: 6px; display: block; }
+  .trait-label:first-of-type { margin-top: 0; }
+  .gold-box { margin-top: 10px; padding: 5px 9px; border: 1.5px solid var(--gold); border-radius: 3px; background: rgba(184,134,11,0.07); display: flex; align-items: center; gap: 6px; }
+  .gold-box strong { font-family: 'Cinzel', serif; font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-light); white-space: nowrap; }
+  .gold-box .editable { font-size: 0.88rem; font-weight: 600; width: 55px; }
+  .footer { margin-top: 20px; padding-top: 14px; border-top: 3px double var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.8rem; }
+  .save-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--green); cursor: pointer; display: inline-block; transition: background 0.15s; }
+  .save-circle.fail { border-color: var(--red); }
+  .save-circle.filled-s { background: var(--green); }
+  .save-circle.filled-f { background: var(--red); }
+  #insp { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--gold); cursor: pointer; margin-top: 4px; transition: background 0.15s; }
+  .history-panel { margin-top: 20px; border-top: 3px double var(--border); padding-top: 14px; }
+  .history-toggle { font-family: 'Cinzel', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--gold); cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; gap: 6px; }
+  .history-toggle:hover { color: var(--gold-light); }
+  .history-toggle .arrow { transition: transform 0.2s; display: inline-block; }
+  .history-toggle.open .arrow { transform: rotate(90deg); }
+  .history-body { display: none; margin-top: 10px; }
+  .history-body.open { display: block; }
+  .history-entry { display: grid; grid-template-columns: 120px 140px 1fr; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px dotted var(--parchment-dark); font-size: 0.75rem; line-height: 1.4; }
+  .history-entry:last-child { border-bottom: none; }
+  .history-time { font-family: 'Cinzel', serif; font-size: 0.5rem; color: var(--border-light); letter-spacing: 0.04em; }
+  .history-field { font-family: 'Cinzel', serif; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-light); }
+  .history-clear { font-family: 'Cinzel', serif; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); background: none; border: 1px solid var(--red); border-radius: 2px; padding: 2px 7px; cursor: pointer; float: right; margin-top: -2px; }
+  .history-clear:hover { background: rgba(122,21,21,0.1); }
+  @media (max-width: 680px) { .body-grid { grid-template-columns: 1fr; } .header { grid-template-columns: 1fr; } .combat-row { flex-wrap: wrap; } .cs { min-width: 30%; } .footer { grid-template-columns: 1fr; } }
+  @media (max-width: 500px) { .history-entry { grid-template-columns: 1fr; gap: 2px; } }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a class="back-link" href="index.html">← Party Overview</a>
+  <div class="sync-bar">
+    <span class="sync-status offline" id="sync-status">Connecting...</span>
+    <button class="save-btn" onclick="saveToFirestore()">Save</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="header">
+    <div>
+      <input class="editable name-field" id="f-name" value="" placeholder="Character Name">
+      <div class="char-sub">Player 4 · Fill in your character details</div>
+    </div>
+    <table class="meta-table">
+      <tr><td>Class & Level</td><td><input class="editable" id="f-class" value="" placeholder="e.g. Rogue 3" style="width:120px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Race</td><td><input class="editable" id="f-race" value="" placeholder="e.g. Elf" style="width:120px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Background</td><td><input class="editable" id="f-bg" value="" placeholder="e.g. Outlander" style="width:120px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Alignment</td><td><input class="editable" id="f-align" value="" placeholder="e.g. Chaotic Good" style="width:120px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Player</td><td><input class="editable" id="f-player" value="2" style="width:120px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Prof. Bonus</td><td><input class="editable" id="f-prof" value="+2" style="width:120px;text-align:right;font-weight:600;"></td></tr>
+    </table>
+  </div>
+
+  <div class="combat-row">
+    <div class="cs"><input class="editable big" id="f-ac" value=""><span class="lbl">Armor Class</span></div>
+    <div class="cs"><input class="editable big" id="f-init" value=""><span class="lbl">Initiative</span></div>
+    <div class="cs"><input class="editable big" id="f-speed" value="30"><span class="lbl">Speed ft</span></div>
+    <div class="cs">
+      <div style="display:flex;align-items:center;justify-content:center;gap:3px;">
+        <input class="editable big" id="f-curhp" value="" style="color:var(--green);">
+        <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--ink-light);">/</span>
+        <input class="editable big" id="f-maxhp" value="" style="color:var(--green);">
+      </div>
+      <span class="lbl">Current / Max HP</span>
+    </div>
+    <div class="cs"><input class="editable big" id="f-hd" value=""><span class="lbl">Hit Dice</span></div>
+    <div class="cs"><input class="editable big" id="f-pp" value=""><span class="lbl">Passive Perc.</span></div>
+    <div class="cs"><input class="editable big" id="f-gold" value="" style="color:var(--gold);"><span class="lbl">Gold GP</span></div>
+    <div class="cs"><input class="editable big" id="f-carry" value="" style="color:var(--ink-light);"><span class="lbl">Carry lbs</span></div>
+  </div>
+
+  <div class="body-grid">
+    <div>
+      <div class="st">Ability Scores</div>
+      <div class="ability">
+        <div class="ability-top"><span class="ability-name">Strength</span><input class="editable ability-score-ed" id="f-str" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-strmod" value="+0">
+        <div class="ability-saves" style="font-size:0.61rem;color:var(--ink-light);">Save / Athletics</div>
+      </div>
+      <div class="ability">
+        <div class="ability-top"><span class="ability-name">Dexterity</span><input class="editable ability-score-ed" id="f-dex" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-dexmod" value="+0">
+        <div class="ability-saves">Save / Acrobatics / Sleight / Stealth</div>
+      </div>
+      <div class="ability">
+        <div class="ability-top"><span class="ability-name">Constitution</span><input class="editable ability-score-ed" id="f-con" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-conmod" value="+0">
+        <div class="ability-saves">Save</div>
+      </div>
+      <div class="ability">
+        <div class="ability-top"><span class="ability-name">Intelligence</span><input class="editable ability-score-ed" id="f-int" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-intmod" value="+0">
+        <div class="ability-saves">Save / Arcana / History / Invest. / Nature / Religion</div>
+      </div>
+      <div class="ability">
+        <div class="ability-top"><span class="ability-name">Wisdom</span><input class="editable ability-score-ed" id="f-wis" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-wismod" value="+0">
+        <div class="ability-saves">Save / Animal / Insight / Medicine / Percep. / Survival</div>
+      </div>
+      <div class="ability">
+        <div class="ability-top"><span class="ability-name">Charisma</span><input class="editable ability-score-ed" id="f-cha" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-chamod" value="+0">
+        <div class="ability-saves">Save / Decep. / Intimid. / Perform. / Persuas.</div>
+      </div>
+      <div class="st">Proficiencies</div>
+      <textarea class="editable" id="f-profs" style="font-style:normal;min-height:80px;" placeholder="Armor, Weapons, Tools, Languages..."></textarea>
+    </div>
+
+    <div>
+      <div class="st">Weapons & Attacks</div>
+      <textarea class="editable" id="f-weapons" style="font-style:normal;min-height:130px;font-size:0.78rem;" placeholder="Weapon · Atk Bonus · Damage · Notes&#10;e.g. Longsword · +5 · 1d8+3 slashing · Versatile&#10;e.g. Shortbow · +4 · 1d6+2 piercing · Ranged 80ft"></textarea>
+
+      <div class="st">Features & Abilities</div>
+      <textarea class="editable" id="f-features" style="font-style:normal;min-height:200px;font-size:0.78rem;" placeholder="Feature Name: Description&#10;e.g. Second Wind: Bonus action, regain 1d10+level HP, once per rest&#10;e.g. Sneak Attack: Extra 2d6 damage when you have advantage"></textarea>
+    </div>
+
+    <div>
+      <div class="st">Personality</div>
+      <span class="trait-label">Traits</span>
+      <textarea class="editable" id="f-traits" placeholder="Personality traits..."></textarea>
+      <span class="trait-label">Ideals</span>
+      <textarea class="editable" id="f-ideals" placeholder="Ideals..."></textarea>
+      <span class="trait-label">Bonds</span>
+      <textarea class="editable" id="f-bonds" placeholder="Bonds..."></textarea>
+      <span class="trait-label">Flaws</span>
+      <textarea class="editable" id="f-flaws" placeholder="Flaws..."></textarea>
+
+      <div class="st">Equipment</div>
+      <textarea class="editable" id="f-equipment" style="font-style:normal;min-height:100px;" placeholder="List your items here..."></textarea>
+      <div class="gold-box"><strong>Gold</strong><input class="editable" id="f-gold2" value=""> GP</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>
+      <div class="st" style="margin-top:0">Backstory</div>
+      <textarea class="editable" id="f-backstory" style="font-style:normal;min-height:120px;font-size:0.82rem;" placeholder="Your character's history, motivations, and secrets..."></textarea>
+    </div>
+    <div>
+      <div class="st" style="margin-top:0">Death Saves</div>
+      <div style="display:flex;gap:20px;padding:8px 0 12px;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.54rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);margin-bottom:5px;">Successes</div>
+          <div style="display:flex;gap:6px;">
+            <div class="save-circle" onclick="this.classList.toggle('filled-s')"></div>
+            <div class="save-circle" onclick="this.classList.toggle('filled-s')"></div>
+            <div class="save-circle" onclick="this.classList.toggle('filled-s')"></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.54rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--red);margin-bottom:5px;">Failures</div>
+          <div style="display:flex;gap:6px;">
+            <div class="save-circle fail" onclick="this.classList.toggle('filled-f')"></div>
+            <div class="save-circle fail" onclick="this.classList.toggle('filled-f')"></div>
+            <div class="save-circle fail" onclick="this.classList.toggle('filled-f')"></div>
+          </div>
+        </div>
+      </div>
+      <div class="st">Inspiration</div>
+      <div id="insp" onclick="this.style.background=this.style.background?'':'var(--gold)'" title="Toggle inspiration"></div>
+      <div class="st">Session Notes</div>
+      <textarea class="editable" id="f-notes" style="font-style:normal;min-height:80px;" placeholder="Notes from this session..."></textarea>
+    </div>
+  </div>
+
+  <div class="history-panel">
+    <button class="history-toggle" id="history-toggle" onclick="toggleHistory()">
+      <span class="arrow">▶</span> Edit History
+    </button>
+    <div class="history-body" id="history-body">
+      <button class="history-clear" onclick="clearHistory()">Clear</button>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+const PLAYER_ID = 'player4';
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const FIELDS = [
+  'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
+  'f-ac','f-init','f-speed','f-curhp','f-maxhp','f-hd','f-pp','f-gold','f-carry',
+  'f-str','f-strmod','f-dex','f-dexmod','f-con','f-conmod',
+  'f-int','f-intmod','f-wis','f-wismod','f-cha','f-chamod',
+  'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2',
+  'f-weapons','f-features','f-equipment','f-backstory','f-profs'
+];
+
+function setStatus(type, text) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + type;
+  el.textContent = text;
+}
+
+async function saveToFirestore() {
+  setStatus('saving', 'Saving...');
+  const data = {};
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value || '';
+  });
+  try {
+    await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    setStatus('ok', 'Saved ✓');
+    setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
+  } catch (e) {
+    setStatus('error', 'Save Failed');
+  }
+}
+
+function loadFromFirestore() {
+  setStatus('saving', 'Connecting...');
+  db.collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+    if (!doc.exists) { setStatus('ok', 'Ready'); return; }
+    const data = doc.data();
+    FIELDS.forEach(id => {
+      if (data[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el) el.value = data[id];
+      }
+    });
+    setStatus('ok', 'Live ✓');
+  }, () => setStatus('error', 'Connection error'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromFirestore();
+  renderHistory();
+});
+
+const FIELD_LABELS = {
+  'f-name':'Character Name','f-class':'Class & Level','f-race':'Race',
+  'f-bg':'Background','f-align':'Alignment','f-player':'Player',
+  'f-prof':'Prof. Bonus','f-ac':'Armor Class','f-init':'Initiative',
+  'f-speed':'Speed','f-curhp':'Current HP','f-maxhp':'Max HP',
+  'f-hd':'Hit Dice','f-pp':'Passive Perception','f-gold':'Gold (GP)',
+  'f-carry':'Carry Capacity','f-str':'STR','f-strmod':'STR Modifier',
+  'f-dex':'DEX','f-dexmod':'DEX Modifier','f-con':'CON','f-conmod':'CON Modifier',
+  'f-int':'INT','f-intmod':'INT Modifier','f-wis':'WIS','f-wismod':'WIS Modifier',
+  'f-cha':'CHA','f-chamod':'CHA Modifier','f-traits':'Personality Traits',
+  'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
+  'f-notes':'Session Notes','f-gold2':'Gold (Equipment)',
+  'f-weapons':'Weapons','f-features':'Features','f-equipment':'Equipment',
+  'f-backstory':'Backstory','f-profs':'Proficiencies'
+};
+const HISTORY_KEY = 'edit-history-sheet4';
+const MAX_HISTORY = 100;
+
+function recordEdit(fieldId, oldVal, newVal) {
+  if (oldVal === newVal) return;
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  history.unshift({ ts: Date.now(), field: FIELD_LABELS[fieldId] || fieldId, from: oldVal, to: newVal });
+  if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  const container = document.getElementById('history-list');
+  if (!history.length) {
+    container.innerHTML = '<div style="font-style:italic;color:var(--ink-light);font-size:0.78rem;padding:8px 0;">No edits recorded yet.</div>';
+    return;
+  }
+  const trunc = s => s && s.length > 40 ? s.slice(0, 40) + '…' : (s || '');
+  container.innerHTML = history.map(e => {
+    const d = new Date(e.ts);
+    const t = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const fromHtml = e.from ? `<span style="color:var(--red);text-decoration:line-through;">${trunc(e.from)}</span> → ` : '';
+    return `<div class="history-entry">
+      <span class="history-time">${t}</span>
+      <span class="history-field">${e.field}</span>
+      <span>${fromHtml}<span style="color:var(--green);">${trunc(e.to) || '<em style="color:var(--border-light)">cleared</em>'}</span></span>
+    </div>`;
+  }).join('');
+}
+
+function toggleHistory() {
+  document.getElementById('history-toggle').classList.toggle('open');
+  document.getElementById('history-body').classList.toggle('open');
+}
+
+function clearHistory() {
+  if (confirm('Clear all edit history for this sheet?')) {
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  }
+}
+
+let saveTimer;
+FIELDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    let oldValue;
+    el.addEventListener('focus', () => { oldValue = el.value; });
+    el.addEventListener('blur', () => { recordEdit(id, oldValue, el.value); });
+    el.addEventListener('input', () => {
+      setStatus('saving', 'Unsaved changes');
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveToFirestore, 2000);
+    });
+  }
+});
+</script>
+</body>
+</html>

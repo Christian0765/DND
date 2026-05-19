@@ -296,8 +296,8 @@
 <div class="top-bar">
   <a class="back-link" href="index.html">← Party Overview</a>
   <div class="sync-bar">
-    <span class="sync-status offline" id="sync-status">No Sheet Connected</span>
-    <button class="save-btn" onclick="saveToSheet()">Save to Sheet</button>
+    <span class="sync-status offline" id="sync-status">Connecting...</span>
+    <button class="save-btn" onclick="saveToFirestore()">Save</button>
   </div>
 </div>
 
@@ -512,8 +512,14 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const SHEET_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+const PLAYER_ID = 'player1';
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
@@ -529,52 +535,39 @@ function setStatus(type, text) {
   el.textContent = text;
 }
 
-async function saveToSheet() {
-  if (SHEET_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    setStatus('error', 'No Sheet URL — see setup');
-    return;
-  }
+async function saveToFirestore() {
   setStatus('saving', 'Saving...');
   const data = {};
   FIELDS.forEach(id => {
     const el = document.getElementById(id);
-    if (el) data[id] = el.value || el.innerText;
+    if (el) data[id] = el.value || '';
   });
   try {
-    await fetch(SHEET_URL, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
+    await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
     setStatus('ok', 'Saved ✓');
-    setTimeout(() => setStatus('ok', 'Sheet Connected'), 3000);
+    setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
   } catch (e) {
     setStatus('error', 'Save Failed');
   }
 }
 
-async function loadFromSheet() {
-  if (SHEET_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    setStatus('offline', 'No Sheet Connected');
-    return;
-  }
-  setStatus('saving', 'Loading...');
-  try {
-    const res = await fetch(SHEET_URL);
-    const data = await res.json();
+function loadFromFirestore() {
+  setStatus('saving', 'Connecting...');
+  db.collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+    if (!doc.exists) { setStatus('ok', 'Ready'); return; }
+    const data = doc.data();
     FIELDS.forEach(id => {
       if (data[id] !== undefined) {
         const el = document.getElementById(id);
         if (el) el.value = data[id];
       }
     });
-    setStatus('ok', 'Sheet Connected');
-  } catch (e) {
-    setStatus('error', 'Could not load');
-  }
+    setStatus('ok', 'Live ✓');
+  }, () => setStatus('error', 'Connection error'));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadFromSheet();
+  loadFromFirestore();
   renderHistory();
 });
 
