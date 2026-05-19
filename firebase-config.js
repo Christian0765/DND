@@ -1,8 +1,8 @@
 const FIREBASE_CONFIG = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID",
-  appId: "PASTE_YOUR_APP_ID"
+  apiKey: "AIzaSyAQsE0j0Gb_bO77REOG5nDZWh6Fn4tMMtw",
+  authDomain: "dnd-tracker-4f54e.firebaseapp.com",
+  projectId: "dnd-tracker-4f54e",
+  storageBucket: "dnd-tracker-4f54e.firebasestorage.app",
+  messagingSenderId: "858845462377",
+  appId: "1:858845462377:web:885e4ffd7baf06c61007f8"
 };
