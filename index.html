@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #f5ead2;
+    --parchment-dark: #e8d5a8;
+    --ink: #1a1208;
+    --ink-light: #4a3520;
+    --red: #7a1515;
+    --gold: #9a7000;
+    --gold-light: #c4920a;
+    --border: #7a5a28;
+    --border-light: #b08840;
+    --green: #285a18;
+    --bg: #111008;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
+    font-family: 'Crimson Text', serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+
+  /* HEADER */
+  .site-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeIn 0.8s ease;
+  }
+  .site-title {
+    font-family: 'Cinzel', serif;
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+    text-shadow: 0 2px 20px rgba(184,134,11,0.4);
+    line-height: 1;
+  }
+  .site-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--border-light);
+    margin-top: 8px;
+  }
+  .divider {
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 16px auto;
+  }
+
+  /* PARTY GRID */
+  .party-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    max-width: 960px;
+    margin: 0 auto 40px;
+    animation: fadeIn 0.8s ease 0.1s both;
+  }
+
+  .player-card {
+    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 2px #1a0e04, 0 8px 30px rgba(0,0,0,0.6);
+    border-radius: 3px;
+    padding: 20px 16px;
+    text-decoration: none;
+    color: var(--ink);
+    display: block;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .player-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 2px #1a0e04, 0 16px 40px rgba(0,0,0,0.7);
+  }
+  .player-card.empty { opacity: 0.6; }
+  .player-card.empty:hover { opacity: 0.8; }
+
+  .card-role {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--red);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .card-class {
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+
+  .card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .stat-box {
+    text-align: center;
+    background: rgba(255,255,255,0.3);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 4px 2px;
+  }
+  .stat-box .sv {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--red);
+    display: block;
+    line-height: 1;
+  }
+  .stat-box .sv.hp { color: var(--green); }
+  .stat-box .sv.gp { color: var(--gold); }
+  .stat-box .sl {
+    font-family: 'Cinzel', serif;
+    font-size: 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-light);
+    display: block;
+    margin-top: 2px;
+  }
+
+  .hp-bar-wrap {
+    background: rgba(0,0,0,0.1);
+    border-radius: 2px;
+    height: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .hp-bar {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .hp-bar.low { background: var(--red); }
+  .hp-bar.mid { background: var(--gold); }
+
+  .card-link {
+    display: block;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    padding: 5px;
+    transition: background 0.15s;
+  }
+  .card-link:hover { background: rgba(154,112,0,0.15); }
+
+  .empty-badge {
+    display: inline-block;
+    background: rgba(122,90,40,0.15);
+    border: 1px dashed var(--border-light);
+    border-radius: 2px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-style: italic;
+    color: var(--ink-light);
+    margin-bottom: 12px;
+  }
+
+  /* ADD PLAYER */
+  .add-player-card {
+    background: rgba(255,255,255,0.04);
+    border: 2px dashed var(--border);
+    border-radius: 3px;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    text-decoration: none;
+  }
+  .add-player-card:hover { background: rgba(255,255,255,0.07); border-color: var(--gold); }
+  .add-icon { font-size: 2rem; color: var(--border-light); margin-bottom: 8px; }
+  .add-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--border-light);
+  }
+
+  /* SETUP PANEL */
+  .setup-panel {
+    max-width: 760px;
+    margin: 0 auto;
+    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 3px #1a0e04, 0 8px 30px rgba(0,0,0,0.6);
+    border-radius: 3px;
+    padding: 28px 32px;
+    animation: fadeIn 0.8s ease 0.2s both;
+  }
+  .setup-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--red);
+    border-bottom: 2px double var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 18px;
+    letter-spacing: 0.05em;
+  }
+  .setup-step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  .step-num {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--gold-light);
+    min-width: 24px;
+    line-height: 1.3;
+  }
+  .step-text strong {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink);
+    display: block;
+    margin-bottom: 2px;
+  }
+  code {
+    background: rgba(0,0,0,0.08);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 1px 5px;
+    font-size: 0.8rem;
+    font-family: monospace;
+    color: var(--red);
+  }
+  .script-box {
+    background: #1a1208;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #e8d5a8;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    margin-top: 8px;
+  }
+  .copy-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    background: none;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    padding: 3px 8px;
+    cursor: pointer;
+    margin-top: 6px;
+    float: right;
+  }
+  .copy-btn:hover { background: rgba(154,112,0,0.15); }
+
+  /* DM PANEL */
+  .dm-toggle {
+    display: block;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--border-light);
+    cursor: pointer;
+    padding: 10px;
+    margin: 0 auto 20px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    width: 200px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .dm-toggle:hover { color: var(--gold-light); border-color: var(--gold); }
+
+  .dm-panel {
+    display: none;
+    max-width: 760px;
+    margin: 0 auto 24px;
+    background: linear-gradient(160deg, #1a0e04 0%, #0d0802 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 3px #080604, 0 8px 30px rgba(0,0,0,0.8);
+    border-radius: 3px;
+    padding: 24px 28px;
+    animation: fadeIn 0.3s ease;
+  }
+  .dm-panel.open { display: block; }
+
+  .dm-panel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 18px;
+    letter-spacing: 0.05em;
+  }
+
+  .dm-login { text-align: center; padding: 10px 0; }
+  .dm-login p { font-size: 0.85rem; color: var(--border-light); margin-bottom: 12px; font-style: italic; }
+
+  .dm-input {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--parchment);
+    padding: 8px 12px;
+    width: 220px;
+    outline: none;
+    letter-spacing: 0.15em;
+    text-align: center;
+  }
+  .dm-input:focus { border-color: var(--gold); }
+  .dm-input::placeholder { color: var(--border-light); letter-spacing: 0.1em; }
+
+  .dm-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold-light);
+    background: none;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background 0.15s;
+  }
+  .dm-btn:hover { background: rgba(154,112,0,0.2); }
+  .dm-btn.danger { color: var(--red); border-color: var(--red); }
+  .dm-btn.danger:hover { background: rgba(122,21,21,0.15); }
+
+  .dm-error { color: var(--red); font-size: 0.78rem; margin-top: 8px; font-style: italic; }
+
+  .dm-controls { display: none; }
+  .dm-controls.open { display: block; }
+
+  .dm-section { margin-bottom: 20px; }
+  .dm-section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 5px;
+    margin-bottom: 12px;
+  }
+
+  .dm-field { margin-bottom: 10px; }
+  .dm-field label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.56rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--border-light);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .dm-field input[type="text"] {
+    font-family: 'Crimson Text', serif;
+    font-size: 0.9rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--parchment);
+    padding: 7px 10px;
+    width: 100%;
+    outline: none;
+  }
+  .dm-field input[type="text"]:focus { border-color: var(--gold); }
+
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 3px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .upload-area:hover { border-color: var(--gold); background: rgba(154,112,0,0.05); }
+  .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .upload-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .upload-label { font-family: 'Cinzel', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--border-light); }
+  .upload-preview { max-width: 100%; max-height: 120px; border-radius: 2px; margin-top: 10px; display: none; border: 1px solid var(--border); }
+
+  .dm-notes-area {
+    width: 100%;
+    min-height: 100px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--parchment-dark);
+    font-family: 'Crimson Text', serif;
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+  }
+  .dm-notes-area:focus { border-color: var(--gold); }
+  .dm-notes-area::placeholder { color: var(--border); font-style: italic; }
+
+  .dm-logout { margin-top: 16px; text-align: right; }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  @media (max-width: 500px) {
+    .site-title { font-size: 2rem; }
+    .party-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div class="divider"></div>
+  <div class="site-title" id="site-title">Campaign Tracker</div>
+  <div class="site-sub">D&amp;D Campaign · Character Roster</div>
+  <div class="divider"></div>
+</div>
+
+<button class="dm-toggle" onclick="toggleDMPanel()">🔐 DM Panel</button>
+
+<!-- DM PANEL -->
+<div class="dm-panel" id="dm-panel">
+  <div class="dm-panel-title">🔐 Dungeon Master Panel</div>
+
+  <!-- LOGIN -->
+  <div class="dm-login" id="dm-login">
+    <p>Enter your DM passcode to access campaign controls</p>
+    <input class="dm-input" type="password" id="dm-passcode" placeholder="Passcode" onkeydown="if(event.key==='Enter')dmLogin()">
+    <button class="dm-btn" onclick="dmLogin()">Enter</button>
+    <div class="dm-error" id="dm-error"></div>
+  </div>
+
+  <!-- CONTROLS (shown after login) -->
+  <div class="dm-controls" id="dm-controls">
+
+    <div class="dm-section">
+      <div class="dm-section-title">Campaign Identity</div>
+
+      <div class="dm-field">
+        <label>Campaign Name</label>
+        <input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()">
+      </div>
+
+      <div class="dm-field">
+        <label>Campaign Banner / Logo</label>
+        <div class="upload-area" id="upload-area">
+          <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+          <div class="upload-icon">🖼</div>
+          <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
+          <img class="upload-preview" id="banner-preview">
+        </div>
+      </div>
+    </div>
+
+    <div class="dm-section">
+      <div class="dm-section-title">Secret DM Notes</div>
+      <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans, hidden loot...&#10;&#10;Players cannot see this section."></textarea>
+      <div style="text-align:right;margin-top:6px;">
+        <button class="dm-btn" onclick="saveDMNotes()">Save Notes</button>
+      </div>
+    </div>
+
+    <div class="dm-section">
+      <div class="dm-section-title">Passcode</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="dm-input" type="password" id="dm-new-passcode" placeholder="New passcode" style="width:180px;">
+        <button class="dm-btn" onclick="changePasscode()">Change</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--border-light);margin-top:5px;font-style:italic;">Leave blank and click Change to remove passcode protection</div>
+    </div>
+
+    <div class="dm-logout">
+      <button class="dm-btn danger" onclick="dmLogout()">Lock DM Panel</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="party-grid" id="party-grid">
+
+  <!-- PLAYER 1: DRACULA -->
+  <a class="player-card" href="sheet-1.html">
+    <div class="card-role">Player 1</div>
+    <div class="card-name">Dracula</div>
+    <div class="card-class">Dragonborn Fighter · Lv 3</div>
+    <div class="card-stats">
+      <div class="stat-box"><span class="sv hp">22</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv">12</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp">82</span><span class="sl">GP</span></div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar" style="width:100%"></div></div>
+    <div class="card-link">View Sheet →</div>
+  </a>
+
+  <!-- PLAYER 2 -->
+  <a class="player-card empty" href="sheet-2.html">
+    <div class="card-role">Player 2</div>
+    <div class="card-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
+    <div class="card-class">— awaiting character —</div>
+    <div class="empty-badge">Sheet not yet filled</div>
+    <div class="card-stats">
+      <div class="stat-box"><span class="sv hp">—</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv">—</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp">—</span><span class="sl">GP</span></div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar" style="width:0%"></div></div>
+    <div class="card-link">View Sheet →</div>
+  </a>
+
+  <!-- PLAYER 3 -->
+  <a class="player-card empty" href="sheet-3.html">
+    <div class="card-role">Player 3</div>
+    <div class="card-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
+    <div class="card-class">— awaiting character —</div>
+    <div class="empty-badge">Sheet not yet filled</div>
+    <div class="card-stats">
+      <div class="stat-box"><span class="sv hp">—</span><span class="sv hp">—</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv">—</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp">—</span><span class="sl">GP</span></div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar" style="width:0%"></div></div>
+    <div class="card-link">View Sheet →</div>
+  </a>
+
+  <!-- PLAYER 4 -->
+  <a class="player-card empty" href="sheet-4.html">
+    <div class="card-role">Player 4</div>
+    <div class="card-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
+    <div class="card-class">— awaiting character —</div>
+    <div class="empty-badge">Sheet not yet filled</div>
+    <div class="card-stats">
+      <div class="stat-box"><span class="sv hp">—</span><span class="sl">HP</span></div>
+      <div class="stat-box"><span class="sv">—</span><span class="sl">AC</span></div>
+      <div class="stat-box"><span class="sv gp">—</span><span class="sl">GP</span></div>
+    </div>
+    <div class="hp-bar-wrap"><div class="hp-bar" style="width:0%"></div></div>
+    <div class="card-link">View Sheet →</div>
+  </a>
+
+  <!-- ADD PLAYER (modular) -->
+  <div class="add-player-card" onclick="addPlayer()">
+    <div class="add-icon">+</div>
+    <div class="add-label">Add Player</div>
+  </div>
+
+</div>
+
+<!-- AI CONVERSION PROMPT -->
+<div class="setup-panel" style="margin-bottom:20px;">
+  <div class="setup-title">🤖 New Player? Convert Your Sheet with AI</div>
+  <p style="font-size:0.88rem;line-height:1.6;margin-bottom:16px;color:var(--ink-light);">Got a handwritten or existing sheet? Copy this prompt, paste it into any AI (Claude, ChatGPT, etc.), then upload a photo or describe your character. The AI will extract everything in the right format for your digital sheet.</p>
+  <div style="position:relative;">
+    <strong style="font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-light);display:block;margin-bottom:8px;">AI Conversion Prompt</strong>
+    <button class="copy-btn" id="prompt-copy-btn" onclick="copyPrompt()" style="position:absolute;top:0;right:0;margin-top:0;">Copy Prompt</button>
+    <div class="script-box" id="prompt-box" style="white-space:pre-wrap;font-family:'Crimson Text',serif;font-size:0.82rem;color:#e8d5a8;line-height:1.7;">I have a D&D 5e character sheet I want to digitize. Please extract all the following fields and return them clearly labeled:
+
+- Character Name
+- Class &amp; Level
+- Race
+- Background
+- Alignment
+- Player Name
+- Proficiency Bonus
+- Armor Class, Initiative, Speed
+- Current HP &amp; Max HP
+- Hit Dice, Passive Perception, Gold (GP)
+- All 6 Ability Scores (STR/DEX/CON/INT/WIS/CHA) with modifiers
+- All Saving Throw bonuses — mark proficient ones
+- All Skill bonuses — mark proficient ones
+- All Weapons with attack bonus, damage dice, and type
+- All Class Features and Racial Abilities with full descriptions
+- Subclass and Subclass Features
+- Equipment list
+- Personality Traits, Ideals, Bonds, Flaws
+- Backstory notes
+- Any homebrew abilities or special items with descriptions
+- Any special weapon lore or progression stages
+- Treasure and misc items
+- Proficiencies: Armor, Weapons, Tools, Languages
+
+Format each field exactly like:
+Field Name: Value
+
+If anything is unclear or missing, flag it so the player can fill it in manually. Do not guess stats — note anything uncertain.</div>
+  </div>
+  <div style="margin-top:12px;padding:10px 12px;background:rgba(122,21,21,0.08);border:1px solid rgba(122,21,21,0.2);border-radius:3px;font-size:0.8rem;color:var(--ink-light);line-height:1.6;">
+    <strong style="font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--red);display:block;margin-bottom:4px;">Tips</strong>
+    Upload a clear photo of your sheet for best results. Describe any homebrew items after the prompt. Once the AI returns your data, open your sheet file and fill in each field.
+  </div>
+</div>
+
+<!-- SETUP INSTRUCTIONS -->
+<div class="setup-panel">
+  <div class="setup-title">⚙ Setup Instructions — Google Sheets Integration</div>
+
+  <div class="setup-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>Create a Google Sheet for each player</strong>
+      Go to <a href="https://sheets.google.com" style="color:var(--red);">sheets.google.com</a> and create one sheet per player. Name them <code>Player1</code>, <code>Player2</code>, etc. Share each sheet with everyone in the group (Editor access).
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Open Apps Script on each sheet</strong>
+      In each Google Sheet go to <code>Extensions → Apps Script</code>. Delete any existing code and paste in the script below. Click Save, then click <code>Deploy → New Deployment → Web App</code>. Set access to <em>Anyone</em>. Copy the deployment URL.
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>Paste the deployment URLs into each character sheet HTML</strong>
+      Each sheet HTML file has a line at the top: <code>const SHEET_URL = "PASTE_YOUR_URL_HERE";</code> Replace it with the URL from step 2.
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>Host the site on Google Drive</strong>
+      Upload all HTML files to a shared Google Drive folder. Right-click each file → <code>Share → Anyone with link can view</code>. Send the <code>index.html</code> link to all players. Done!
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>To add more players</strong>
+      Duplicate any <code>sheet-X.html</code> file, increment the number, add a new card to <code>index.html</code> following the same pattern, and repeat steps 1-3 for the new player.
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <strong style="font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-light);">Google Apps Script — paste into each sheet</strong>
+    <button class="copy-btn" onclick="copyScript()">Copy Script</button>
+    <div class="script-box" id="script-box">function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+  const obj = {};
+  data.forEach(row => { if (row[0]) obj[row[0]] = row[1]; });
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const params = JSON.parse(e.postData.contents);
+  Object.entries(params).forEach(([key, value]) => {
+    const data = sheet.getDataRange().getValues();
+    let found = false;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0] === key) {
+        sheet.getRange(i + 1, 2).setValue(value);
+        found = true; break;
+      }
+    }
+    if (!found) {
+      sheet.appendRow([key, value]);
+    }
+  });
+  return ContentService.createTextOutput(JSON.stringify({status:"ok"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PASSCODE = "dm1234";
+
+function toggleDMPanel() {
+  const panel = document.getElementById('dm-panel');
+  panel.classList.toggle('open');
+}
+
+function dmLogin() {
+  const input = document.getElementById('dm-passcode').value;
+  const stored = localStorage.getItem('dm-passcode') || DEFAULT_PASSCODE;
+  if (input === stored) {
+    document.getElementById('dm-login').style.display = 'none';
+    document.getElementById('dm-controls').classList.add('open');
+    document.getElementById('dm-error').textContent = '';
+    loadDMData();
+  } else {
+    document.getElementById('dm-error').textContent = 'Incorrect passcode. Try again.';
+  }
+}
+
+function dmLogout() {
+  document.getElementById('dm-login').style.display = 'block';
+  document.getElementById('dm-controls').classList.remove('open');
+  document.getElementById('dm-passcode').value = '';
+}
+
+function changePasscode() {
+  const newCode = document.getElementById('dm-new-passcode').value;
+  if (newCode) {
+    localStorage.setItem('dm-passcode', newCode);
+    document.getElementById('dm-new-passcode').value = '';
+    alert('Passcode updated!');
+  }
+}
+
+function updateCampaignName() {
+  const name = document.getElementById('dm-campaign-name').value;
+  const title = document.getElementById('site-title');
+  if (name) title.textContent = name;
+  else title.textContent = 'Campaign Tracker';
+  localStorage.setItem('campaign-name', name);
+}
+
+function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById('banner-preview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    localStorage.setItem('campaign-banner', e.target.result);
+    applyBanner(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyBanner(src) {
+  let banner = document.getElementById('campaign-banner-img');
+  if (!banner) {
+    banner = document.createElement('img');
+    banner.id = 'campaign-banner-img';
+    banner.style.cssText = 'display:block;width:100%;max-height:200px;object-fit:cover;border-radius:3px;margin-bottom:20px;border:1px solid var(--border);box-shadow:0 0 0 3px #1a0e04;';
+    document.querySelector('.site-header').after(banner);
+  }
+  banner.src = src;
+}
+
+function saveDMNotes() {
+  const notes = document.getElementById('dm-notes').value;
+  localStorage.setItem('dm-notes', notes);
+  const btn = event.target;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save Notes', 2000);
+}
+
+function loadDMData() {
+  const name = localStorage.getItem('campaign-name');
+  const banner = localStorage.getItem('campaign-banner');
+  const notes = localStorage.getItem('dm-notes');
+  if (name) {
+    document.getElementById('dm-campaign-name').value = name;
+    document.getElementById('site-title').textContent = name;
+  }
+  if (banner) {
+    document.getElementById('banner-preview').src = banner;
+    document.getElementById('banner-preview').style.display = 'block';
+    applyBanner(banner);
+  }
+  if (notes) document.getElementById('dm-notes').value = notes;
+}
+
+// Load campaign name and banner on page load (visible to everyone)
+window.addEventListener('DOMContentLoaded', () => {
+  const name = localStorage.getItem('campaign-name');
+  const banner = localStorage.getItem('campaign-banner');
+  if (name) document.getElementById('site-title').textContent = name;
+  if (banner) applyBanner(banner);
+});
+
+function addPlayer() {
+  const count = document.querySelectorAll('.player-card').length + 1;
+  alert('To add Player ' + count + ':\n1. Duplicate sheet-' + (count-1) + '.html → rename to sheet-' + count + '.html\n2. Add a new card to index.html\n3. Set up a new Google Sheet following the instructions below');
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-box').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('prompt-copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy Prompt', 2000);
+  });
+}
+
+function copyScript() {
+  const text = document.getElementById('script-box').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy Script', 2000);
+  });
+}
+</script>
+</body>
+</html>
