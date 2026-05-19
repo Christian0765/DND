@@ -248,11 +248,10 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-let db;
 const PLAYER_ID = 'player3';
 
 firebase.initializeApp(firebaseConfig);
-db = firebase.firestore();
+const db = firebase.firestore();
 
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
