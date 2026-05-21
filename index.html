@@ -663,7 +663,7 @@
 
 <div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
   <a class="dm-toggle" id="dashboard-link" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" href="dashboard.html">← Dashboard</a>
-  <button class="dm-toggle" style="margin:0;" onclick="toggleDMPanel()">🔐 DM Panel</button>
+  <button id="dm-panel-btn" class="dm-toggle" style="margin:0;display:none;" onclick="toggleDMPanel()">🔐 DM Panel</button>
   <a class="dm-toggle" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" data-base="combat.html" href="#">⚔ Combat Tracker</a>
 </div>
 
@@ -856,6 +856,7 @@ function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 // DM Panel
 function toggleDMPanel() {
+  if (!_isDM) return;
   const panel = document.getElementById('dm-panel');
   panel.classList.toggle('open');
   if (panel.classList.contains('open')) loadDMData();
@@ -1110,6 +1111,8 @@ if (!campaignId) {
   window.location.href = 'dashboard.html'; 
 }
 
+let _isDM = false;
+
 // Auth guard + init
 firebase.auth().onAuthStateChanged(user => {
   if (!user) {
@@ -1123,6 +1126,13 @@ firebase.auth().onAuthStateChanged(user => {
     // Update nav links to include campaign param
     document.querySelectorAll('a[data-base]').forEach(a => {
       a.href = a.dataset.base + '?c=' + campaignId;
+    });
+
+    // Check DM status and show/hide DM Panel button accordingly
+    db.collection('campaigns').doc(campaignId).get().then(doc => {
+      _isDM = doc.exists && doc.data().dmUid === user.uid;
+      const dmBtn = document.getElementById('dm-panel-btn');
+      if (dmBtn) dmBtn.style.display = _isDM ? '' : 'none';
     });
 
     [1,2,3,4].forEach(n => {
