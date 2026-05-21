@@ -462,6 +462,66 @@
 
   .upload-area.drag-active { border-color: var(--gold); background: rgba(154,112,0,0.1); }
 
+  /* DM PANEL TABS */
+  .dm-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dm-tab-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--border-light);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .dm-tab-btn.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+  .dm-tab-btn:hover { color: var(--gold-light); }
+  .dm-tab-content { display: none; }
+  .dm-tab-content.active { display: block; }
+
+  /* PLAYERS TAB */
+  .dm-player-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(122,90,40,0.3);
+  }
+  .dm-player-row:last-child { border-bottom: none; }
+  .dm-player-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--border);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .dm-player-info { flex: 1; min-width: 0; }
+  .dm-player-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    color: var(--gold-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dm-player-char {
+    font-size: 0.8rem;
+    color: var(--border-light);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
   @media (max-width: 500px) {
     .site-title { font-size: 2rem; }
     .party-grid { grid-template-columns: 1fr; }
@@ -611,49 +671,63 @@
 <div class="dm-panel" id="dm-panel">
   <div class="dm-panel-title">🔐 Dungeon Master Panel</div>
 
-  <!-- CONTROLS -->
-  <div class="dm-controls open" id="dm-controls">
+  <div class="dm-tabs">
+    <button class="dm-tab-btn active" onclick="switchDMTab('campaign')">Campaign</button>
+    <button class="dm-tab-btn" onclick="switchDMTab('players')">Players</button>
+  </div>
 
-    <div class="dm-section">
-      <div class="dm-section-title">Campaign Identity</div>
+  <!-- CAMPAIGN TAB -->
+  <div class="dm-tab-content active" id="dm-tab-campaign">
+    <div class="dm-controls open" id="dm-controls">
 
-      <div class="dm-field">
-        <label>Campaign Name</label>
-        <input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()">
-      </div>
+      <div class="dm-section">
+        <div class="dm-section-title">Campaign Identity</div>
 
-      <div class="dm-field">
-        <label>Campaign Banner / Logo</label>
-        <div class="upload-area" id="upload-area">
-          <input type="file" accept="image/*" onchange="handleImageUpload(event)">
-          <div class="upload-icon">🖼</div>
-          <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
-          <img class="upload-preview" id="banner-preview">
+        <div class="dm-field">
+          <label>Campaign Name</label>
+          <input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()">
+        </div>
+
+        <div class="dm-field">
+          <label>Campaign Banner / Logo</label>
+          <div class="upload-area" id="upload-area">
+            <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+            <div class="upload-icon">🖼</div>
+            <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
+            <img class="upload-preview" id="banner-preview">
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="dm-section">
-      <div class="dm-section-title">Secret DM Notes</div>
-      <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans, hidden loot...&#10;&#10;Players cannot see this section."></textarea>
-      <div style="text-align:right;margin-top:6px;">
-        <button class="dm-btn" onclick="saveDMNotes()">Save Notes</button>
+      <div class="dm-section">
+        <div class="dm-section-title">Secret DM Notes</div>
+        <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans, hidden loot...&#10;&#10;Players cannot see this section."></textarea>
+        <div style="text-align:right;margin-top:6px;">
+          <button class="dm-btn" onclick="saveDMNotes()">Save Notes</button>
+        </div>
       </div>
-    </div>
 
-    <div class="dm-section">
-      <div class="dm-section-title">Pending Character Requests</div>
-      <div class="upload-area" id="request-drop-zone"
-           ondragover="event.preventDefault();this.classList.add('drag-active')"
-           ondragleave="this.classList.remove('drag-active')"
-           ondrop="handleRequestDrop(event)">
-        <input type="file" accept=".html" onchange="processRequestFile(event.target.files[0])">
-        <div class="upload-icon">📋</div>
-        <div class="upload-label">Drop player's .html file here<br><span style="font-size:0.5rem;opacity:0.6;">or click to browse</span></div>
+      <div class="dm-section">
+        <div class="dm-section-title">Pending Character Requests</div>
+        <div class="upload-area" id="request-drop-zone"
+             ondragover="event.preventDefault();this.classList.add('drag-active')"
+             ondragleave="this.classList.remove('drag-active')"
+             ondrop="handleRequestDrop(event)">
+          <input type="file" accept=".html" onchange="processRequestFile(event.target.files[0])">
+          <div class="upload-icon">📋</div>
+          <div class="upload-label">Drop player's .html file here<br><span style="font-size:0.5rem;opacity:0.6;">or click to browse</span></div>
+        </div>
+        <div id="request-list" style="margin-top:12px;"></div>
       </div>
-      <div id="request-list" style="margin-top:12px;"></div>
-    </div>
 
+    </div>
+  </div>
+
+  <!-- PLAYERS TAB -->
+  <div class="dm-tab-content" id="dm-tab-players">
+    <div id="dm-players-list">
+      <div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Loading players…</div>
+    </div>
   </div>
 </div>
 
@@ -778,11 +852,90 @@ Start by greeting me and asking for my character's name.</div>
 </div>
 
 <script>
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 // DM Panel
 function toggleDMPanel() {
   const panel = document.getElementById('dm-panel');
   panel.classList.toggle('open');
   if (panel.classList.contains('open')) loadDMData();
+}
+
+function switchDMTab(tab) {
+  document.querySelectorAll('.dm-tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && tab === 'campaign') || (i === 1 && tab === 'players'));
+  });
+  document.getElementById('dm-tab-campaign').classList.toggle('active', tab === 'campaign');
+  document.getElementById('dm-tab-players').classList.toggle('active', tab === 'players');
+  if (tab === 'players') loadPlayersTab();
+}
+
+async function loadPlayersTab() {
+  const container = document.getElementById('dm-players-list');
+  container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Loading players…</div>';
+
+  try {
+    const db = firebase.firestore();
+    const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
+    if (!campaignDoc.exists) { container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Campaign not found.</div>'; return; }
+
+    const data = campaignDoc.data();
+    const playersMap = data.players || {};
+    const currentUser = firebase.auth().currentUser;
+    const isDM = data.dmUid === currentUser.uid;
+    const entries = Object.entries(playersMap);
+
+    if (!entries.length) {
+      container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">No players have joined yet.</div>';
+      return;
+    }
+
+    const rows = await Promise.all(entries.map(async ([uid, info]) => {
+      const [userSnap, charSnap] = await Promise.all([
+        db.collection('users').doc(uid).get(),
+        db.collection('campaigns').doc(campaignId).collection('characters').doc(info.slot).get()
+      ]);
+      const u = userSnap.exists ? userSnap.data() : {};
+      const c = charSnap.exists ? charSnap.data() : {};
+      const charName = c['f-name'] ? escHtml(c['f-name']) : '<em style="opacity:0.6;">No character yet</em>';
+      const charCls = [c['f-class'], c['f-race']].filter(Boolean).map(escHtml).join(' · ');
+      const hp = c['f-curhp'] ? `HP ${escHtml(String(c['f-curhp']))}/${escHtml(String(c['f-maxhp'] || '?'))}` : '';
+      const ac = c['f-ac'] ? `AC ${escHtml(String(c['f-ac']))}` : '';
+      const stats = [hp, ac].filter(Boolean).join(' · ');
+      const avatar = u.photoURL ? `<img class="dm-player-avatar" src="${escHtml(u.photoURL)}" onerror="this.style.display='none'">` : `<div class="dm-player-avatar" style="display:flex;align-items:center;justify-content:center;font-size:1rem;">👤</div>`;
+      const removeBtn = isDM ? `<button class="dm-btn danger" onclick="removePlayer('${escHtml(uid)}','${escHtml(info.slot)}',this)" style="white-space:nowrap;">Remove</button>` : '';
+      return `<div class="dm-player-row">
+        ${avatar}
+        <div class="dm-player-info">
+          <div class="dm-player-name">${escHtml(u.displayName || u.email || 'Unknown')}</div>
+          <div class="dm-player-char">${charName}${charCls ? ' · ' + charCls : ''}${stats ? ' | ' + stats : ''}</div>
+        </div>
+        ${removeBtn}
+      </div>`;
+    }));
+
+    container.innerHTML = rows.join('');
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+async function removePlayer(uid, slot, btn) {
+  if (!confirm('Remove this player from the campaign? Their character data will be preserved.')) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const db = firebase.firestore();
+    await db.collection('campaigns').doc(campaignId).update({
+      memberUids: firebase.firestore.FieldValue.arrayRemove(uid),
+      [`players.${uid}`]: firebase.firestore.FieldValue.delete()
+    });
+    await loadPlayersTab();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Remove';
+    alert('Failed to remove player: ' + e.message);
+  }
 }
 
 function updateCampaignName() {
