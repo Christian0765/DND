@@ -703,10 +703,13 @@
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
 
-    // Auth check
+    // Auth check — preserve ?join= param through sign-in redirect
     firebase.auth().onAuthStateChanged(user => {
       if (!user) {
-        window.location.href = 'home.html';
+        const joinParam = new URLSearchParams(window.location.search).get('join');
+        window.location.href = joinParam
+          ? `home.html?next=${encodeURIComponent('dashboard.html?join=' + joinParam)}`
+          : 'home.html';
         return;
       }
       currentUser = user;
@@ -733,6 +736,20 @@
 
       loadCampaigns();
       loadFriends();
+
+      // Auto-join if arriving via invite link (?join=CODE)
+      const joinCode = new URLSearchParams(window.location.search).get('join');
+      if (joinCode) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('create-join').classList.add('active');
+        document.querySelector('[onclick="switchTab(\'create-join\')"]').classList.add('active');
+        document.getElementById('join-code').value = joinCode.toUpperCase();
+        const msg = document.getElementById('join-message');
+        msg.textContent = "You've been invited — joining campaign…";
+        msg.className = 'message show';
+        setTimeout(() => joinCampaign(), 800);
+      }
     }
 
     function switchTab(tabName) {
