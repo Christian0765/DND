@@ -1,0 +1,160 @@
+================================================================================
+  D&D CAMPAIGN TRACKER — HANDOFF DOCUMENT
+  Last Updated: 2026-05-21
+================================================================================
+
+IMPORTANT: Update this file after every major feature or session.
+           Keep the "Last Updated" date and "Recent Changes" section current.
+
+--------------------------------------------------------------------------------
+LIVE SITE
+--------------------------------------------------------------------------------
+URL:        https://christian0765.github.io/DND
+Hosting:    GitHub Pages — auto-deploys from main branch on push
+Repo:       https://github.com/christian0765/DND
+
+--------------------------------------------------------------------------------
+FIREBASE PROJECT
+--------------------------------------------------------------------------------
+Project ID:     dnd-tracker-4f54e
+Console URL:    https://console.firebase.google.com/project/dnd-tracker-4f54e
+Auth Domain:    dnd-tracker-4f54e.firebaseapp.com
+
+Firebase Config (in firebase-config.js — safe to be public for web apps):
+  apiKey:            AIzaSyAQsE0j0Gb_bO77REOG5nDZWh6Fn4tMMtw
+  authDomain:        dnd-tracker-4f54e.firebaseapp.com
+  projectId:         dnd-tracker-4f54e
+  storageBucket:     dnd-tracker-4f54e.firebasestorage.app
+  messagingSenderId: 858845462377
+  appId:             1:858845462377:web:885e4ffd7baf06c61007f8
+  measurementId:     G-JDPJSTXR73
+
+Firebase Services in Use:
+  - Firestore Database (real-time sync)
+  - Firebase Auth (Google Sign-In)
+
+NOTE: Firebase Storage is NOT configured. Banner images use localStorage only.
+
+--------------------------------------------------------------------------------
+FIRESTORE RULES
+--------------------------------------------------------------------------------
+Rules file: /firestore.rules in the repo.
+IMPORTANT: GitHub Pages does NOT auto-deploy Firestore rules.
+You must manually paste the rules into Firebase Console each time they change:
+  Console → Firestore Database → Rules tab → Paste → Publish
+
+Current rules summary:
+  characters/{charId}  — signed-in users can read; DM or owning player can write
+  users/{uid}          — DM can read all; each user reads/writes their own doc
+  campaign/{doc}       — anyone can read; only DM can write
+  purchases/{id}       — any signed-in user can read/write
+  combat/{doc}         — anyone can read; only DM can write
+
+--------------------------------------------------------------------------------
+AUTH & ACCESS
+--------------------------------------------------------------------------------
+Google Sign-In:   Enabled in Firebase Console → Authentication → Sign-in method
+DM Passcode:      Stored in localStorage key 'dm-passcode' (default: dm1234)
+                  NEVER commit the passcode to Firestore or the repo.
+DM Google link:   When DM enters passcode while signed in with Google, their
+                  users/{uid}.charId is set to 'dm' automatically.
+
+Player assignment flow:
+  1. Player visits site → signs in with Google
+  2. Their name appears in DM panel → Manage Players section
+  3. DM assigns them to Player 1/2/3/4 via dropdown
+  4. Player now sees "Your Sheet →" link and can access their sheet
+
+--------------------------------------------------------------------------------
+FILE STRUCTURE
+--------------------------------------------------------------------------------
+index.html        — Party overview, DM panel (broadcast, dice, manage players)
+sheet-1.html      — Player 1 character sheet (Dracula — Dragonborn Fighter)
+sheet-2.html      — Player 2 character sheet (blank)
+sheet-3.html      — Player 3 character sheet (blank)
+sheet-4.html      — Player 4 character sheet (blank)
+sheet-template.html — Downloadable blank template for new players
+combat.html       — Combat tracker (HP, initiative, conditions, drag-to-reorder)
+auth.js           — Shared Google Auth module (sign-in, sheet gate, buyItem, group purchases)
+broadcast.js      — Shared DM broadcast panel (all pages listen to campaign/broadcast)
+firebase-config.js — Firebase project config (public, safe to commit)
+firestore.rules   — Firestore security rules (must be manually deployed to Console)
+handoff.txt       — This file
+
+--------------------------------------------------------------------------------
+FIRESTORE DATA STRUCTURE (current — single campaign, hardcoded)
+--------------------------------------------------------------------------------
+characters/
+  player1, player2, player3, player4
+    f-name, f-class, f-race, f-bg, f-align, f-player, f-prof
+    f-ac, f-init, f-speed, f-curhp, f-maxhp, f-hd, f-pp, f-gold, f-carry
+    f-str/mod, f-dex/mod, f-con/mod, f-int/mod, f-wis/mod, f-cha/mod
+    f-traits, f-ideals, f-bonds, f-flaws, f-notes, f-gold2
+    f-weapons, f-features, f-equipment, f-backstory, f-profs
+
+users/
+  {google-uid}
+    name, email, charId (player1-4 or 'dm'), lastSeen
+
+campaign/
+  settings:   campaignName, dmNotes
+  broadcast:  active, type, title, text/imageUrl/shopItems/results, updatedAt
+
+combat/
+  state:  round, combatants [{id, name, init, hp, maxHp, ac, type, charId, conditions}]
+
+purchases/
+  {auto-id}:  itemName, itemPrice, contributions {charId: amount}, status, createdAt
+
+--------------------------------------------------------------------------------
+BROADCAST TYPES (campaign/broadcast.type)
+--------------------------------------------------------------------------------
+  text        — title + text message
+  image       — title + imageUrl
+  shop        — title + shopItems (plain text, one per line: "Name: Xgp - Desc")
+                Players see Buy buttons; deducts from f-gold, adds to f-equipment
+  combat      — triggers "Combat has begun" panel with link to combat.html
+  dice        — shows spinning dice corner widget (no main panel)
+  initiative  — dramatic staggered reveal of all player initiative rolls
+
+--------------------------------------------------------------------------------
+KNOWN LIMITATIONS (current version)
+--------------------------------------------------------------------------------
+- Single campaign only — all paths hardcoded, no campaignId
+- Exactly 4 player slots — no dynamic player count
+- Character fields are hardcoded — no custom sheet builder yet
+- No mobile-optimized combat view for players
+- No monster library / encounter builder
+- No turn timer or "Next Turn" button
+- Banner image stored in localStorage (not cloud)
+- Firestore rules must be manually deployed via Console (no CLI deploy)
+
+--------------------------------------------------------------------------------
+PRODUCT ROADMAP (prompt queue — see plan file for full prompts)
+--------------------------------------------------------------------------------
+Prompt 1  — Multi-Campaign Foundation (campaign creation, invite codes, dynamic slots)
+Prompt 2  — Custom Sheet Builder (DM defines fields, single sheet.html replaces 1-4)
+Prompt 3  — Mobile-First Player UX (big HP buttons, quick actions, player combat view)
+Prompt 4  — Monster Library & Encounter Builder
+Prompt 5  — Table Tools Polish (turn timer, next turn, loot split, adv/dis dice)
+Prompt 6  — Session Management & Archive
+Prompt 7  — Public Spectator Page
+
+Future:   Virtual Battle Map → AI Opponent → Rulebook Presets → Steam/Electron
+
+--------------------------------------------------------------------------------
+RECENT CHANGES
+--------------------------------------------------------------------------------
+2026-05-21
+  - Added Firebase Auth (Google Sign-In) across all pages
+  - auth.js: sign-in bar, sheet overlay gate, buyItem(), group purchases
+  - broadcast.js: Buy buttons on shop items, group purchase progress bar
+  - combat.html: charId on combatants, character weapons/features expansion,
+    conditions summary bar, broadcast.js included
+  - index.html: Manage Players section in DM panel, dice system (Real/Digital
+    toggle, d4-d100 buttons, Roll Initiative for All Players)
+  - broadcast.js: dice corner widget, initiative reveal, "Open Combat →" button
+  - firestore.rules: auth-based security (replaces open read/write)
+  - sheets 2/3/4: upgraded from Firebase SDK 9.22.0 to 10.12.0
+
+--------------------------------------------------------------------------------
