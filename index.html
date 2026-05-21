@@ -592,9 +592,6 @@
   }
 </style>
 </head>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
 <body>
 
 <div class="site-header">
@@ -780,45 +777,6 @@ Start by greeting me and asking for my character's name.</div>
 </div>
 
 <script>
-// Firebase init
-let db;
-try {
-  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.firestore();
-  [1,2,3,4].forEach(n => {
-    db.collection('characters').doc(String(n)).onSnapshot(doc => {
-      if (doc.exists) updateCard(n, doc.data());
-    });
-  });
-} catch(e) {
-  console.warn('Firebase not configured — live sync disabled:', e.message);
-}
-
-function updateCard(n, data) {
-  const get = k => data[k] || '';
-  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  const name = get('f-name');
-  setText('p'+n+'-name', name || 'Unnamed');
-  const cls = [get('f-class'), get('f-race')].filter(Boolean).join(' · ');
-  setText('p'+n+'-class', cls || '— awaiting character —');
-  const hp = get('f-curhp'), maxHp = get('f-maxhp');
-  setText('p'+n+'-hp', hp || '—');
-  setText('p'+n+'-ac', get('f-ac') || '—');
-  setText('p'+n+'-gp', get('f-gold') || '—');
-  const bar = document.getElementById('p'+n+'-hpbar');
-  if (bar && hp && maxHp) {
-    const pct = Math.max(0, Math.min(100, parseInt(hp) / parseInt(maxHp) * 100));
-    bar.style.width = pct + '%';
-    bar.className = 'hp-bar' + (pct <= 25 ? ' low' : pct <= 50 ? ' mid' : '');
-  }
-  if (name) {
-    const card = document.getElementById('card-p'+n);
-    if (card) card.classList.remove('empty');
-    const badge = document.getElementById('p'+n+'-badge');
-    if (badge) badge.style.display = 'none';
-  }
-}
-
 // DM Panel
 function toggleDMPanel() {
   const panel = document.getElementById('dm-panel');
@@ -1005,7 +963,8 @@ window.addEventListener('DOMContentLoaded', () => {
           const badge = document.getElementById('p'+n+'-badge');
           if (badge) badge.style.display = 'none';
         }
-        if (d['f-class']) document.getElementById('p'+n+'-class').textContent = d['f-class'];
+        const cls = [d['f-class'], d['f-race']].filter(Boolean).join(' · ');
+        if (cls) document.getElementById('p'+n+'-class').textContent = cls;
         const curhp = d['f-curhp'] || '—';
         const maxhp = d['f-maxhp'] || '';
         document.getElementById('p'+n+'-hp').textContent = curhp;
