@@ -35,12 +35,20 @@
     .bp-body img { max-width: 100%; border-radius: 3px; border: 1px solid #7a5a28; margin-top: 8px; display: block; }
     .bp-shop-item {
       padding: 7px 0; border-bottom: 1px dotted #b08840;
-      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline;
+      display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
     }
     .bp-shop-item:last-child { border-bottom: none; }
     .bp-shop-name { font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 600; }
     .bp-shop-price { font-family: 'Cinzel', serif; font-size: 0.68rem; color: #9a7000; white-space: nowrap; }
     .bp-shop-desc { font-size: 0.78rem; color: #4a3520; font-style: italic; grid-column: 1 / -1; margin-top: -2px; }
+    .bp-buy-btn {
+      font-family: 'Cinzel', serif; font-size: 0.52rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #c4920a; border: 1px solid #9a7000;
+      border-radius: 2px; padding: 3px 10px; background: none; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap; align-self: center;
+    }
+    .bp-buy-btn:hover { background: rgba(154,112,0,0.15); }
+    .bp-buy-btn:disabled { color: #5a9a3a; border-color: #5a9a3a; cursor: default; }
     .bp-combat { text-align: center; padding: 20px 0; }
     .bp-combat-icon { font-size: 2.5rem; margin-bottom: 10px; }
     .bp-combat-msg { font-family: 'Cinzel', serif; font-size: 1.1rem; color: #7a1515; font-weight: 600; margin-bottom: 16px; }
@@ -124,10 +132,16 @@
         const afterColon = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : '';
         const price = dashIdx > -1 ? afterColon.slice(0, afterColon.indexOf(' - ')).trim() : afterColon;
         const desc = dashIdx > -1 ? line.slice(line.indexOf(' - ') + 3).trim() : '';
+        const priceNum = parseInt(price) || 0;
+        const slug = name.replace(/\W+/g, '-').toLowerCase();
+        const buyBtn = priceNum > 0
+          ? `<button id="buy-btn-${slug}" class="bp-buy-btn" onclick="buyItem('${name.replace(/'/g, "\\'")}',${priceNum})">${priceNum}&nbsp;gp &mdash; Buy</button>`
+          : '';
         return `<div class="bp-shop-item">
           <span class="bp-shop-name">${name}</span>
           <span class="bp-shop-price">${price}</span>
           ${desc ? `<span class="bp-shop-desc">${desc}</span>` : ''}
+          ${buyBtn}
         </div>`;
       }).join('');
       body.innerHTML = items || '<p>No items listed.</p>';

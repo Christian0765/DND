@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="firebase-config.js"></script>
 <style>
   :root {
@@ -296,6 +297,14 @@
 </head>
 <body>
 
+<div id="auth-overlay" class="auth-overlay" style="display:flex;">
+  <div class="auth-overlay-box">
+    <div class="auth-overlay-title">Sign In Required</div>
+    <p class="auth-overlay-sub">Sign in with your Google account to access your character sheet.</p>
+    <button class="auth-btn large" onclick="signInWithGoogle()">Sign in with Google</button>
+  </div>
+</div>
+
 <div class="top-bar">
   <a class="back-link" href="index.html">← Party Overview</a>
   <div class="sync-bar">
@@ -517,6 +526,7 @@
 
 <script>
 const CHAR_ID = 'player1';
+window.SHEET_CHAR_ID = CHAR_ID;
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
   'f-ac','f-init','f-speed','f-curhp','f-maxhp','f-hd','f-pp','f-gold','f-carry',
@@ -638,6 +648,7 @@ FIELDS.forEach(id => {
   }
 });
 </script>
+<script src="auth.js"></script>
 <script src="broadcast.js"></script>
 </body>
 </html>

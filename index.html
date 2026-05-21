@@ -611,6 +611,7 @@
 </head>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="firebase-config.js"></script>
 <body>
 
@@ -678,6 +679,16 @@
             <div class="upload-label">Drop player's .html file here<br><span style="font-size:0.5rem;opacity:0.6;">or click to browse</span></div>
           </div>
           <div id="request-list" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="dm-section" style="margin-top:20px;">
+          <div class="dm-section-title">Manage Players</div>
+          <p style="font-size:0.76rem;color:var(--border-light);margin-bottom:10px;line-height:1.5;">
+            Players who have signed in with Google appear here. Assign each to their character slot.
+          </p>
+          <div id="manage-players-list">
+            <div style="font-size:0.76rem;color:#7a5a28;font-style:italic;">No players signed in yet.</div>
+          </div>
         </div>
       </div>
 
@@ -766,6 +777,11 @@
   </div><!-- end .dm-controls -->
 
 </div><!-- end .dm-panel -->
+
+<div class="auth-bar" id="auth-bar">
+  <span class="auth-info">Sign in to link your character to your Google account</span>
+  <button class="auth-btn" onclick="signInWithGoogle()">Sign in with Google</button>
+</div>
 
 <div class="party-grid" id="party-grid">
 
@@ -944,6 +960,10 @@ function dmLogin() {
     document.getElementById('dm-header-logout').style.display = '';
     setDiceMode(localStorage.getItem('dm-dice-mode') || 'real');
     loadDMData();
+    // Link Google account to DM role
+    if (window.currentUser && db) {
+      db.collection('users').doc(window.currentUser.uid).set({ charId: 'dm' }, { merge: true });
+    }
   } else {
     document.getElementById('dm-error').style.display = 'block';
   }
@@ -1212,6 +1232,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+<script src="auth.js"></script>
 <script src="broadcast.js"></script>
 </body>
 </html>
