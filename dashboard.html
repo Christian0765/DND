@@ -645,13 +645,16 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Player Slots</label>
-            <div class="form-inline">
-              <label style="display:flex;gap:8px;font-family:Crimson Text;"><input type="radio" name="slots" value="2"> 2 Players</label>
-              <label style="display:flex;gap:8px;font-family:Crimson Text;"><input type="radio" name="slots" value="3"> 3 Players</label>
-              <label style="display:flex;gap:8px;font-family:Crimson Text;"><input type="radio" name="slots" value="4" checked> 4 Players</label>
-            </div>
+            <label class="form-label">Campaign Type</label>
+            <input type="text" id="create-type" class="form-input" placeholder="e.g. Fantasy, Sci-Fi, Horror">
           </div>
+
+          <div class="form-group">
+            <label class="form-label">Max Player Count</label>
+            <input type="number" id="create-slots" class="form-input" value="4" min="2" max="10" placeholder="2-10 players">
+          </div>
+
+          <div class="message" id="create-message"></div>
 
           <div class="form-buttons">
             <button class="btn-form primary" onclick="createCampaign()">✓ Create Campaign</button>
@@ -768,6 +771,7 @@
                 if ('${isActive}') { window.location.href = '${href}'; }
               ">
                 <div class="campaign-name">${c.name}</div>
+                <div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:8px;">${c.type || 'General'}</div>
                 <div class="campaign-meta">
                   <div class="campaign-meta-item">👥 ${playerCount}/${c.playerSlots}</div>
                   <div class="campaign-meta-item">📋 ${c.status === 'draft' ? 'Draft' : 'Active'}</div>
@@ -874,10 +878,17 @@
 
     function createCampaign() {
       const name = document.getElementById('create-name').value.trim();
-      const slots = +document.querySelector('input[name="slots"]:checked').value;
+      const type = document.getElementById('create-type').value.trim();
+      const slots = parseInt(document.getElementById('create-slots').value) || 4;
+      const msg = document.getElementById('create-message');
 
       if (!name) {
-        showMessage(document.getElementById('friend-message'), 'Campaign name is required.', 'error');
+        showMessage(msg, 'Campaign name is required.', 'error');
+        return;
+      }
+
+      if (slots < 2 || slots > 10) {
+        showMessage(msg, 'Player count must be between 2 and 10.', 'error');
         return;
       }
 
@@ -886,6 +897,7 @@
 
       db.collection('campaigns').doc(campaignId).set({
         name,
+        type: type || 'General',
         dmUid: currentUser.uid,
         status: 'draft',
         inviteCode,
@@ -895,7 +907,12 @@
         updatedAt: firebase.firestore.Timestamp.now()
       }).then(() => {
         document.getElementById('create-name').value = '';
-        showMessage(document.getElementById('friend-message'), `Campaign created! Invite code: ${inviteCode}`, 'success');
+        document.getElementById('create-type').value = '';
+        document.getElementById('create-slots').value = '4';
+        showMessage(msg, `Campaign "${name}" created! Invite code: ${inviteCode}`, 'success');
+        setTimeout(() => msg.classList.remove('show'), 4000);
+      }).catch(err => {
+        showMessage(msg, 'Error creating campaign: ' + err.message, 'error');
       });
     }
 
