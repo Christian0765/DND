@@ -705,6 +705,38 @@
       .cc-action-row { flex-wrap:wrap; }
       .cc-invite-box { flex-direction:column; }
     }
+
+    /* Online presence dot */
+    .online-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .online-dot.online { background:#3a9c28; box-shadow:0 0 6px rgba(58,156,40,.7); }
+    .online-dot.offline { background:var(--border); }
+
+    /* Invite modal */
+    .invite-modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.72);
+      z-index:9000; align-items:center; justify-content:center; padding:20px;
+    }
+    .invite-modal-overlay.open { display:flex; animation:fadeIn .2s ease; }
+    .invite-modal-box {
+      background:linear-gradient(160deg,#f7edd8 0%,#ecdcb5 100%);
+      border:1px solid var(--border); box-shadow:0 0 0 2px #1a0e04,0 16px 56px rgba(0,0,0,.85);
+      border-radius:3px; padding:28px 30px; max-width:460px; width:100%;
+      position:relative; max-height:82vh; overflow-y:auto;
+    }
+    .invite-modal-box::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+    .invite-modal-title { font-family:'Cinzel',serif; font-size:1.05rem; font-weight:900; color:var(--red); margin-bottom:18px; padding-right:24px; }
+    .invite-modal-close { position:absolute; top:12px; right:14px; background:none; border:none; font-size:1.1rem; cursor:pointer; color:var(--ink-light); line-height:1; }
+    .invite-modal-close:hover { color:var(--red); }
+    .invite-link-row { display:flex; gap:7px; align-items:center; margin-bottom:22px; }
+    .invite-link-input { flex:1; font-family:monospace; font-size:.72rem; padding:7px 10px; background:rgba(255,255,255,.55); border:1px solid var(--border); border-radius:2px; color:var(--ink); }
+    .invite-link-copy { font-family:'Cinzel',serif; font-size:.54rem; text-transform:uppercase; letter-spacing:.1em; padding:7px 12px; background:var(--green); color:var(--parchment); border:none; border-radius:2px; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .invite-link-copy:hover { background:#1e4410; }
+    .invite-friend-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(122,90,40,.2); }
+    .invite-friend-row:last-child { border-bottom:none; }
+    .invite-friend-avatar { width:32px; height:32px; border-radius:50%; background:var(--parchment-dark); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+
+    /* Tab notification badge */
+    .tab-badge { display:inline-block; background:#c0392b; color:#fff; font-family:'Cinzel',serif; font-size:.45rem; font-weight:700; border-radius:9px; padding:1px 5px; margin-left:5px; vertical-align:middle; line-height:1.5; animation:fadeIn .3s ease; }
   </style>
 </head>
 <body>
@@ -726,7 +758,7 @@
   <div class="tabs-container">
     <div class="tab-buttons">
       <button class="tab-btn active" onclick="switchTab('my-campaigns')">📜 My Campaigns</button>
-      <button class="tab-btn" onclick="switchTab('friends')">👥 Friends</button>
+      <button class="tab-btn" id="friends-tab-btn" onclick="switchTab('friends')">👥 Friends</button>
       <button class="tab-btn" onclick="switchTab('create-join')">➕ Create & Join</button>
     </div>
 
@@ -1121,13 +1153,15 @@
       document.getElementById('user-email').textContent = email;
       document.getElementById('user-avatar').textContent = avatar;
 
-      // Ensure user document exists
-      db.collection('users').doc(currentUser.uid).set({
+      // Ensure user document exists and mark as online
+      const heartbeat = () => db.collection('users').doc(currentUser.uid).set({
         displayName: currentUser.displayName,
         photoURL: currentUser.photoURL,
         email: currentUser.email,
-        friends: firebase.firestore.FieldValue.arrayUnion()
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
+      heartbeat();
+      setInterval(heartbeat, 90000); // refresh every 90 s
 
       loadCampaigns();
       loadFriends();
@@ -1185,8 +1219,10 @@
           grid.innerHTML = campaigns.map(c => {
             const playerCount = Object.keys(c.players || {}).length;
             const isActive = c.status === 'active';
+            const isDM = c.dmUid === currentUser.uid;
             const href = isActive ? `index.html?c=${c.id}` : `campaign-creator.html?edit=${c.id}`;
             const safeName = escHtml(c.name);
+            const safeCode = escHtml(c.inviteCode || '');
 
             return `
               <div class="campaign-card">
@@ -1197,11 +1233,14 @@
                   <div class="campaign-meta-item">📋 ${isActive ? 'Active' : 'Draft'}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px;background:rgba(0,0,0,0.1);border-radius:2px;">
-                  <span class="invite-code-display" id="code-${c.id}" style="font-family:monospace;font-size:0.85rem;color:var(--gold);font-weight:600;flex:1;opacity:0;transition:opacity 0.2s;">Invite: ${c.inviteCode}</span>
+                  <span class="invite-code-display" id="code-${c.id}" style="font-family:monospace;font-size:0.85rem;color:var(--gold);font-weight:600;flex:1;opacity:0;transition:opacity 0.2s;">Invite: ${safeCode}</span>
                   <button class="invite-toggle" onclick="toggleCode('${c.id}', event)" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--border-light);transition:color 0.2s;">👁</button>
                 </div>
                 <div class="status-badge status-${c.status}">${isActive ? 'ACTIVE' : 'DRAFT'}</div>
-                <div class="campaign-action" style="display:flex;gap:8px;align-items:center;">
+                ${isDM && isActive ? `
+                <button onclick="event.stopPropagation();openInviteModal('${c.id}','${safeCode}','${safeName.replace(/'/g,"\\'")}')" style="width:100%;margin-top:8px;background:rgba(154,112,0,0.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;padding:6px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;">📨 Invite Friends</button>
+                ` : ''}
+                <div class="campaign-action" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
                   <a href="${href}" style="flex:1;color:inherit;" onclick="event.stopPropagation();">${isActive ? 'Enter Campaign →' : 'Complete Setup →'}</a>
                   <button onclick="event.stopPropagation();deleteCampaign('${c.id}','${safeName.replace(/'/g,"\\'")}',this)" style="background:rgba(122,21,21,0.15);border:1px solid var(--red);color:var(--red);border-radius:2px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.7rem;white-space:nowrap;" title="Delete campaign">🗑 Delete</button>
                 </div>
@@ -1216,18 +1255,25 @@
       const reqSection = document.getElementById('friend-requests-section');
       const reqList = document.getElementById('friend-requests-list');
       const uid = currentUser.uid;
+      const ONLINE_MS = 5 * 60 * 1000; // 5 minutes
 
       try {
-        // Read own doc for my explicit friends + who I've already processed
         const ownDoc = await db.collection('users').doc(uid).get();
         const ownData = ownDoc.exists ? ownDoc.data() : {};
         const myFriendUids = ownData.friends || [];
         const processed = ownData.processedRequests || [];
-        const sentRequests = ownData.sentRequests || [];
 
-        // Incoming requests: other users who have me in their sentRequests
+        // Incoming requests
         const reqSnap = await db.collection('users').where('sentRequests', 'array-contains', uid).get();
         const incoming = reqSnap.docs.filter(d => !processed.includes(d.id) && !myFriendUids.includes(d.id));
+
+        // Update Friends tab badge
+        const tabBtn = document.getElementById('friends-tab-btn');
+        const oldBadge = tabBtn.querySelector('.tab-badge');
+        if (oldBadge) oldBadge.remove();
+        if (incoming.length > 0) {
+          tabBtn.insertAdjacentHTML('beforeend', `<span class="tab-badge">${incoming.length}</span>`);
+        }
 
         if (incoming.length > 0) {
           reqSection.style.display = 'block';
@@ -1246,10 +1292,9 @@
           reqList.innerHTML = '';
         }
 
-        // Friends list: people I explicitly added + people who accepted my request
-        // (they have me in their friends array)
-        const theyAddedMeSnap = await db.collection('users').where('friends', 'array-contains', uid).get();
-        const theyAddedUids = theyAddedMeSnap.docs.map(d => d.id);
+        // Friends list (own + those who have me in their friends)
+        const theyAddedSnap = await db.collection('users').where('friends', 'array-contains', uid).get();
+        const theyAddedUids = theyAddedSnap.docs.map(d => d.id);
         const allFriendUids = [...new Set([...myFriendUids, ...theyAddedUids])];
 
         if (allFriendUids.length === 0) {
@@ -1261,17 +1306,23 @@
           return;
         }
 
+        const now = Date.now();
         const friendDocs = await Promise.all(allFriendUids.map(fid => db.collection('users').doc(fid).get()));
         list.innerHTML = friendDocs.filter(d => d.exists).map(d => {
           const f = d.data();
           const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
+          const lastSeen = f.lastSeen?.toMillis?.() || 0;
+          const isOnline = (now - lastSeen) < ONLINE_MS;
           return `
             <div class="friend-card">
               <div class="friend-info">
                 <div class="friend-avatar">${avatar}</div>
                 <div class="friend-details">
-                  <div class="friend-name">${escHtml(f.displayName || 'Unknown')}</div>
-                  <div class="friend-campaign">${escHtml(f.email || '')}</div>
+                  <div class="friend-name" style="display:flex;align-items:center;gap:7px;">
+                    ${escHtml(f.displayName || 'Unknown')}
+                    <span class="online-dot ${isOnline ? 'online' : 'offline'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
+                  </div>
+                  <div class="friend-campaign">${isOnline ? '<span style="color:var(--green);font-size:0.75rem;">● Online</span>' : '<span style="color:var(--border-light);font-size:0.75rem;">○ Offline</span>'}</div>
                 </div>
               </div>
               <button class="friend-action" onclick="removeFriend('${d.id}')">Remove</button>
@@ -1579,6 +1630,71 @@
       });
     }
 
+    // ─── Invite Friends Modal ───
+    let _inviteLink = '';
+
+    async function openInviteModal(campaignId, inviteCode, campaignName) {
+      _inviteLink = `${location.origin}${location.pathname}?join=${inviteCode}`;
+      document.getElementById('invite-modal-title').textContent = 'Invite Friends — ' + campaignName;
+      document.getElementById('invite-modal-link').value = _inviteLink;
+      document.getElementById('invite-modal').classList.add('open');
+
+      const container = document.getElementById('invite-modal-friends');
+      container.innerHTML = '<div style="color:var(--ink-light);font-size:.85rem;font-style:italic;padding:8px 0;">Loading…</div>';
+
+      try {
+        const uid = currentUser.uid;
+        const ownData = (await db.collection('users').doc(uid).get()).data() || {};
+        const myFriendUids = ownData.friends || [];
+        const theyAddedSnap = await db.collection('users').where('friends', 'array-contains', uid).get();
+        const allUids = [...new Set([...myFriendUids, ...theyAddedSnap.docs.map(d => d.id)])];
+
+        if (allUids.length === 0) {
+          container.innerHTML = '<div style="color:var(--ink-light);font-size:.85rem;font-style:italic;padding:8px 0;">You have no friends added yet.</div>';
+          return;
+        }
+
+        const ONLINE_MS = 5 * 60 * 1000;
+        const now = Date.now();
+        const docs = await Promise.all(allUids.map(fid => db.collection('users').doc(fid).get()));
+        container.innerHTML = docs.filter(d => d.exists).map(d => {
+          const f = d.data();
+          const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
+          const isOnline = ((f.lastSeen?.toMillis?.() || 0)) > now - ONLINE_MS;
+          return `
+            <div class="invite-friend-row">
+              <div class="invite-friend-avatar">${avatar}</div>
+              <div style="flex:1;">
+                <div style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:var(--ink);">${escHtml(f.displayName || 'Unknown')}</div>
+                <div style="font-size:.75rem;color:${isOnline ? 'var(--green)' : 'var(--border-light)'};">${isOnline ? '● Online' : '○ Offline'}</div>
+              </div>
+              <button onclick="copyInviteForFriend(this)" style="font-family:'Cinzel',serif;font-size:.52rem;text-transform:uppercase;letter-spacing:.1em;padding:5px 10px;background:rgba(154,112,0,.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;cursor:pointer;white-space:nowrap;">Copy Link</button>
+            </div>`;
+        }).join('');
+      } catch(e) {
+        container.innerHTML = `<div style="color:var(--red);font-size:.85rem;">Error: ${escHtml(e.message)}</div>`;
+      }
+    }
+
+    function closeInviteModal() {
+      document.getElementById('invite-modal').classList.remove('open');
+    }
+
+    function copyInviteModalLink() {
+      navigator.clipboard.writeText(_inviteLink).then(() => {
+        const btn = document.getElementById('invite-modal-copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      });
+    }
+
+    function copyInviteForFriend(btn) {
+      navigator.clipboard.writeText(_inviteLink).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy Link', 2000);
+      });
+    }
+
     function deleteCampaign(id, name, btn) {
       if (!confirm(`Delete campaign "${name}"? This cannot be undone.`)) return;
       btn.disabled = true;
@@ -1610,5 +1726,22 @@
       el.className = `message show ${type}`;
     }
   </script>
+
+  <!-- Invite Friends Modal -->
+  <div class="invite-modal-overlay" id="invite-modal" onclick="if(event.target===this)closeInviteModal()">
+    <div class="invite-modal-box">
+      <button class="invite-modal-close" onclick="closeInviteModal()">✕</button>
+      <div class="invite-modal-title" id="invite-modal-title">Invite Friends</div>
+      <div style="font-family:'Cinzel',serif;font-size:.52rem;text-transform:uppercase;letter-spacing:.15em;color:var(--border-light);margin-bottom:6px;">Invite Link</div>
+      <div class="invite-link-row">
+        <input class="invite-link-input" id="invite-modal-link" type="text" readonly>
+        <button class="invite-link-copy" id="invite-modal-copy-btn" onclick="copyInviteModalLink()">Copy</button>
+      </div>
+      <div style="font-family:'Cinzel',serif;font-size:.52rem;text-transform:uppercase;letter-spacing:.15em;color:var(--border-light);margin-bottom:10px;">Your Friends</div>
+      <div id="invite-modal-friends">
+        <div style="color:var(--ink-light);font-size:.85rem;font-style:italic;padding:8px 0;">Loading friends…</div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
