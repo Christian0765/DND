@@ -790,26 +790,25 @@
           grid.innerHTML = campaigns.map(c => {
             const playerCount = Object.keys(c.players || {}).length;
             const isActive = c.status === 'active';
-            const href = isActive ? `index.html?c=${c.id}` : '#';
-            const action = isActive ? 'Enter Campaign →' : 'Complete Setup →';
+            const href = isActive ? `index.html?c=${c.id}` : `campaign-creator.html?edit=${c.id}`;
+            const safeName = escHtml(c.name);
 
             return `
-              <div class="campaign-card" onclick="
-                if ('${isActive}') { window.location.href = '${href}'; }
-              ">
-                <div class="campaign-name">${c.name}</div>
-                <div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:8px;">${c.type || 'General'}</div>
+              <div class="campaign-card">
+                <div class="campaign-name">${safeName}</div>
+                <div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:8px;">${escHtml(c.type || 'General')}</div>
                 <div class="campaign-meta">
                   <div class="campaign-meta-item">👥 ${playerCount}/${c.playerSlots}</div>
-                  <div class="campaign-meta-item">📋 ${c.status === 'draft' ? 'Draft' : 'Active'}</div>
+                  <div class="campaign-meta-item">📋 ${isActive ? 'Active' : 'Draft'}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px;background:rgba(0,0,0,0.1);border-radius:2px;">
                   <span class="invite-code-display" id="code-${c.id}" style="font-family:monospace;font-size:0.85rem;color:var(--gold);font-weight:600;flex:1;opacity:0;transition:opacity 0.2s;">Invite: ${c.inviteCode}</span>
                   <button class="invite-toggle" onclick="toggleCode('${c.id}', event)" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--border-light);transition:color 0.2s;">👁</button>
                 </div>
-                <div class="status-badge status-${c.status}">${c.status === 'draft' ? 'DRAFT' : 'ACTIVE'}</div>
-                <div class="campaign-action">
-                  ${isActive ? '<a href="' + href + '" style="flex:1;color:inherit;">Enter Campaign →</a>' : 'Complete Setup →'}
+                <div class="status-badge status-${c.status}">${isActive ? 'ACTIVE' : 'DRAFT'}</div>
+                <div class="campaign-action" style="display:flex;gap:8px;align-items:center;">
+                  <a href="${href}" style="flex:1;color:inherit;" onclick="event.stopPropagation();">${isActive ? 'Enter Campaign →' : 'Complete Setup →'}</a>
+                  <button onclick="event.stopPropagation();deleteCampaign('${c.id}','${safeName.replace(/'/g,"\\'")}',this)" style="background:rgba(122,21,21,0.15);border:1px solid var(--red);color:var(--red);border-radius:2px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.7rem;white-space:nowrap;" title="Delete campaign">🗑 Delete</button>
                 </div>
               </div>
             `;
@@ -1005,6 +1004,32 @@
       firebase.auth().signOut().then(() => {
         window.location.href = 'home.html';
       });
+    }
+
+    function deleteCampaign(id, name, btn) {
+      if (!confirm(`Delete campaign "${name}"? This cannot be undone.`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+
+      db.collection('campaigns').doc(id).delete()
+        .then(() => {
+          db.collection('users').doc(currentUser.uid).update({
+            campaignIds: firebase.firestore.FieldValue.arrayRemove(id)
+          }).catch(() => {});
+        })
+        .catch(err => {
+          btn.disabled = false;
+          btn.textContent = '🗑 Delete';
+          alert('Error deleting campaign: ' + err.message);
+        });
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
     function showMessage(el, text, type) {
