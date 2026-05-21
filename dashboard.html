@@ -759,7 +759,7 @@
     <div class="tab-buttons">
       <button class="tab-btn active" onclick="switchTab('my-campaigns')">📜 My Campaigns</button>
       <button class="tab-btn" id="friends-tab-btn" onclick="switchTab('friends')">👥 Friends</button>
-      <button class="tab-btn" onclick="switchTab('create-join')">➕ Create & Join</button>
+      <button class="tab-btn" id="create-join-tab-btn" onclick="switchTab('create-join')">➕ Create & Join</button>
     </div>
 
     <!-- TAB: MY CAMPAIGNS -->
@@ -795,6 +795,12 @@
 
     <!-- TAB: CREATE & JOIN -->
     <div id="create-join" class="tab-content">
+
+      <!-- ── PENDING CAMPAIGN INVITES ── -->
+      <div id="campaign-invites-section" style="display:none;margin-bottom:24px;">
+        <div class="cc-req-title">🏰 Campaign Invitations</div>
+        <div id="campaign-invites-list"></div>
+      </div>
 
       <!-- ── MODE SELECT ── -->
       <div id="cc-select" class="cc-screen active">
@@ -1165,6 +1171,7 @@
 
       loadCampaigns();
       loadFriends();
+      loadCampaignInvites();
 
       // Auto-join if arriving via invite link (?join=CODE)
       const joinCode = new URLSearchParams(window.location.search).get('join');
@@ -1631,10 +1638,13 @@
     }
 
     // ─── Invite Friends Modal ───
-    let _inviteLink = '';
+    let _inviteLink = '', _inviteCampaignId = '', _inviteCode = '', _inviteCampaignName = '';
 
     async function openInviteModal(campaignId, inviteCode, campaignName) {
       _inviteLink = `${location.origin}${location.pathname}?join=${inviteCode}`;
+      _inviteCampaignId = campaignId;
+      _inviteCode = inviteCode;
+      _inviteCampaignName = campaignName;
       document.getElementById('invite-modal-title').textContent = 'Invite Friends — ' + campaignName;
       document.getElementById('invite-modal-link').value = _inviteLink;
       document.getElementById('invite-modal').classList.add('open');
@@ -1650,7 +1660,7 @@
         const allUids = [...new Set([...myFriendUids, ...theyAddedSnap.docs.map(d => d.id)])];
 
         if (allUids.length === 0) {
-          container.innerHTML = '<div style="color:var(--ink-light);font-size:.85rem;font-style:italic;padding:8px 0;">You have no friends added yet.</div>';
+          container.innerHTML = '<div style="color:var(--ink-light);font-size:.85rem;font-style:italic;padding:8px 0;">Add friends first to invite them directly.</div>';
           return;
         }
 
@@ -1660,7 +1670,7 @@
         container.innerHTML = docs.filter(d => d.exists).map(d => {
           const f = d.data();
           const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
-          const isOnline = ((f.lastSeen?.toMillis?.() || 0)) > now - ONLINE_MS;
+          const isOnline = (f.lastSeen?.toMillis?.() || 0) > now - ONLINE_MS;
           return `
             <div class="invite-friend-row">
               <div class="invite-friend-avatar">${avatar}</div>
@@ -1668,7 +1678,7 @@
                 <div style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:var(--ink);">${escHtml(f.displayName || 'Unknown')}</div>
                 <div style="font-size:.75rem;color:${isOnline ? 'var(--green)' : 'var(--border-light)'};">${isOnline ? '● Online' : '○ Offline'}</div>
               </div>
-              <button onclick="copyInviteForFriend(this)" style="font-family:'Cinzel',serif;font-size:.52rem;text-transform:uppercase;letter-spacing:.1em;padding:5px 10px;background:rgba(154,112,0,.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;cursor:pointer;white-space:nowrap;">Copy Link</button>
+              <button onclick="sendInviteToFriend(this,'${d.id}')" style="font-family:'Cinzel',serif;font-size:.52rem;text-transform:uppercase;letter-spacing:.1em;padding:5px 10px;background:rgba(154,112,0,.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;cursor:pointer;white-space:nowrap;">Send &amp; Copy</button>
             </div>`;
         }).join('');
       } catch(e) {
@@ -1688,11 +1698,90 @@
       });
     }
 
-    function copyInviteForFriend(btn) {
-      navigator.clipboard.writeText(_inviteLink).then(() => {
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy Link', 2000);
-      });
+    async function sendInviteToFriend(btn, toUid) {
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        await db.collection('users').doc(currentUser.uid).update({
+          campaignInvites: firebase.firestore.FieldValue.arrayUnion({
+            toUid, campaignId: _inviteCampaignId,
+            inviteCode: _inviteCode, campaignName: _inviteCampaignName
+          })
+        });
+        navigator.clipboard.writeText(_inviteLink).catch(() => {});
+        btn.textContent = 'Sent ✓';
+      } catch(e) {
+        btn.disabled = false; btn.textContent = 'Send & Copy';
+      }
+    }
+
+    // ─── Campaign Invites (Create & Join tab) ───
+    async function loadCampaignInvites() {
+      const uid = currentUser.uid;
+      const section = document.getElementById('campaign-invites-section');
+      const listEl = document.getElementById('campaign-invites-list');
+      const tabBtn = document.getElementById('create-join-tab-btn');
+
+      try {
+        const ownData = (await db.collection('users').doc(uid).get()).data() || {};
+        const myFriendUids = ownData.friends || [];
+        const dismissed = ownData.dismissedInvites || [];
+        const joinedCampaigns = Object.keys((await db.collection('campaigns')
+          .where('memberUids', 'array-contains', uid).get()).docs.reduce((a, d) => ({ ...a, [d.id]: true }), {}));
+
+        const theyAddedSnap = await db.collection('users').where('friends', 'array-contains', uid).get();
+        const allFriendUids = [...new Set([...myFriendUids, ...theyAddedSnap.docs.map(d => d.id)])];
+
+        const invites = [];
+        await Promise.all(allFriendUids.map(async fid => {
+          const fd = await db.collection('users').doc(fid).get();
+          if (!fd.exists) return;
+          const fdata = fd.data();
+          (fdata.campaignInvites || []).forEach(inv => {
+            if (inv.toUid !== uid) return;
+            const key = `${fid}|${inv.campaignId}`;
+            if (dismissed.includes(key)) return;
+            if (joinedCampaigns.includes(inv.campaignId)) return;
+            invites.push({ ...inv, fromUid: fid, fromName: escHtml(fdata.displayName || fdata.email || 'Someone') });
+          });
+        }));
+
+        // Badge
+        const oldBadge = tabBtn.querySelector('.tab-badge');
+        if (oldBadge) oldBadge.remove();
+        if (invites.length > 0) {
+          tabBtn.insertAdjacentHTML('beforeend', `<span class="tab-badge">${invites.length}</span>`);
+        }
+
+        if (invites.length === 0) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        listEl.innerHTML = invites.map(inv => `
+          <div class="cc-req-card" style="flex-wrap:wrap;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-size:.9rem;font-weight:700;color:var(--gold-light);">🏰 ${escHtml(inv.campaignName)}</div>
+              <div style="font-size:.78rem;color:var(--border-light);margin-top:2px;">Invited by ${inv.fromName}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button class="cc-req-accept" onclick="joinFromInvite('${inv.inviteCode}','${inv.fromUid}','${inv.campaignId}')">Join</button>
+              <button class="cc-req-decline" onclick="dismissInvite('${inv.fromUid}','${inv.campaignId}')">Dismiss</button>
+            </div>
+          </div>`).join('');
+      } catch(e) {
+        section.style.display = 'none';
+      }
+    }
+
+    function joinFromInvite(inviteCode, fromUid, campaignId) {
+      dismissInvite(fromUid, campaignId);
+      document.getElementById('join-code').value = inviteCode.toUpperCase();
+      // scroll to join section and trigger
+      document.getElementById('join-code').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => joinCampaign(), 400);
+    }
+
+    function dismissInvite(fromUid, campaignId) {
+      db.collection('users').doc(currentUser.uid).update({
+        dismissedInvites: firebase.firestore.FieldValue.arrayUnion(`${fromUid}|${campaignId}`)
+      }).then(() => loadCampaignInvites());
     }
 
     function deleteCampaign(id, name, btn) {
