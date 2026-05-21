@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Combat Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <style>
   :root {
@@ -425,7 +426,7 @@
 <body>
 
 <div class="top-bar">
-  <a class="back-link" href="index.html">← Party Overview</a>
+  <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div></div>
 </div>
 
@@ -482,31 +483,50 @@
 </div>
 
 <script>
+firebase.initializeApp(firebaseConfig);
+
+// Get campaign ID from URL
+const campaignId = new URLSearchParams(window.location.search).get('c');
+if (!campaignId) { 
+  window.location.href = 'dashboard.html'; 
+}
+
 const CONDITIONS = ['Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated','Paralyzed','Poisoned','Prone','Restrained','Stunned','Unconscious'];
 
 let state = { round: 1, combatants: [] };
 let db;
 
-try {
-  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.firestore();
-  db.collection('combat').doc('state').onSnapshot({includeMetadataChanges: true}, doc => {
-    if (doc.metadata.hasPendingWrites) return;
-    if (doc.exists) {
-      const data = doc.data();
-      if (data && Array.isArray(data.combatants)) { state = data; render(); }
-    } else {
-      render();
-    }
-  });
-} catch(e) {
-  console.warn('Firebase not configured — using local state');
-  render();
+function goBack() {
+  window.location.href = 'index.html?c=' + campaignId;
 }
+
+// Auth guard + init
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'home.html';
+    return;
+  }
+
+  try {
+    db = firebase.firestore();
+    db.collection('campaigns').doc(campaignId).collection('combat').doc('state').onSnapshot({includeMetadataChanges: true}, doc => {
+      if (doc.metadata.hasPendingWrites) return;
+      if (doc.exists) {
+        const data = doc.data();
+        if (data && Array.isArray(data.combatants)) { state = data; render(); }
+      } else {
+        render();
+      }
+    });
+  } catch(e) {
+    console.warn('Firebase not configured — using local state');
+    render();
+  }
+});
 
 function save() {
   if (db) {
-    db.collection('combat').doc('state').set(JSON.parse(JSON.stringify(state)));
+    db.collection('campaigns').doc(campaignId).collection('combat').doc('state').set(JSON.parse(JSON.stringify(state)));
   }
 }
 

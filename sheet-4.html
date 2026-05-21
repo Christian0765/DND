@@ -96,7 +96,7 @@
 <body>
 
 <div class="top-bar">
-  <a class="back-link" href="index.html">← Party Overview</a>
+  <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div class="sync-bar">
     <span class="sync-status offline" id="sync-status">Connecting...</span>
     <button class="save-btn" onclick="saveToFirestore()">Save</button>
@@ -245,13 +245,34 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 const PLAYER_ID = 'player4';
 
+// Get campaign ID from URL
+const campaignId = new URLSearchParams(window.location.search).get('c');
+if (!campaignId) { 
+  window.location.href = 'dashboard.html'; 
+}
+
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+
+// Auth guard + init
+let db = null;
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'home.html';
+    return;
+  }
+  db = firebase.firestore();
+  loadFromFirestore();
+});
+
+function goBack() {
+  window.location.href = 'index.html?c=' + campaignId;
+}
 
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
@@ -269,6 +290,7 @@ function setStatus(type, text) {
 }
 
 async function saveToFirestore() {
+  if (!db) { setStatus('offline', 'Offline'); return; }
   setStatus('saving', 'Saving...');
   const data = {};
   FIELDS.forEach(id => {
@@ -276,7 +298,7 @@ async function saveToFirestore() {
     if (el) data[id] = el.value || '';
   });
   try {
-    await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).set(data, { merge: true });
     setStatus('ok', 'Saved ✓');
     setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
   } catch (e) {
@@ -285,8 +307,9 @@ async function saveToFirestore() {
 }
 
 function loadFromFirestore() {
+  if (!db) { setStatus('offline', 'Offline'); return; }
   setStatus('saving', 'Connecting...');
-  db.collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+  db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
     if (!doc.exists) { setStatus('ok', 'Ready'); return; }
     const data = doc.data();
     FIELDS.forEach(id => {
@@ -300,7 +323,6 @@ function loadFromFirestore() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadFromFirestore();
   renderHistory();
 });
 

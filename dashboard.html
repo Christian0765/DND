@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - D&D Campaign Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --parchment: #f5ead2;
+      --parchment-dark: #e8d5a8;
+      --ink: #1a1208;
+      --ink-light: #4a3520;
+      --red: #7a1515;
+      --gold: #9a7000;
+      --gold-light: #c4920a;
+      --border: #7a5a28;
+      --border-light: #b08840;
+      --green: #285a18;
+      --bg: #111008;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
+      font-family: 'Crimson Text', serif;
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 32px 16px 60px;
+    }
+
+    /* HEADER */
+    .dashboard-header {
+      max-width: 1200px;
+      margin: 0 auto 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      animation: fadeIn 0.8s ease;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 0 2px #1a0e04;
+      background: var(--parchment);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .user-info {
+      text-align: left;
+    }
+
+    .user-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+
+    .user-email {
+      font-size: 0.75rem;
+      color: var(--border-light);
+      margin-top: 3px;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-base {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+      color: var(--ink);
+      box-shadow: 0 0 0 2px #1a0e04, 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(160deg, #fefaf5 0%, #f5e8c6 100%);
+      box-shadow: 0 0 0 2px #1a0e04, 0 6px 25px rgba(156,122,10,0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--border-light);
+      border-color: var(--border-light);
+    }
+
+    .btn-secondary:hover {
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .btn-signup {
+      background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+      color: var(--ink);
+      box-shadow: 0 0 0 2px #1a0e04;
+    }
+
+    /* TABS */
+    .tabs-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--border-light);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: -2px;
+    }
+
+    .tab-btn.active {
+      color: var(--gold-light);
+      border-bottom-color: var(--gold);
+    }
+
+    .tab-btn:hover {
+      color: var(--gold);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* CAMPAIGNS GRID */
+    .campaigns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .campaign-card {
+      background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
+      border: 1px solid var(--border);
+      box-shadow: 0 0 0 2px #1a0e04, 0 8px 30px rgba(0,0,0,0.6);
+      border-radius: 3px;
+      padding: 20px 16px;
+      text-decoration: none;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .campaign-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 0 0 2px #1a0e04, 0 12px 40px rgba(0,0,0,0.8);
+    }
+
+    .campaign-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--red);
+      line-height: 1.3;
+    }
+
+    .campaign-meta {
+      font-size: 0.8rem;
+      color: var(--ink-light);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .campaign-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 8px;
+      border-radius: 2px;
+      margin-top: 8px;
+    }
+
+    .status-draft {
+      background: rgba(122,21,21,0.15);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .status-active {
+      background: rgba(40,90,24,0.15);
+      color: var(--green);
+      border: 1px solid var(--green);
+    }
+
+    .campaign-action {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--border-light);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .empty-state-text {
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    /* CREATION FORM */
+    .form-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+      border: 1px solid var(--border);
+      box-shadow: 0 0 0 3px #1a0e04, 0 8px 30px rgba(0,0,0,0.6);
+      border-radius: 3px;
+      padding: 28px 32px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .form-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--red);
+      border-bottom: 2px double var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--border-light);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      font-family: 'Crimson Text', serif;
+      font-size: 0.95rem;
+      background: rgba(255,255,255,0.5);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--ink);
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--gold);
+      background: rgba(255,255,255,0.7);
+    }
+
+    .form-inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .btn-form {
+      flex: 1;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-form.primary {
+      background: linear-gradient(160deg, #285a18 0%, #1a3911 100%);
+      color: var(--parchment);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .btn-form.primary:hover {
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+
+    .btn-form.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--border);
+    }
+
+    .btn-form.secondary:hover {
+      background: rgba(0,0,0,0.1);
+    }
+
+    .join-input-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    .join-input-container .form-input {
+      flex: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+
+    .btn-join {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 8px 16px;
+      background: var(--green);
+      color: var(--parchment);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .btn-join:hover {
+      background: #1a4a0f;
+    }
+
+    /* FRIENDS LIST */
+    .friends-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .friend-card {
+      background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+      border: 1px solid var(--border);
+      box-shadow: 0 0 0 2px #1a0e04, 0 4px 15px rgba(0,0,0,0.5);
+      border-radius: 3px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      justify-content: space-between;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .friend-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .friend-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--parchment-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .friend-details {
+      flex: 1;
+    }
+
+    .friend-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--red);
+    }
+
+    .friend-campaign {
+      font-size: 0.8rem;
+      color: var(--ink-light);
+      margin-top: 2px;
+    }
+
+    .friend-campaign a {
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    .friend-campaign a:hover {
+      text-decoration: underline;
+    }
+
+    .friend-action {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      color: var(--border-light);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .friend-action:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* ADD FRIEND FORM */
+    .add-friend-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .add-friend-form .form-input {
+      flex: 1;
+    }
+
+    .btn-add-friend {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 8px 16px;
+      background: var(--green);
+      color: var(--parchment);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-add-friend:hover {
+      background: #1a4a0f;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 3px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.success {
+      background: rgba(40,90,24,0.15);
+      border: 1px solid var(--green);
+      color: var(--green);
+    }
+
+    .message.error {
+      background: rgba(122,21,21,0.15);
+      border: 1px solid var(--red);
+      color: var(--red);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 600px) {
+      .dashboard-header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .header-left {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .campaigns-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-inline {
+        grid-template-columns: 1fr;
+      }
+
+      .friend-card {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .friend-details {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="dashboard-header">
+    <div class="header-left">
+      <div class="user-avatar" id="user-avatar">👤</div>
+      <div class="user-info">
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-email" id="user-email"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button onclick="signOut()" class="btn-base btn-secondary">🚪 Sign Out</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-container">
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="switchTab('my-campaigns')">📜 My Campaigns</button>
+      <button class="tab-btn" onclick="switchTab('friends')">👥 Friends</button>
+      <button class="tab-btn" onclick="switchTab('create-join')">➕ Create & Join</button>
+    </div>
+
+    <!-- TAB: MY CAMPAIGNS -->
+    <div id="my-campaigns" class="tab-content active">
+      <div class="campaigns-grid" id="campaigns-grid">
+        <div class="empty-state">
+          <div class="empty-state-icon">📜</div>
+          <div class="empty-state-text">No campaigns yet. Create one to get started!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: FRIENDS -->
+    <div id="friends" class="tab-content">
+      <div style="max-width: 600px; margin: 0 auto;">
+        <div class="add-friend-form">
+          <input type="email" id="friend-email" class="form-input" placeholder="Friend's email address...">
+          <button onclick="addFriend()" class="btn-add-friend">Add</button>
+        </div>
+        <div class="message" id="friend-message"></div>
+        <div class="friends-list" id="friends-list">
+          <div style="text-align: center; color: var(--border-light); padding: 40px 20px;">
+            <div style="font-size: 2rem; margin-bottom: 12px;">👥</div>
+            <div>No friends added yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CREATE & JOIN -->
+    <div id="create-join" class="tab-content">
+      <div class="tab-content active" id="tab-create" style="display:block;">
+        <div class="form-container">
+          <div class="form-title">✨ Create New Campaign</div>
+
+          <div class="form-group">
+            <label class="form-label">Campaign Name</label>
+            <input type="text" id="create-name" class="form-input" placeholder="e.g. Dragon Veil Chronicles">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Player Slots</label>
+            <div class="form-inline">
+              <label style="display:flex;gap:8px;font-family:Crimson Text;"><input type="radio" name="slots" value="2"> 2 Players</label>
+              <label style="display:flex;gap:8px;font-family:Crimson Text;"><input type="radio" name="slots" value="3"> 3 Players</label>
+              <label style="display:flex;gap:8px;font-family:Crimson Text;"><input type="radio" name="slots" value="4" checked> 4 Players</label>
+            </div>
+          </div>
+
+          <div class="form-buttons">
+            <button class="btn-form primary" onclick="createCampaign()">✓ Create Campaign</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-join" style="margin-top: 40px;">
+        <div class="form-container">
+          <div class="form-title">🔗 Join a Campaign</div>
+
+          <div class="form-group">
+            <label class="form-label">Invite Code</label>
+            <div class="join-input-container">
+              <input type="text" id="join-code" class="form-input" placeholder="e.g. ABC123" style="text-transform:uppercase;">
+              <button class="btn-join" onclick="joinCampaign()">Join</button>
+            </div>
+          </div>
+
+          <div class="message" id="join-message"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <script>
+    let currentUser = null;
+    let db = null;
+    let unsubscribeCampaigns = null;
+
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+
+    // Auth check
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = 'home.html';
+        return;
+      }
+      currentUser = user;
+      initDashboard();
+    });
+
+    function initDashboard() {
+      // Set user info
+      const displayName = currentUser.displayName || 'User';
+      const email = currentUser.email || '';
+      const avatar = (displayName.charAt(0) || '👤').toUpperCase();
+
+      document.getElementById('user-name').textContent = displayName;
+      document.getElementById('user-email').textContent = email;
+      document.getElementById('user-avatar').textContent = avatar;
+
+      // Ensure user document exists
+      db.collection('users').doc(currentUser.uid).set({
+        displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL,
+        email: currentUser.email,
+        friends: firebase.firestore.FieldValue.arrayUnion()
+      }, { merge: true });
+
+      loadCampaigns();
+      loadFriends();
+    }
+
+    function switchTab(tabName) {
+      // Hide all
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+      // Show selected
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function loadCampaigns() {
+      const grid = document.getElementById('campaigns-grid');
+
+      if (unsubscribeCampaigns) unsubscribeCampaigns();
+
+      unsubscribeCampaigns = db.collection('campaigns')
+        .where('dmUid', '==', currentUser.uid)
+        .onSnapshot(snap => {
+          const campaigns = [];
+          snap.forEach(doc => {
+            campaigns.push({ id: doc.id, ...doc.data() });
+          });
+
+          if (campaigns.length === 0) {
+            grid.innerHTML = `
+              <div style="grid-column:1/-1;">
+                <div class="empty-state">
+                  <div class="empty-state-icon">📜</div>
+                  <div class="empty-state-text">No campaigns yet. Create one to get started!</div>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          grid.innerHTML = campaigns.map(c => {
+            const playerCount = Object.keys(c.players || {}).length;
+            const isActive = c.status === 'active';
+            const href = isActive ? `index.html?c=${c.id}` : '#';
+            const action = isActive ? 'Enter Campaign →' : 'Complete Setup →';
+
+            return `
+              <div class="campaign-card" onclick="
+                if ('${isActive}') { window.location.href = '${href}'; }
+              ">
+                <div class="campaign-name">${c.name}</div>
+                <div class="campaign-meta">
+                  <div class="campaign-meta-item">👥 ${playerCount}/${c.playerSlots}</div>
+                  <div class="campaign-meta-item">📋 ${c.status === 'draft' ? 'Draft' : 'Active'}</div>
+                </div>
+                <div class="status-badge status-${c.status}">${c.status === 'draft' ? 'DRAFT' : 'ACTIVE'}</div>
+                <div class="campaign-action">
+                  ${isActive ? '<a href="' + href + '" style="flex:1;color:inherit;">Enter Campaign →</a>' : 'Complete Setup →'}
+                </div>
+              </div>
+            `;
+          }).join('');
+        });
+    }
+
+    function loadFriends() {
+      const list = document.getElementById('friends-list');
+
+      db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
+        if (!doc.exists || !doc.data().friends || doc.data().friends.length === 0) {
+          list.innerHTML = `
+            <div style="text-align: center; color: var(--border-light); padding: 40px 20px;">
+              <div style="font-size: 2rem; margin-bottom: 12px;">👥</div>
+              <div>No friends added yet.</div>
+            </div>
+          `;
+          return;
+        }
+
+        const friendIds = doc.data().friends || [];
+        Promise.all(friendIds.map(uid => db.collection('users').doc(uid).get()))
+          .then(docs => {
+            list.innerHTML = docs.map(doc => {
+              if (!doc.exists) return '';
+              const friend = doc.data();
+              const avatar = (friend.displayName?.charAt(0) || '👤').toUpperCase();
+              return `
+                <div class="friend-card">
+                  <div class="friend-info">
+                    <div class="friend-avatar">${avatar}</div>
+                    <div class="friend-details">
+                      <div class="friend-name">${friend.displayName || 'Unknown'}</div>
+                      <div class="friend-campaign">${friend.displayName} is offline</div>
+                    </div>
+                  </div>
+                  <button class="friend-action" onclick="removeFriend('${doc.id}')">Remove</button>
+                </div>
+              `;
+            }).join('');
+          });
+      });
+    }
+
+    function addFriend() {
+      const email = document.getElementById('friend-email').value.trim();
+      const msg = document.getElementById('friend-message');
+
+      if (!email) {
+        showMessage(msg, 'Please enter your friend\'s email.', 'error');
+        return;
+      }
+
+      // Find user by email
+      db.collection('users').where('email', '==', email).limit(1).get()
+        .then(snap => {
+          if (snap.empty) {
+            showMessage(msg, 'User not found.', 'error');
+            return;
+          }
+
+          const friendUid = snap.docs[0].id;
+          if (friendUid === currentUser.uid) {
+            showMessage(msg, 'You can\'t add yourself.', 'error');
+            return;
+          }
+
+          // Add to current user's friends
+          db.collection('users').doc(currentUser.uid).update({
+            friends: firebase.firestore.FieldValue.arrayUnion(friendUid)
+          });
+
+          // Add current user to friend's friends
+          db.collection('users').doc(friendUid).update({
+            friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+          });
+
+          document.getElementById('friend-email').value = '';
+          showMessage(msg, 'Friend added!', 'success');
+          setTimeout(() => msg.classList.remove('show'), 3000);
+        })
+        .catch(err => {
+          showMessage(msg, 'Error adding friend.', 'error');
+        });
+    }
+
+    function removeFriend(friendUid) {
+      db.collection('users').doc(currentUser.uid).update({
+        friends: firebase.firestore.FieldValue.arrayRemove(friendUid)
+      });
+
+      db.collection('users').doc(friendUid).update({
+        friends: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+      });
+    }
+
+    function createCampaign() {
+      const name = document.getElementById('create-name').value.trim();
+      const slots = +document.querySelector('input[name="slots"]:checked').value;
+
+      if (!name) {
+        showMessage(document.getElementById('friend-message'), 'Campaign name is required.', 'error');
+        return;
+      }
+
+      const campaignId = db.collection('_').doc().id;
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      db.collection('campaigns').doc(campaignId).set({
+        name,
+        dmUid: currentUser.uid,
+        status: 'draft',
+        inviteCode,
+        playerSlots: slots,
+        players: {},
+        createdAt: firebase.firestore.Timestamp.now(),
+        updatedAt: firebase.firestore.Timestamp.now()
+      }).then(() => {
+        document.getElementById('create-name').value = '';
+        showMessage(document.getElementById('friend-message'), `Campaign created! Invite code: ${inviteCode}`, 'success');
+      });
+    }
+
+    function joinCampaign() {
+      const code = document.getElementById('join-code').value.trim().toUpperCase();
+      const msg = document.getElementById('join-message');
+
+      if (!code) {
+        showMessage(msg, 'Please enter an invite code.', 'error');
+        return;
+      }
+
+      db.collection('campaigns').where('inviteCode', '==', code).limit(1).get()
+        .then(snap => {
+          if (snap.empty) {
+            showMessage(msg, 'Invalid invite code.', 'error');
+            return;
+          }
+
+          const campaign = snap.docs[0];
+          const players = campaign.data().players || {};
+          const playerCount = Object.keys(players).length;
+
+          if (playerCount >= campaign.data().playerSlots) {
+            showMessage(msg, 'Campaign is full.', 'error');
+            return;
+          }
+
+          const slotNum = playerCount + 1;
+          const slotKey = `player${slotNum}`;
+
+          db.collection('campaigns').doc(campaign.id).update({
+            [`players.${currentUser.uid}`]: {
+              slot: slotKey,
+              joinedAt: firebase.firestore.Timestamp.now()
+            }
+          }).then(() => {
+            document.getElementById('join-code').value = '';
+            showMessage(msg, 'Campaign joined!', 'success');
+            setTimeout(() => {
+              window.location.href = `index.html?c=${campaign.id}`;
+            }, 1500);
+          });
+        });
+    }
+
+    function signOut() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = 'home.html';
+      });
+    }
+
+    function showMessage(el, text, type) {
+      el.textContent = text;
+      el.className = `message show ${type}`;
+    }
+  </script>
+</body>
+</html>
