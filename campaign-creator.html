@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Creator — DM Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parchment: #f5ead2;
+  --parchment-dark: #e8d5a8;
+  --ink: #1a1208;
+  --ink-light: #4a3520;
+  --red: #7a1515;
+  --gold: #9a7000;
+  --gold-light: #c4920a;
+  --border: #7a5a28;
+  --border-light: #b08840;
+  --green: #285a18;
+  --green-light: #3a7a22;
+  --bg: #0a0804;
+  --bg-mid: #111008;
+  --card-shadow: 0 0 0 2px #1a0e04, 0 8px 32px rgba(0,0,0,0.7);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  font-family: 'Crimson Text', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── AMBIENT ── */
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+}
+.ambient::before {
+  content: '';
+  position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse, rgba(154,112,0,0.08) 0%, transparent 70%);
+  animation: pulse 6s ease-in-out infinite;
+}
+.ambient::after {
+  content: '';
+  position: absolute; bottom: -20%; left: 20%;
+  width: 600px; height: 400px;
+  background: radial-gradient(ellipse, rgba(122,21,21,0.05) 0%, transparent 70%);
+  animation: pulse 8s ease-in-out infinite reverse;
+}
+@keyframes pulse { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+.particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.particle {
+  position: absolute; width: 2px; height: 2px;
+  background: var(--gold-light); border-radius: 50%; opacity: 0;
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(0) scale(0); }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.2; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(1.5); }
+}
+
+/* ── AUTH OVERLAY ── */
+#auth-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+  display: flex; align-items: center; justify-content: center; transition: opacity 0.5s;
+}
+#auth-overlay.hidden { opacity: 0; pointer-events: none; }
+.auth-spinner {
+  font-family: 'Cinzel', serif; font-size: 0.65rem;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--border-light);
+  animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
+
+/* ── APP WRAPPER ── */
+#app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── TOP BAR ── */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px; border-bottom: 1px solid rgba(122,90,40,0.2);
+  background: rgba(10,8,4,0.8); backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 100;
+}
+.back-link {
+  font-family: 'Cinzel', serif; font-size: 0.58rem; text-transform: uppercase;
+  letter-spacing: 0.18em; color: var(--border-light); text-decoration: none;
+  border: 1px solid var(--border); padding: 5px 12px; border-radius: 2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.back-link:hover { color: var(--gold-light); border-color: var(--gold); }
+.top-title {
+  font-family: 'Cinzel', serif; font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.28em; color: var(--border-light);
+}
+.user-chip { display: flex; align-items: center; gap: 8px; font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.12em; color: var(--border-light); }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; }
+
+/* ── HERO / MODE SELECT ── */
+#screen-hero {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 60px 24px; text-align: center;
+  min-height: calc(100vh - 65px);
+}
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:none;} }
+
+.hero-eyebrow {
+  font-family: 'Cinzel', serif; font-size: 0.6rem; text-transform: uppercase;
+  letter-spacing: 0.4em; color: var(--gold); margin-bottom: 20px;
+  animation: fadeInUp 0.6s ease both;
+}
+.hero-title {
+  font-family: 'Cinzel', serif; font-size: clamp(2.4rem,5vw,4rem); font-weight: 900;
+  color: var(--parchment); text-shadow: 0 0 60px rgba(196,146,10,0.3);
+  line-height: 1.1; margin-bottom: 16px; animation: fadeInUp 0.7s ease 0.1s both;
+}
+.hero-title span { color: var(--gold-light); }
+.hero-desc {
+  font-size: 1.15rem; color: var(--parchment-dark); max-width: 540px; line-height: 1.7;
+  margin-bottom: 56px; opacity: 0.8; animation: fadeInUp 0.7s ease 0.2s both;
+}
+.hero-divider {
+  width: 120px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 0 auto 56px; animation: fadeInUp 0.6s ease 0.15s both;
+}
+.mode-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  max-width: 800px; width: 100%; animation: fadeInUp 0.7s ease 0.3s both;
+}
+.mode-card {
+  background: linear-gradient(160deg, rgba(247,237,216,0.05) 0%, rgba(236,220,181,0.03) 100%);
+  border: 1px solid var(--border); border-radius: 4px; padding: 40px 32px;
+  cursor: pointer; transition: border-color 0.25s, background 0.25s, transform 0.25s, box-shadow 0.25s;
+  text-align: left; position: relative; overflow: hidden;
+}
+.mode-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--gold); opacity: 0; transition: opacity 0.25s;
+}
+.mode-card:hover {
+  border-color: var(--gold-light);
+  background: linear-gradient(160deg, rgba(196,146,10,0.08) 0%, rgba(154,112,0,0.04) 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(196,146,10,0.2);
+}
+.mode-card:hover::before { opacity: 1; }
+.mode-card.primary { border-color: rgba(196,146,10,0.4); }
+.mode-card.primary::before { opacity: 0.5; }
+.mode-card-icon { font-size: 2.2rem; margin-bottom: 18px; display: block; filter: drop-shadow(0 0 12px rgba(196,146,10,0.4)); }
+.mode-card-label { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 900; color: var(--parchment); letter-spacing: 0.06em; margin-bottom: 8px; }
+.mode-card-sub { font-family: 'Cinzel', serif; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 14px; }
+.mode-card-desc { font-size: 0.88rem; color: var(--parchment-dark); opacity: 0.7; line-height: 1.65; }
+.mode-card-time { display: inline-block; margin-top: 18px; font-family: 'Cinzel', serif; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.18em; color: var(--border-light); border: 1px solid var(--border); padding: 3px 8px; border-radius: 2px; }
+
+/* ── CREATOR SCREENS ── */
+#screen-quick, #screen-advanced { display: none; flex: 1; padding: 40px 24px 80px; }
+#screen-quick.active, #screen-advanced.active { display: block; }
+
+.creator-wrap { max-width: 720px; margin: 0 auto; animation: fadeInUp 0.5s ease both; }
+.creator-wrap.wide { max-width: 980px; }
+.creator-header { text-align: center; margin-bottom: 40px; }
+.creator-title { font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 900; color: var(--gold-light); text-shadow: 0 0 40px rgba(196,146,10,0.25); margin-bottom: 6px; }
+.creator-sub { font-family: 'Cinzel', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.3em; color: var(--border-light); }
+
+/* ── PARCHMENT CARD ── */
+.parchment-card {
+  background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
+  border: 1px solid var(--border); box-shadow: var(--card-shadow); border-radius: 3px;
+  padding: 32px 36px; position: relative;
+}
+.parchment-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* ── FORM ELEMENTS ── */
+.field-group { margin-bottom: 22px; }
+.field-label { font-family: 'Cinzel', serif; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-light); display: block; margin-bottom: 6px; }
+.field-input {
+  font-family: 'Crimson Text', serif; font-size: 1rem;
+  background: rgba(255,255,255,0.5); border: 1px solid var(--border-light);
+  border-radius: 2px; color: var(--ink); padding: 9px 12px; width: 100%; outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.field-input:focus { border-color: var(--gold); background: rgba(255,255,255,0.85); }
+.field-textarea {
+  font-family: 'Crimson Text', serif; font-size: 0.92rem;
+  background: rgba(255,255,255,0.5); border: 1px solid var(--border-light);
+  border-radius: 2px; color: var(--ink); padding: 9px 12px; width: 100%; outline: none;
+  resize: vertical; min-height: 80px; line-height: 1.6;
+  transition: border-color 0.15s, background 0.15s;
+}
+.field-textarea:focus { border-color: var(--gold); background: rgba(255,255,255,0.85); }
+.field-row { display: grid; gap: 16px; }
+.field-row.col2 { grid-template-columns: 1fr 1fr; }
+.field-row.col3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* Slot picker */
+.slot-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.slot-btn {
+  font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 700;
+  color: var(--ink-light); background: rgba(255,255,255,0.4);
+  border: 1px solid var(--border-light); border-radius: 2px;
+  width: 44px; height: 44px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.slot-btn:hover { border-color: var(--gold); color: var(--gold-light); background: rgba(154,112,0,0.1); }
+.slot-btn.active { background: var(--red); color: var(--parchment); border-color: var(--red); }
+
+/* Toggle */
+.toggle-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.toggle-label-text { font-size: 0.9rem; color: var(--ink-light); }
+.toggle {
+  position: relative; width: 42px; height: 22px;
+  background: rgba(122,90,40,0.25); border-radius: 11px;
+  border: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+}
+.toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; background: var(--border-light);
+  border-radius: 50%; transition: transform 0.2s, background 0.2s;
+}
+.toggle.on { background: rgba(40,90,24,0.5); border-color: var(--green); }
+.toggle.on::after { transform: translateX(20px); background: var(--green); }
+
+/* Theme chips */
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: 'Cinzel', serif; font-size: 0.5rem; text-transform: uppercase;
+  letter-spacing: 0.12em; padding: 5px 11px; border-radius: 2px;
+  border: 1px solid var(--border-light); background: rgba(255,255,255,0.3);
+  color: var(--ink-light); cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { border-color: var(--gold); color: var(--gold-light); }
+.chip.active { background: rgba(122,21,21,0.12); border-color: var(--red); color: var(--red); font-weight: 600; }
+
+/* Banner upload */
+.banner-upload {
+  border: 2px dashed var(--border-light); border-radius: 3px; padding: 24px;
+  text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  position: relative; overflow: hidden; background: rgba(255,255,255,0.2);
+}
+.banner-upload:hover { border-color: var(--gold); background: rgba(154,112,0,0.05); }
+.banner-upload input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.banner-upload-icon { font-size: 1.8rem; margin-bottom: 6px; }
+.banner-upload-label { font-family: 'Cinzel', serif; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--border-light); }
+.banner-preview { width: 100%; max-height: 140px; object-fit: cover; border-radius: 2px; display: none; border: 1px solid var(--border); margin-top: 10px; }
+
+/* Section titles */
+.qs-section-title {
+  font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.15em; color: var(--red);
+  border-bottom: 2px double var(--border); padding-bottom: 10px; margin-bottom: 20px;
+}
+.section-divider {
+  display: flex; align-items: center; gap: 12px; margin: 24px 0;
+}
+.section-divider::before, .section-divider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(122,90,40,0.35);
+}
+.section-divider span { font-family: 'Cinzel', serif; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--border-light); white-space: nowrap; }
+
+/* ── ADVANCED ACCORDION ── */
+.accordion-section {
+  background: linear-gradient(160deg, rgba(20,14,6,0.95) 0%, rgba(12,9,3,0.95) 100%);
+  border: 1px solid var(--border); border-radius: 3px; margin-bottom: 12px;
+  overflow: hidden; transition: box-shadow 0.2s;
+}
+.accordion-section.open { box-shadow: 0 0 0 1px rgba(196,146,10,0.3), 0 8px 32px rgba(0,0,0,0.5); }
+.accordion-header {
+  display: flex; align-items: center; gap: 16px; padding: 18px 24px;
+  cursor: pointer; user-select: none; transition: background 0.15s;
+}
+.accordion-header:hover { background: rgba(196,146,10,0.05); }
+.accordion-icon { font-size: 1.3rem; flex-shrink: 0; }
+.accordion-title { font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 600; color: var(--parchment); letter-spacing: 0.06em; }
+.accordion-sub { font-size: 0.78rem; color: var(--border-light); font-style: italic; margin-top: 2px; }
+.accordion-arrow { margin-left: auto; color: var(--border-light); font-size: 0.75rem; transition: transform 0.2s; }
+.accordion-section.open .accordion-arrow { transform: rotate(180deg); color: var(--gold); }
+.accordion-body { display: none; padding: 0 24px 24px; animation: fadeInUp 0.2s ease; }
+.accordion-section.open .accordion-body { display: block; }
+
+/* Module toggles */
+.module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.module-item {
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  border-radius: 2px; padding: 12px 14px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex; align-items: center; gap: 12px;
+}
+.module-item:hover { border-color: var(--gold); background: rgba(196,146,10,0.05); }
+.module-item.on { border-color: var(--green-light); background: rgba(40,90,24,0.08); }
+.module-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex-shrink: 0; transition: background 0.15s; }
+.module-item.on .module-dot { background: var(--green); box-shadow: 0 0 8px rgba(40,90,24,0.6); }
+.module-label { font-family: 'Cinzel', serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--parchment-dark); }
+.module-desc { font-size: 0.72rem; color: var(--border-light); font-style: italic; margin-top: 2px; }
+
+/* Rule presets */
+.rule-preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.rule-preset {
+  border: 1px solid var(--border); border-radius: 2px; padding: 12px 14px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s; position: relative;
+}
+.rule-preset:hover { border-color: var(--gold-light); }
+.rule-preset.active { border-color: var(--gold); background: rgba(196,146,10,0.08); }
+.rule-preset.locked { opacity: 0.4; cursor: not-allowed; }
+.rule-preset-name { font-family: 'Cinzel', serif; font-size: 0.68rem; color: var(--parchment); font-weight: 600; margin-bottom: 3px; }
+.rule-preset-tag { font-family: 'Cinzel', serif; font-size: 0.44rem; text-transform: uppercase; letter-spacing: 0.15em; padding: 2px 6px; border-radius: 2px; border: 1px solid; position: absolute; top: 8px; right: 8px; }
+.rule-preset-tag.soon { color: var(--border-light); border-color: var(--border); }
+.rule-preset-tag.active-tag { color: var(--green); border-color: var(--green-light); }
+
+/* Dashboard layout presets */
+.layout-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.layout-card {
+  border: 1px solid var(--border); border-radius: 3px; padding: 14px 12px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s; text-align: center;
+}
+.layout-card:hover { border-color: var(--gold); background: rgba(196,146,10,0.05); }
+.layout-card.active { border-color: var(--gold); background: rgba(196,146,10,0.1); }
+.layout-preview { display: grid; gap: 3px; margin-bottom: 10px; height: 52px; opacity: 0.6; }
+.lp-box { background: rgba(196,146,10,0.25); border-radius: 1px; }
+.layout-name { font-family: 'Cinzel', serif; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--parchment-dark); }
+
+/* ── BUTTONS ── */
+.action-row {
+  display: flex; justify-content: flex-end; gap: 12px; margin-top: 28px;
+  padding-top: 20px; border-top: 1px solid rgba(122,90,40,0.3);
+}
+.btn {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.15em; padding: 10px 20px; border-radius: 2px;
+  cursor: pointer; transition: all 0.15s; border: 1px solid;
+}
+.btn-ghost { color: var(--border-light); background: none; border-color: var(--border); }
+.btn-ghost:hover { color: var(--parchment); border-color: var(--border-light); }
+.btn-gold { color: var(--gold-light); background: none; border-color: var(--gold); }
+.btn-gold:hover { background: rgba(154,112,0,0.15); }
+.btn-primary { color: var(--parchment); background: var(--red); border-color: var(--red); }
+.btn-primary:hover { background: #5a0f0f; border-color: #5a0f0f; }
+.btn-success { color: var(--parchment); background: var(--green); border-color: var(--green); }
+.btn-success:hover { background: #1e4410; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── SUCCESS ── */
+#screen-success { display: none; flex: 1; align-items: center; justify-content: center; padding: 60px 24px; text-align: center; }
+#screen-success.active { display: flex; flex-direction: column; }
+.success-icon { font-size: 4rem; margin-bottom: 20px; animation: pop 0.5s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes pop { from{opacity:0;transform:scale(0.4);} to{opacity:1;transform:scale(1);} }
+.success-title { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 900; color: var(--gold-light); text-shadow: 0 0 40px rgba(196,146,10,0.4); margin-bottom: 8px; }
+.success-sub { font-size: 1rem; color: var(--parchment-dark); opacity: 0.8; margin-bottom: 36px; }
+.invite-box { display: inline-flex; align-items: center; gap: 12px; background: rgba(196,146,10,0.1); border: 1px solid var(--gold); border-radius: 3px; padding: 16px 24px; margin-bottom: 36px; }
+.invite-code { font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 900; color: var(--gold-light); letter-spacing: 0.2em; }
+.invite-copy-btn { font-family: 'Cinzel', serif; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold); background: none; border: 1px solid var(--gold); border-radius: 2px; padding: 4px 8px; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.invite-copy-btn:hover { background: rgba(154,112,0,0.2); }
+.modules-preview { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 28px; }
+.mod-tag { font-family: 'Cinzel', serif; font-size: 0.48rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--green); border: 1px solid rgba(40,90,24,0.5); background: rgba(40,90,24,0.1); padding: 4px 10px; border-radius: 2px; }
+.success-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* ── ERROR ── */
+.error-bar { background: rgba(122,21,21,0.15); border: 1px solid var(--red); border-radius: 2px; color: var(--red); font-size: 0.84rem; font-style: italic; padding: 10px 14px; margin-top: 14px; display: none; }
+.error-bar.show { display: block; }
+
+@media (max-width: 640px) {
+  .mode-grid { grid-template-columns: 1fr; }
+  .field-row.col2, .field-row.col3 { grid-template-columns: 1fr; }
+  .module-grid, .rule-preset-grid, .layout-grid { grid-template-columns: 1fr; }
+  .parchment-card { padding: 22px 18px; }
+  .action-row { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<div id="auth-overlay"><div class="auth-spinner">Authenticating…</div></div>
+<div class="ambient"></div>
+<div class="particles" id="particles"></div>
+
+<div id="app">
+
+  <div class="top-bar">
+    <a class="back-link" href="dashboard.html">← Dashboard</a>
+    <div class="top-title">GM Command Center</div>
+    <div class="user-chip">
+      <img src="" alt="" class="user-avatar" id="user-avatar" style="display:none;">
+      <span id="user-name"></span>
+    </div>
+  </div>
+
+  <!-- ═══ HERO ═══ -->
+  <div id="screen-hero">
+    <div class="hero-eyebrow">Dungeon Master Tools</div>
+    <div class="hero-title">Forge Your <span>Campaign</span></div>
+    <p class="hero-desc">Every legend begins with a single spark. Choose your path and build the world your players will never forget.</p>
+    <div class="hero-divider"></div>
+    <div class="mode-grid">
+      <div class="mode-card primary" onclick="startQuickMode()">
+        <span class="mode-card-icon">⚡</span>
+        <div class="mode-card-label">Quick Start</div>
+        <div class="mode-card-sub">Ready in minutes</div>
+        <div class="mode-card-desc">Get your campaign live fast. Essential settings only — expand everything later from the campaign dashboard.</div>
+        <div class="mode-card-time">Under 60 seconds</div>
+      </div>
+      <div class="mode-card" onclick="startAdvancedMode()">
+        <span class="mode-card-icon">🏰</span>
+        <div class="mode-card-label">Advanced Setup</div>
+        <div class="mode-card-sub">Full configuration</div>
+        <div class="mode-card-desc">Complete world-building toolkit. Rules, modules, dashboard layout, factions, maps, and permissions — all from the start.</div>
+        <div class="mode-card-time">5–10 minutes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ QUICK START ═══ -->
+  <div id="screen-quick">
+    <div class="creator-wrap">
+      <div class="creator-header">
+        <div class="creator-title">Quick Start</div>
+        <div class="creator-sub">Essential settings · Everything else configurable later</div>
+      </div>
+      <div class="parchment-card">
+        <div class="qs-section-title">Campaign Identity</div>
+
+        <div class="field-group">
+          <label class="field-label">Campaign Name <span style="color:var(--red)">*</span></label>
+          <input class="field-input" id="qs-name" type="text" placeholder="e.g. The Dragon Veil Chronicles" maxlength="80" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Short Description</label>
+          <textarea class="field-textarea" id="qs-desc" placeholder="A brief summary of your campaign's premise, setting, or hook…" rows="3"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Theme</label>
+          <div class="chip-group" id="qs-themes">
+            <div class="chip active" data-val="High Fantasy" onclick="pickTheme(this,'qs')">High Fantasy</div>
+            <div class="chip" data-val="Dark Fantasy" onclick="pickTheme(this,'qs')">Dark Fantasy</div>
+            <div class="chip" data-val="Political Intrigue" onclick="pickTheme(this,'qs')">Political Intrigue</div>
+            <div class="chip" data-val="Horror" onclick="pickTheme(this,'qs')">Horror</div>
+            <div class="chip" data-val="Exploration" onclick="pickTheme(this,'qs')">Exploration</div>
+            <div class="chip" data-val="Homebrew" onclick="pickTheme(this,'qs')">Homebrew</div>
+          </div>
+        </div>
+
+        <div class="section-divider"><span>Players &amp; Level</span></div>
+
+        <div class="field-row col2">
+          <div class="field-group">
+            <label class="field-label">Max Players</label>
+            <div class="slot-picker">
+              <button class="slot-btn" data-n="2" onclick="pickSlots(this,'qs')">2</button>
+              <button class="slot-btn" data-n="3" onclick="pickSlots(this,'qs')">3</button>
+              <button class="slot-btn active" data-n="4" onclick="pickSlots(this,'qs')">4</button>
+              <button class="slot-btn" data-n="5" onclick="pickSlots(this,'qs')">5</button>
+              <button class="slot-btn" data-n="6" onclick="pickSlots(this,'qs')">6</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Starting Level</label>
+            <input class="field-input" id="qs-level" type="number" min="1" max="20" value="1" style="max-width:120px;">
+          </div>
+        </div>
+
+        <div class="section-divider"><span>Privacy</span></div>
+
+        <div class="toggle-row">
+          <div class="toggle on" id="qs-private-toggle" onclick="toggleEl(this)"></div>
+          <span class="toggle-label-text">Private — players join via invite code only</span>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle" id="qs-draft-toggle" onclick="toggleEl(this)"></div>
+          <span class="toggle-label-text">Save as Draft — don't generate invite code yet</span>
+        </div>
+
+        <div class="error-bar" id="qs-error"></div>
+
+        <div class="action-row">
+          <button class="btn btn-ghost" onclick="showHero()">← Back</button>
+          <button class="btn btn-success" id="qs-create-btn" onclick="createCampaignQuick()">Create Campaign →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ADVANCED SETUP ═══ -->
+  <div id="screen-advanced">
+    <div class="creator-wrap wide">
+      <div class="creator-header">
+        <div class="creator-title">Advanced Setup</div>
+        <div class="creator-sub">Full DM Command Center configuration</div>
+      </div>
+
+      <!-- 1. BASICS -->
+      <div class="accordion-section open" id="acc-basics">
+        <div class="accordion-header" onclick="toggleAccordion('acc-basics')">
+          <span class="accordion-icon">📜</span>
+          <div><div class="accordion-title">Campaign Basics</div><div class="accordion-sub">Name, description, theme, banner, and schedule</div></div>
+          <span class="accordion-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          <div class="parchment-card">
+            <div class="field-group">
+              <label class="field-label">Campaign Name <span style="color:var(--red)">*</span></label>
+              <input class="field-input" id="adv-name" type="text" placeholder="e.g. Shadows of the Sunless Sea" maxlength="80" autocomplete="off">
+            </div>
+            <div class="field-row col2">
+              <div class="field-group">
+                <label class="field-label">Tone</label>
+                <select class="field-input" id="adv-tone">
+                  <option>Heroic Epic</option><option>Gritty Realism</option>
+                  <option>Dark &amp; Mature</option><option>Whimsical &amp; Light</option>
+                  <option>Mystery &amp; Intrigue</option><option>Survival Horror</option>
+                  <option>Swashbuckling</option><option>Custom</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">XP Progression</label>
+                <select class="field-input" id="adv-xp">
+                  <option value="milestone">Milestone (story beats)</option>
+                  <option value="xp">Standard XP</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="dm">DM Discretion</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Theme</label>
+              <div class="chip-group" id="adv-themes">
+                <div class="chip active" data-val="High Fantasy" onclick="pickTheme(this,'adv')">High Fantasy</div>
+                <div class="chip" data-val="Dark Fantasy" onclick="pickTheme(this,'adv')">Dark Fantasy</div>
+                <div class="chip" data-val="Political Intrigue" onclick="pickTheme(this,'adv')">Political Intrigue</div>
+                <div class="chip" data-val="Horror" onclick="pickTheme(this,'adv')">Horror</div>
+                <div class="chip" data-val="Exploration" onclick="pickTheme(this,'adv')">Exploration</div>
+                <div class="chip" data-val="Dungeon Crawl" onclick="pickTheme(this,'adv')">Dungeon Crawl</div>
+                <div class="chip" data-val="Urban" onclick="pickTheme(this,'adv')">Urban</div>
+                <div class="chip" data-val="Homebrew" onclick="pickTheme(this,'adv')">Homebrew</div>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Description / Premise</label>
+              <textarea class="field-textarea" id="adv-desc" placeholder="Describe the setting, premise, and world your players will inhabit…" rows="4"></textarea>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Campaign Banner</label>
+              <div class="banner-upload">
+                <input type="file" accept="image/*" onchange="handleBanner(event)">
+                <div class="banner-upload-icon">🖼</div>
+                <div class="banner-upload-label">Click or drag · Recommended 1400×400px · JPG, PNG, WebP</div>
+                <img class="banner-preview" id="adv-banner-preview">
+              </div>
+            </div>
+            <div class="field-row col3">
+              <div class="field-group">
+                <label class="field-label">Max Players</label>
+                <div class="slot-picker">
+                  <button class="slot-btn" data-n="2" onclick="pickSlots(this,'adv')">2</button>
+                  <button class="slot-btn" data-n="3" onclick="pickSlots(this,'adv')">3</button>
+                  <button class="slot-btn active" data-n="4" onclick="pickSlots(this,'adv')">4</button>
+                  <button class="slot-btn" data-n="5" onclick="pickSlots(this,'adv')">5</button>
+                  <button class="slot-btn" data-n="6" onclick="pickSlots(this,'adv')">6</button>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Starting Level</label>
+                <input class="field-input" id="adv-level" type="number" min="1" max="20" value="1">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Session Frequency</label>
+                <select class="field-input" id="adv-freq">
+                  <option>Weekly</option><option>Bi-weekly</option>
+                  <option>Monthly</option><option>Irregular</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-row col2">
+              <div class="field-group">
+                <label class="field-label">Session Day &amp; Time</label>
+                <input class="field-input" id="adv-schedule" type="text" placeholder="e.g. Saturdays at 7pm EST">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Privacy</label>
+                <select class="field-input" id="adv-privacy">
+                  <option value="private">Private (invite code only)</option>
+                  <option value="dm-approve">DM Approval Required</option>
+                  <option value="open">Open (anyone with code)</option>
+                </select>
+              </div>
+            </div>
+            <div class="toggle-row" style="margin-top:8px;">
+              <div class="toggle" id="adv-draft-toggle" onclick="toggleEl(this)"></div>
+              <span class="toggle-label-text" style="color:var(--ink-light);">Save as Draft — generate invite code later</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. RULE SYSTEM -->
+      <div class="accordion-section" id="acc-rules">
+        <div class="accordion-header" onclick="toggleAccordion('acc-rules')">
+          <span class="accordion-icon">📚</span>
+          <div><div class="accordion-title">Rule System</div><div class="accordion-sub">Homebrew rules, house rules, and gameplay modifiers</div></div>
+          <span class="accordion-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          <div style="color:var(--parchment-dark);">
+            <div class="rule-preset-grid">
+              <div class="rule-preset active" onclick="pickRulePreset(this,'homebrew')">
+                <span class="rule-preset-tag active-tag">Active</span>
+                <div class="rule-preset-name">Homebrew / Custom</div>
+                <div style="font-size:0.76rem;color:var(--border-light);font-style:italic;margin-top:4px;">Full DM control — build your own rule set</div>
+              </div>
+              <div class="rule-preset locked"><span class="rule-preset-tag soon">Soon</span><div class="rule-preset-name">D&amp;D 5e (2014)</div><div style="font-size:0.76rem;color:var(--border-light);font-style:italic;margin-top:4px;">Standard 5th Edition rules</div></div>
+              <div class="rule-preset locked"><span class="rule-preset-tag soon">Soon</span><div class="rule-preset-name">D&amp;D 2024</div><div style="font-size:0.76rem;color:var(--border-light);font-style:italic;margin-top:4px;">One D&amp;D revised ruleset</div></div>
+              <div class="rule-preset locked"><span class="rule-preset-tag soon">Soon</span><div class="rule-preset-name">Pathfinder 2e</div><div style="font-size:0.76rem;color:var(--border-light);font-style:italic;margin-top:4px;">Pathfinder Second Edition</div></div>
+            </div>
+            <div class="section-divider"><span>House Rules</span></div>
+            <div class="module-grid">
+              <div class="module-item on" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Critical Hit System</div><div class="module-desc">Track and apply custom crit effects</div></div></div>
+              <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Flanking Rules</div><div class="module-desc">Positional advantage mechanics</div></div></div>
+              <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Gritty Rest System</div><div class="module-desc">Short/long rest house rules</div></div></div>
+              <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Encumbrance Tracking</div><div class="module-desc">Weight-based carry limits</div></div></div>
+              <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Heroic Death Saves</div><div class="module-desc">Cinematic death &amp; resurrection rules</div></div></div>
+              <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Item Crafting</div><div class="module-desc">Downtime crafting rules</div></div></div>
+            </div>
+            <div class="field-group" style="margin-top:18px;">
+              <label class="field-label" style="color:var(--parchment-dark);">Custom House Rule Notes</label>
+              <textarea class="field-textarea" id="adv-houserules" placeholder="Document your custom rules here…" rows="4" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--parchment-dark);"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. WORLD SYSTEMS -->
+      <div class="accordion-section" id="acc-modules">
+        <div class="accordion-header" onclick="toggleAccordion('acc-modules')">
+          <span class="accordion-icon">🌍</span>
+          <div><div class="accordion-title">World &amp; Campaign Systems</div><div class="accordion-sub">Enable the modules your campaign needs</div></div>
+          <span class="accordion-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          <div style="color:var(--parchment-dark);margin-bottom:14px;font-size:0.84rem;font-style:italic;">Click to enable or disable. All systems can be changed from campaign settings later.</div>
+          <div class="module-grid">
+            <div class="module-item on" id="mod-quests" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">⚔ Quest Board</div><div class="module-desc">Main, side &amp; hidden quests with rewards</div></div></div>
+            <div class="module-item on" id="mod-shop" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">🏪 Shop Inventories</div><div class="module-desc">Multiple stores, limited stock &amp; restock</div></div></div>
+            <div class="module-item on" id="mod-bulletin" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">📋 Bulletin Board</div><div class="module-desc">Rumors, announcements &amp; faction notices</div></div></div>
+            <div class="module-item on" id="mod-reputation" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">⚖ Reputation System</div><div class="module-desc">Faction standings &amp; NPC relationships</div></div></div>
+            <div class="module-item on" id="mod-sessions" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">📅 Session Tracker</div><div class="module-desc">Session notes, recaps &amp; scheduling</div></div></div>
+            <div class="module-item on" id="mod-maps" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">🗺 Campaign Maps</div><div class="module-desc">Region maps with pins, notes &amp; DM layers</div></div></div>
+            <div class="module-item" id="mod-npc" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">🧙 NPC Compendium</div><div class="module-desc">NPC notes, stats &amp; relationship tracking</div></div></div>
+            <div class="module-item" id="mod-timeline" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">📆 Campaign Timeline</div><div class="module-desc">In-world calendar &amp; historical events</div></div></div>
+            <div class="module-item" id="mod-dmnotes" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">🔒 DM Secret Vault</div><div class="module-desc">Private notes, plot spoilers &amp; hidden info</div></div></div>
+            <div class="module-item" id="mod-loot" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">💎 Loot Tracker</div><div class="module-desc">Distributed and pending party loot</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. DASHBOARD LAYOUT -->
+      <div class="accordion-section" id="acc-layout">
+        <div class="accordion-header" onclick="toggleAccordion('acc-layout')">
+          <span class="accordion-icon">🖥</span>
+          <div><div class="accordion-title">Dashboard Layout</div><div class="accordion-sub">Choose your starting workspace preset</div></div>
+          <span class="accordion-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          <div style="color:var(--parchment-dark);margin-bottom:18px;font-size:0.84rem;font-style:italic;">Fully customizable with drag-and-drop after creation. Choose a starting preset:</div>
+          <div class="layout-grid">
+            <div class="layout-card active" onclick="pickLayout(this,'session-prep')">
+              <div class="layout-preview" style="display:grid;grid-template-columns:2fr 1fr;gap:3px;">
+                <div class="lp-box" style="height:100%;"></div>
+                <div style="display:grid;gap:3px;"><div class="lp-box"></div><div class="lp-box"></div></div>
+              </div>
+              <div class="layout-name">Session Prep</div>
+            </div>
+            <div class="layout-card" onclick="pickLayout(this,'combat')">
+              <div class="layout-preview" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+                <div class="lp-box" style="height:100%;"></div>
+                <div style="display:grid;gap:3px;"><div class="lp-box"></div><div class="lp-box"></div><div class="lp-box"></div></div>
+              </div>
+              <div class="layout-name">Combat Mode</div>
+            </div>
+            <div class="layout-card" onclick="pickLayout(this,'worldbuilding')">
+              <div class="layout-preview" style="display:flex;flex-direction:column;gap:3px;">
+                <div class="lp-box" style="flex:2;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;flex:1;"><div class="lp-box"></div><div class="lp-box"></div></div>
+              </div>
+              <div class="layout-name">Worldbuilding</div>
+            </div>
+            <div class="layout-card" onclick="pickLayout(this,'tavern')">
+              <div class="layout-preview" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;">
+                <div class="lp-box"></div><div class="lp-box"></div><div class="lp-box"></div>
+              </div>
+              <div class="layout-name">Tavern / Town</div>
+            </div>
+            <div class="layout-card" onclick="pickLayout(this,'notes')">
+              <div class="layout-preview" style="display:grid;grid-template-columns:1fr 2fr;gap:3px;">
+                <div style="display:grid;gap:3px;"><div class="lp-box"></div><div class="lp-box"></div></div>
+                <div class="lp-box" style="height:100%;"></div>
+              </div>
+              <div class="layout-name">Notes Focus</div>
+            </div>
+            <div class="layout-card" onclick="pickLayout(this,'minimal')">
+              <div class="layout-preview" style="display:flex;flex-direction:column;gap:3px;">
+                <div class="lp-box" style="flex:1;"></div><div class="lp-box" style="flex:1;"></div>
+              </div>
+              <div class="layout-name">Minimal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. PERMISSIONS -->
+      <div class="accordion-section" id="acc-perms">
+        <div class="accordion-header" onclick="toggleAccordion('acc-perms')">
+          <span class="accordion-icon">🔐</span>
+          <div><div class="accordion-title">Permissions &amp; Players</div><div class="accordion-sub">Control what players can see and edit</div></div>
+          <span class="accordion-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          <div class="module-grid">
+            <div class="module-item on" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Activity Logs</div><div class="module-desc">Track all player edits &amp; changes</div></div></div>
+            <div class="module-item on" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">DM Approval</div><div class="module-desc">Review join requests before adding</div></div></div>
+            <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Player Quest Edits</div><div class="module-desc">Allow players to update quest status</div></div></div>
+            <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Player Shop View</div><div class="module-desc">Players can browse shop inventories</div></div></div>
+            <div class="module-item" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Player Bulletin Posts</div><div class="module-desc">Players can post to bulletin board</div></div></div>
+            <div class="module-item on" onclick="toggleModule(this)"><div class="module-dot"></div><div><div class="module-label">Shared Session Notes</div><div class="module-desc">Players can view session recaps</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="error-bar" id="adv-error"></div>
+
+      <div class="action-row">
+        <button class="btn btn-ghost" onclick="showHero()">← Back</button>
+        <button class="btn btn-gold" onclick="createCampaignAdvanced('draft')">Save as Draft</button>
+        <button class="btn btn-success" id="adv-create-btn" onclick="createCampaignAdvanced('active')">Launch Campaign →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SUCCESS ═══ -->
+  <div id="screen-success">
+    <div class="success-icon">🏰</div>
+    <div class="success-title" id="success-title">Campaign Created!</div>
+    <div class="success-sub" id="success-sub">Your world is ready. Gather your adventurers.</div>
+    <div class="invite-box" id="invite-box" style="display:none;">
+      <div>
+        <div style="font-family:'Cinzel',serif;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.2em;color:var(--border-light);margin-bottom:4px;">Invite Code</div>
+        <div class="invite-code" id="invite-code-display">——</div>
+      </div>
+      <button class="invite-copy-btn" onclick="copyInvite()">Copy Link</button>
+    </div>
+    <div class="modules-preview" id="modules-preview"></div>
+    <div class="success-actions">
+      <a class="btn btn-ghost" href="dashboard.html" style="text-decoration:none;">← My Campaigns</a>
+      <a class="btn btn-primary" id="enter-btn" href="index.html" style="text-decoration:none;">Enter Campaign →</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUser = null;
+let qsSlots = 4, advSlots = 4;
+let qsTheme = 'High Fantasy', advTheme = 'High Fantasy';
+let advLayout = 'session-prep';
+let bannerBase64 = '';
+let createdInviteCode = '';
+
+// Auth guard
+auth.onAuthStateChanged(async user => {
+  if (!user) { window.location.href = 'home.html'; return; }
+  currentUser = user;
+  document.getElementById('user-name').textContent = user.displayName || user.email;
+  const av = document.getElementById('user-avatar');
+  if (user.photoURL) { av.src = user.photoURL; av.style.display = 'block'; }
+  const overlay = document.getElementById('auth-overlay');
+  overlay.classList.add('hidden');
+  setTimeout(() => overlay.style.display = 'none', 500);
+});
+
+// Particles
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `left:${Math.random()*100}vw;bottom:-10px;animation-duration:${8+Math.random()*14}s;animation-delay:${Math.random()*12}s;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;`;
+    c.appendChild(p);
+  }
+})();
+
+// Screen nav
+function showHero() {
+  document.getElementById('screen-hero').style.display = 'flex';
+  ['screen-quick','screen-advanced','screen-success'].forEach(id => { document.getElementById(id).classList.remove('active'); });
+}
+function startQuickMode() {
+  document.getElementById('screen-hero').style.display = 'none';
+  document.getElementById('screen-quick').classList.add('active');
+}
+function startAdvancedMode() {
+  document.getElementById('screen-hero').style.display = 'none';
+  document.getElementById('screen-advanced').classList.add('active');
+}
+
+// UI helpers
+function toggleAccordion(id) { document.getElementById(id).classList.toggle('open'); }
+function toggleEl(el) { el.classList.toggle('on'); }
+function toggleModule(el) { el.classList.toggle('on'); }
+
+function pickSlots(btn, prefix) {
+  btn.closest('.slot-picker').querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (prefix === 'qs') qsSlots = +btn.dataset.n; else advSlots = +btn.dataset.n;
+}
+function pickTheme(chip, prefix) {
+  chip.closest('.chip-group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  if (prefix === 'qs') qsTheme = chip.dataset.val; else advTheme = chip.dataset.val;
+}
+function pickRulePreset(el) {
+  if (el.classList.contains('locked')) return;
+  document.querySelectorAll('.rule-preset:not(.locked)').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+}
+function pickLayout(el, key) {
+  document.querySelectorAll('.layout-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  advLayout = key;
+}
+function handleBanner(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    bannerBase64 = ev.target.result;
+    const p = document.getElementById('adv-banner-preview');
+    p.src = bannerBase64; p.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function getEnabledModules() {
+  const map = { 'mod-quests':'quests','mod-shop':'shop','mod-bulletin':'bulletin','mod-reputation':'reputation','mod-sessions':'sessions','mod-maps':'maps','mod-npc':'npc','mod-timeline':'timeline','mod-dmnotes':'dmnotes','mod-loot':'loot' };
+  const enabled = {};
+  Object.entries(map).forEach(([id,key]) => {
+    const el = document.getElementById(id);
+    enabled[key] = el ? el.classList.contains('on') : false;
+  });
+  return enabled;
+}
+
+// Success screen
+function showSuccess(id, code, name, enabledMods) {
+  ['screen-quick','screen-advanced'].forEach(s => document.getElementById(s).classList.remove('active'));
+  const sc = document.getElementById('screen-success');
+  sc.classList.add('active');
+  document.getElementById('success-title').textContent = name + ' is Ready!';
+  const invBox = document.getElementById('invite-box');
+  if (code) {
+    invBox.style.display = 'inline-flex';
+    document.getElementById('invite-code-display').textContent = code;
+    createdInviteCode = code;
+    document.getElementById('success-sub').textContent = 'Share the invite code so your adventurers can join.';
+  } else {
+    invBox.style.display = 'none';
+    document.getElementById('success-sub').textContent = 'Campaign saved as Draft. Publish it from the Dashboard when ready.';
+  }
+  const labels = { quests:'⚔ Quest Board', shop:'🏪 Shop', bulletin:'📋 Bulletin', reputation:'⚖ Reputation', sessions:'📅 Sessions', maps:'🗺 Maps', npc:'🧙 NPCs', timeline:'📆 Timeline', dmnotes:'🔒 DM Vault', loot:'💎 Loot' };
+  document.getElementById('modules-preview').innerHTML = Object.entries(enabledMods).filter(([,v]) => v).map(([k]) => `<span class="mod-tag">${labels[k]||k}</span>`).join('');
+  document.getElementById('enter-btn').href = 'index.html?c=' + id;
+}
+
+// Quick Start create
+async function createCampaignQuick() {
+  const name = document.getElementById('qs-name').value.trim();
+  const err = document.getElementById('qs-error');
+  err.className = 'error-bar';
+  if (!name) { err.textContent = 'Campaign name is required.'; err.classList.add('show'); document.getElementById('qs-name').focus(); return; }
+  const btn = document.getElementById('qs-create-btn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  const isDraft = document.getElementById('qs-draft-toggle').classList.contains('on');
+  const status = isDraft ? 'draft' : 'active';
+  const inviteCode = status === 'active' ? Math.random().toString(36).substring(2,8).toUpperCase() : '';
+  try {
+    const ref = db.collection('campaigns').doc();
+    const id = ref.id;
+    const defaultMods = { quests:true, shop:true, bulletin:true, reputation:true, sessions:true, maps:true };
+    await ref.set({
+      name, description: document.getElementById('qs-desc').value.trim(),
+      theme: qsTheme, dmUid: currentUser.uid, status, inviteCode,
+      playerSlots: qsSlots, startingLevel: parseInt(document.getElementById('qs-level').value)||1,
+      players: {}, memberUids: [currentUser.uid], modules: defaultMods, layoutPreset: 'session-prep',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('users').doc(currentUser.uid).update({ campaignIds: firebase.firestore.FieldValue.arrayUnion(id) });
+    showSuccess(id, inviteCode, name, defaultMods);
+  } catch(e) {
+    err.textContent = 'Error: ' + e.message; err.classList.add('show');
+    btn.disabled = false; btn.textContent = 'Create Campaign →';
+  }
+}
+
+// Advanced create
+async function createCampaignAdvanced(status) {
+  const name = document.getElementById('adv-name').value.trim();
+  const err = document.getElementById('adv-error');
+  err.className = 'error-bar';
+  if (!name) { err.textContent = 'Campaign name is required — fill in Campaign Basics first.'; err.classList.add('show'); document.getElementById('acc-basics').classList.add('open'); document.getElementById('adv-name').focus(); return; }
+  const draftOn = document.getElementById('adv-draft-toggle').classList.contains('on');
+  const finalStatus = draftOn ? 'draft' : status;
+  const inviteCode = finalStatus === 'active' ? Math.random().toString(36).substring(2,8).toUpperCase() : '';
+  document.getElementById('adv-create-btn').disabled = true;
+  const enabledMods = getEnabledModules();
+  try {
+    const ref = db.collection('campaigns').doc();
+    const id = ref.id;
+    await ref.set({
+      name, description: document.getElementById('adv-desc').value.trim(),
+      theme: advTheme, tone: document.getElementById('adv-tone').value,
+      xpProgression: document.getElementById('adv-xp').value,
+      sessionFrequency: document.getElementById('adv-freq').value,
+      sessionSchedule: document.getElementById('adv-schedule').value.trim(),
+      privacy: document.getElementById('adv-privacy').value,
+      houseRuleNotes: document.getElementById('adv-houserules').value.trim(),
+      banner: bannerBase64, dmUid: currentUser.uid, status: finalStatus, inviteCode,
+      playerSlots: advSlots, startingLevel: parseInt(document.getElementById('adv-level').value)||1,
+      players: {}, memberUids: [currentUser.uid], modules: enabledMods, layoutPreset: advLayout,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('users').doc(currentUser.uid).update({ campaignIds: firebase.firestore.FieldValue.arrayUnion(id) });
+    showSuccess(id, inviteCode, name, enabledMods);
+  } catch(e) {
+    err.textContent = 'Error: ' + e.message; err.classList.add('show');
+    document.getElementById('adv-create-btn').disabled = false;
+  }
+}
+
+// Copy invite
+function copyInvite() {
+  const url = `${location.origin}${location.pathname.replace('campaign-creator.html','dashboard.html')}?join=${createdInviteCode}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('.invite-copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy Link', 2000);
+  });
+}
+</script>
+</body>
+</html>
