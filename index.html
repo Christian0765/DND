@@ -325,30 +325,25 @@
 
   .dm-panel {
     display: none;
-    width: 100%;
-    margin: 0 0 24px 0;
+    max-width: 760px;
+    margin: 0 auto 24px;
     background: linear-gradient(160deg, #1a0e04 0%, #0d0802 100%);
-    border-top: 2px solid var(--border);
-    border-bottom: 2px solid var(--border);
-    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
-    padding: 20px 24px 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 3px #080604, 0 8px 30px rgba(0,0,0,0.8);
+    border-radius: 3px;
+    padding: 24px 28px;
     animation: fadeIn 0.3s ease;
   }
   .dm-panel.open { display: block; }
 
-  .dm-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 14px;
-    margin-bottom: 20px;
-  }
   .dm-panel-title {
     font-family: 'Cinzel', serif;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--gold-light);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 18px;
     letter-spacing: 0.05em;
   }
 
@@ -373,14 +368,14 @@
 
   .dm-btn {
     font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
     color: var(--gold-light);
     background: none;
     border: 1px solid var(--gold);
     border-radius: 2px;
-    padding: 9px 18px;
+    padding: 8px 16px;
     cursor: pointer;
     margin-left: 8px;
     transition: background 0.15s;
@@ -393,35 +388,23 @@
 
   .dm-controls { display: none; }
   .dm-controls.open { display: block; }
-  .dm-grid {
-    display: grid;
-    grid-template-columns: 280px 1fr 300px;
-    gap: 24px;
-    align-items: start;
-  }
-  @media (max-width: 900px) {
-    .dm-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 600px) {
-    .dm-grid { grid-template-columns: 1fr; }
-  }
 
-  .dm-section { margin-bottom: 0; }
+  .dm-section { margin-bottom: 20px; }
   .dm-section-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
     color: var(--gold);
     border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
-    margin-bottom: 14px;
+    padding-bottom: 5px;
+    margin-bottom: 12px;
   }
 
   .dm-field { margin-bottom: 10px; }
   .dm-field label {
     font-family: 'Cinzel', serif;
-    font-size: 0.65rem;
+    font-size: 0.56rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--border-light);
@@ -464,7 +447,7 @@
     border-radius: 2px;
     color: var(--parchment-dark);
     font-family: 'Crimson Text', serif;
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     padding: 8px 10px;
     resize: vertical;
     outline: none;
@@ -609,10 +592,6 @@
   }
 </style>
 </head>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="firebase-config.js"></script>
 <body>
 
 <div class="site-header">
@@ -624,169 +603,63 @@
 
 <div style="text-align:center;margin-bottom:20px;display:flex;justify-content:center;gap:12px;">
   <button class="dm-toggle" style="margin:0;" onclick="toggleDMPanel()">🔐 DM Panel</button>
-  <a class="dm-toggle" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" href="combat.html">⚔ Combat Tracker</a>
+  <a class="dm-toggle" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" data-base="combat.html" href="#">⚔ Combat Tracker</a>
 </div>
 
 <!-- DM PANEL -->
 <div class="dm-panel" id="dm-panel">
-
-  <div class="dm-panel-header">
-    <div class="dm-panel-title">🔐 Dungeon Master Command</div>
-    <div id="dm-header-logout" style="display:none;">
-      <button class="dm-btn danger" onclick="dmLogout()">Log Out</button>
-    </div>
-  </div>
-
-  <!-- LOGIN -->
-  <div class="dm-login" id="dm-login">
-    <p>Enter the DM passcode to access this panel.</p>
-    <input class="dm-input" type="password" id="dm-pass" placeholder="Passcode" onkeydown="if(event.key==='Enter')dmLogin()">
-    <button class="dm-btn" onclick="dmLogin()">Unlock</button>
-    <div class="dm-error" id="dm-error" style="display:none;">Incorrect passcode.</div>
-  </div>
+  <div class="dm-panel-title">🔐 Dungeon Master Panel</div>
 
   <!-- CONTROLS -->
-  <div class="dm-controls" id="dm-controls">
-    <div class="dm-grid">
+  <div class="dm-controls open" id="dm-controls">
 
-      <!-- COLUMN 1: CAMPAIGN -->
-      <div>
-        <div class="dm-section">
-          <div class="dm-section-title">Campaign Identity</div>
-          <div class="dm-field">
-            <label>Campaign Name</label>
-            <input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()">
-          </div>
-          <div class="dm-field">
-            <label>Campaign Banner</label>
-            <div class="upload-area" id="upload-area">
-              <input type="file" accept="image/*" onchange="handleImageUpload(event)">
-              <div class="upload-icon">🖼</div>
-              <div class="upload-label">Click or drag to upload<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP</span></div>
-              <img class="upload-preview" id="banner-preview">
-            </div>
-          </div>
-        </div>
+    <div class="dm-section">
+      <div class="dm-section-title">Campaign Identity</div>
 
-        <div class="dm-section" style="margin-top:20px;">
-          <div class="dm-section-title">Pending Requests</div>
-          <div class="upload-area" id="request-drop-zone"
-               ondragover="event.preventDefault();this.classList.add('drag-active')"
-               ondragleave="this.classList.remove('drag-active')"
-               ondrop="handleRequestDrop(event)">
-            <input type="file" accept=".html" onchange="processRequestFile(event.target.files[0])">
-            <div class="upload-icon">📋</div>
-            <div class="upload-label">Drop player's .html file here<br><span style="font-size:0.5rem;opacity:0.6;">or click to browse</span></div>
-          </div>
-          <div id="request-list" style="margin-top:12px;"></div>
-        </div>
-
-        <div class="dm-section" style="margin-top:20px;">
-          <div class="dm-section-title">Manage Players</div>
-          <p style="font-size:0.76rem;color:var(--border-light);margin-bottom:10px;line-height:1.5;">
-            Players who have signed in with Google appear here. Assign each to their character slot.
-          </p>
-          <div id="manage-players-list">
-            <div style="font-size:0.76rem;color:#7a5a28;font-style:italic;">No players signed in yet.</div>
-          </div>
-        </div>
+      <div class="dm-field">
+        <label>Campaign Name</label>
+        <input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()">
       </div>
 
-      <!-- COLUMN 2: BROADCAST -->
-      <div>
-        <div class="dm-section">
-          <div class="dm-section-title">DM Broadcast</div>
-
-          <div class="dm-field">
-            <label>Text Announcement</label>
-            <textarea class="dm-notes-area" id="dm-broadcast-text" style="min-height:80px;" placeholder="Message to all players..."></textarea>
-            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
-              <input type="text" id="dm-broadcast-text-title" placeholder="Title (e.g. Hear Ye!)" style="flex:1;font-family:'Cinzel',serif;font-size:0.8rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;outline:none;">
-              <button class="dm-btn" onclick="broadcastText()">Send</button>
-            </div>
-          </div>
-
-          <div class="dm-field">
-            <label>Image / Map URL</label>
-            <input type="text" id="dm-broadcast-img" placeholder="Paste image URL (Imgur, etc.)" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;width:100%;outline:none;display:block;margin-bottom:8px;">
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input type="text" id="dm-broadcast-img-title" placeholder="Title (e.g. City Map)" style="flex:1;font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;outline:none;">
-              <button class="dm-btn" onclick="broadcastImage()">Show</button>
-            </div>
-          </div>
-
-          <div class="dm-field">
-            <label>Shop Items</label>
-            <textarea class="dm-notes-area" id="dm-broadcast-shop" style="min-height:90px;" placeholder="One item per line:&#10;Healing Potion: 50gp - Restores 2d4+2 HP&#10;Rope: 1gp - 50ft hemp rope"></textarea>
-            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
-              <input type="text" id="dm-broadcast-shop-title" placeholder="Shop name (e.g. The Rusty Flagon)" style="flex:1;font-family:'Cinzel',serif;font-size:0.8rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;outline:none;">
-              <button class="dm-btn" onclick="broadcastShop()">Open Shop</button>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border);margin-top:10px;">
-            <button class="dm-btn" onclick="broadcastCombat()">⚔ Start Combat</button>
-            <button class="dm-btn danger" onclick="closeBroadcast()">✕ Dismiss for All</button>
-          </div>
-        </div>
-
-        <div class="dm-section" style="margin-top:20px;">
-          <div class="dm-section-title">Dice</div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <button class="dm-btn" id="dice-mode-real" onclick="setDiceMode('real')" style="flex:1;">🎲 Real Dice</button>
-            <button class="dm-btn" id="dice-mode-digital" onclick="setDiceMode('digital')" style="flex:1;">💻 Digital Dice</button>
-          </div>
-          <div id="dice-digital-controls" style="display:none;">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-              <button class="dm-btn" onclick="rollAndBroadcast('d4')" style="padding:6px 10px;font-size:0.65rem;">d4</button>
-              <button class="dm-btn" onclick="rollAndBroadcast('d6')" style="padding:6px 10px;font-size:0.65rem;">d6</button>
-              <button class="dm-btn" onclick="rollAndBroadcast('d8')" style="padding:6px 10px;font-size:0.65rem;">d8</button>
-              <button class="dm-btn" onclick="rollAndBroadcast('d10')" style="padding:6px 10px;font-size:0.65rem;">d10</button>
-              <button class="dm-btn" onclick="rollAndBroadcast('d12')" style="padding:6px 10px;font-size:0.65rem;">d12</button>
-              <button class="dm-btn" onclick="rollAndBroadcast('d20')" style="padding:6px 14px;font-size:0.65rem;border-color:var(--gold-light);color:var(--gold-light);">d20</button>
-              <button class="dm-btn" onclick="rollAndBroadcast('d100')" style="padding:6px 10px;font-size:0.65rem;">d%</button>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
-              <select id="dm-dice-as" style="font-family:'Cinzel',serif;font-size:0.72rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:6px 8px;outline:none;flex:1;">
-                <option value="DM">Roll as: DM</option>
-                <option value="player1">Player 1</option>
-                <option value="player2">Player 2</option>
-                <option value="player3">Player 3</option>
-                <option value="player4">Player 4</option>
-              </select>
-              <input type="number" id="dm-dice-mod" value="0" style="font-family:'Cinzel',serif;font-size:0.8rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:6px 8px;width:64px;outline:none;text-align:center;" placeholder="+0">
-              <span style="font-size:0.6rem;color:var(--border-light);white-space:nowrap;">modifier</span>
-            </div>
-            <button class="dm-btn" onclick="rollInitiative()" style="width:100%;font-size:0.72rem;padding:10px;border-color:var(--gold-light);color:var(--gold-light);">🎲 Roll Initiative for All Players</button>
-          </div>
+      <div class="dm-field">
+        <label>Campaign Banner / Logo</label>
+        <div class="upload-area" id="upload-area">
+          <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+          <div class="upload-icon">🖼</div>
+          <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
+          <img class="upload-preview" id="banner-preview">
         </div>
       </div>
+    </div>
 
-      <!-- COLUMN 3: NOTES -->
-      <div>
-        <div class="dm-section">
-          <div class="dm-section-title">Secret DM Notes</div>
-          <textarea class="dm-notes-area" id="dm-notes" style="min-height:280px;" placeholder="NPC true motives, plot spoilers, upcoming session plans, hidden loot...&#10;&#10;Players cannot see this section."></textarea>
-          <div style="text-align:right;margin-top:8px;">
-            <button class="dm-btn" onclick="saveDMNotes()">Save Notes</button>
-          </div>
-        </div>
+    <div class="dm-section">
+      <div class="dm-section-title">Secret DM Notes</div>
+      <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans, hidden loot...&#10;&#10;Players cannot see this section."></textarea>
+      <div style="text-align:right;margin-top:6px;">
+        <button class="dm-btn" onclick="saveDMNotes()">Save Notes</button>
       </div>
+    </div>
 
-    </div><!-- end .dm-grid -->
-  </div><!-- end .dm-controls -->
+    <div class="dm-section">
+      <div class="dm-section-title">Pending Character Requests</div>
+      <div class="upload-area" id="request-drop-zone"
+           ondragover="event.preventDefault();this.classList.add('drag-active')"
+           ondragleave="this.classList.remove('drag-active')"
+           ondrop="handleRequestDrop(event)">
+        <input type="file" accept=".html" onchange="processRequestFile(event.target.files[0])">
+        <div class="upload-icon">📋</div>
+        <div class="upload-label">Drop player's .html file here<br><span style="font-size:0.5rem;opacity:0.6;">or click to browse</span></div>
+      </div>
+      <div id="request-list" style="margin-top:12px;"></div>
+    </div>
 
-</div><!-- end .dm-panel -->
-
-<div class="auth-bar" id="auth-bar">
-  <span class="auth-info">Sign in to link your character to your Google account</span>
-  <button class="auth-btn" onclick="signInWithGoogle()">Sign in with Google</button>
+  </div>
 </div>
 
 <div class="party-grid" id="party-grid">
 
   <!-- PLAYER 1: DRACULA -->
-  <a class="player-card" href="sheet-1.html" id="card-1">
+  <a class="player-card" data-base="sheet-1.html" href="#" id="card-1">
     <div class="card-role">Player 1</div>
     <div class="card-name" id="p1-name">Dracula</div>
     <div class="card-class" id="p1-class">Dragonborn Fighter · Lv 3</div>
@@ -800,7 +673,7 @@
   </a>
 
   <!-- PLAYER 2 -->
-  <a class="player-card empty" href="sheet-2.html" id="card-2">
+  <a class="player-card empty" data-base="sheet-2.html" href="#" id="card-2">
     <div class="card-role">Player 2</div>
     <div class="card-name" id="p2-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
     <div class="card-class" id="p2-class">— awaiting character —</div>
@@ -815,7 +688,7 @@
   </a>
 
   <!-- PLAYER 3 -->
-  <a class="player-card empty" href="sheet-3.html" id="card-3">
+  <a class="player-card empty" data-base="sheet-3.html" href="#" id="card-3">
     <div class="card-role">Player 3</div>
     <div class="card-name" id="p3-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
     <div class="card-class" id="p3-class">— awaiting character —</div>
@@ -830,7 +703,7 @@
   </a>
 
   <!-- PLAYER 4 -->
-  <a class="player-card empty" href="sheet-4.html" id="card-4">
+  <a class="player-card empty" data-base="sheet-4.html" href="#" id="card-4">
     <div class="card-role">Player 4</div>
     <div class="card-name" id="p4-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
     <div class="card-class" id="p4-class">— awaiting character —</div>
@@ -904,45 +777,6 @@ Start by greeting me and asking for my character's name.</div>
 </div>
 
 <script>
-// Firebase init
-let db;
-try {
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  [1,2,3,4].forEach(n => {
-    db.collection('characters').doc('player'+n).onSnapshot(doc => {
-      if (doc.exists) updateCard(n, doc.data());
-    });
-  });
-} catch(e) {
-  console.warn('Firebase not configured — live sync disabled:', e.message);
-}
-
-function updateCard(n, data) {
-  const get = k => data[k] || '';
-  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  const name = get('f-name');
-  setText('p'+n+'-name', name || 'Unnamed');
-  const cls = [get('f-class'), get('f-race')].filter(Boolean).join(' · ');
-  setText('p'+n+'-class', cls || '— awaiting character —');
-  const hp = get('f-curhp'), maxHp = get('f-maxhp');
-  setText('p'+n+'-hp', hp || '—');
-  setText('p'+n+'-ac', get('f-ac') || '—');
-  setText('p'+n+'-gp', get('f-gold') || '—');
-  const bar = document.getElementById('p'+n+'-hpbar');
-  if (bar && hp && maxHp) {
-    const pct = Math.max(0, Math.min(100, parseInt(hp) / parseInt(maxHp) * 100));
-    bar.style.width = pct + '%';
-    bar.className = 'hp-bar' + (pct <= 25 ? ' low' : pct <= 50 ? ' mid' : '');
-  }
-  if (name) {
-    const card = document.getElementById('card-p'+n);
-    if (card) card.classList.remove('empty');
-    const badge = document.getElementById('p'+n+'-badge');
-    if (badge) badge.style.display = 'none';
-  }
-}
-
 // DM Panel
 function toggleDMPanel() {
   const panel = document.getElementById('dm-panel');
@@ -950,37 +784,10 @@ function toggleDMPanel() {
   if (panel.classList.contains('open')) loadDMData();
 }
 
-function dmLogin() {
-  const pass = document.getElementById('dm-pass').value;
-  const stored = localStorage.getItem('dm-passcode') || 'dm1234';
-  if (pass === stored) {
-    document.getElementById('dm-login').style.display = 'none';
-    document.getElementById('dm-error').style.display = 'none';
-    document.getElementById('dm-controls').classList.add('open');
-    document.getElementById('dm-header-logout').style.display = '';
-    setDiceMode(localStorage.getItem('dm-dice-mode') || 'real');
-    loadDMData();
-    // Link Google account to DM role
-    if (window.currentUser && db) {
-      db.collection('users').doc(window.currentUser.uid).set({ charId: 'dm' }, { merge: true });
-    }
-  } else {
-    document.getElementById('dm-error').style.display = 'block';
-  }
-}
-
-function dmLogout() {
-  document.getElementById('dm-controls').classList.remove('open');
-  document.getElementById('dm-header-logout').style.display = 'none';
-  document.getElementById('dm-login').style.display = '';
-  document.getElementById('dm-pass').value = '';
-  document.getElementById('dm-panel').classList.remove('open');
-}
-
 function updateCampaignName() {
   const name = document.getElementById('dm-campaign-name').value;
   document.getElementById('site-title').textContent = name || 'Campaign Tracker';
-  if (db) db.collection('campaign').doc('settings').set({ campaignName: name }, { merge: true });
+  localStorage.setItem('campaign-name', name);
 }
 
 function handleImageUpload(event) {
@@ -1008,112 +815,20 @@ function applyBanner(src) {
 }
 
 function saveDMNotes() {
-  const notes = document.getElementById('dm-notes').value;
-  if (db) db.collection('campaign').doc('settings').set({ dmNotes: notes }, { merge: true });
+  localStorage.setItem('dm-notes', document.getElementById('dm-notes').value);
   const btn = event.target;
   btn.textContent = 'Saved ✓';
   setTimeout(() => btn.textContent = 'Save Notes', 2000);
 }
 
 function loadDMData() {
+  const name = localStorage.getItem('campaign-name');
   const banner = localStorage.getItem('campaign-banner');
+  const notes = localStorage.getItem('dm-notes');
+  if (name) { document.getElementById('dm-campaign-name').value = name; document.getElementById('site-title').textContent = name; }
   if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
-  if (db) {
-    db.collection('campaign').doc('settings').get().then(doc => {
-      if (!doc.exists) return;
-      const d = doc.data();
-      if (d.campaignName) { document.getElementById('dm-campaign-name').value = d.campaignName; document.getElementById('site-title').textContent = d.campaignName; }
-      if (d.dmNotes) document.getElementById('dm-notes').value = d.dmNotes;
-    });
-  }
+  if (notes) document.getElementById('dm-notes').value = notes;
   renderPendingRequests();
-}
-
-// DM Broadcast
-function broadcastText() {
-  if (!db) return;
-  const text = document.getElementById('dm-broadcast-text').value.trim();
-  const title = document.getElementById('dm-broadcast-text-title').value.trim() || 'DM Announcement';
-  if (!text) return;
-  db.collection('campaign').doc('broadcast').set({ active: true, type: 'text', title, text, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-}
-
-function broadcastImage() {
-  if (!db) return;
-  const imageUrl = document.getElementById('dm-broadcast-img').value.trim();
-  const title = document.getElementById('dm-broadcast-img-title').value.trim() || 'Map';
-  if (!imageUrl) return;
-  db.collection('campaign').doc('broadcast').set({ active: true, type: 'image', title, imageUrl, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-}
-
-function broadcastShop() {
-  if (!db) return;
-  const shopItems = document.getElementById('dm-broadcast-shop').value.trim();
-  const title = document.getElementById('dm-broadcast-shop-title').value.trim() || 'Shop';
-  if (!shopItems) return;
-  db.collection('campaign').doc('broadcast').set({ active: true, type: 'shop', title, shopItems, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-}
-
-function broadcastCombat() {
-  if (!db) return;
-  db.collection('campaign').doc('broadcast').set({ active: true, type: 'combat', title: 'Combat Begins!', text: 'Roll for initiative — combat has started!', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-}
-
-function closeBroadcast() {
-  if (!db) return;
-  db.collection('campaign').doc('broadcast').set({ active: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-}
-
-// Dice
-function setDiceMode(mode) {
-  localStorage.setItem('dm-dice-mode', mode);
-  document.getElementById('dice-digital-controls').style.display = mode === 'digital' ? 'block' : 'none';
-  document.getElementById('dice-mode-real').style.opacity = mode === 'real' ? '1' : '0.5';
-  document.getElementById('dice-mode-digital').style.opacity = mode === 'digital' ? '1' : '0.5';
-}
-
-function rollAndBroadcast(dieType) {
-  if (!db) return;
-  const sides = parseInt(dieType.replace('d', ''));
-  const mod = parseInt(document.getElementById('dm-dice-mod').value) || 0;
-  const rolledBy = document.getElementById('dm-dice-as').value || 'DM';
-  const result = Math.floor(Math.random() * sides) + 1;
-  db.collection('campaign').doc('broadcast').set({
-    active: true, type: 'dice', dieType,
-    result, modifier: mod, total: result + mod, rolledBy,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-async function rollInitiative() {
-  if (!db) return;
-  const btn = event.target;
-  btn.textContent = 'Rolling…';
-  btn.disabled = true;
-  try {
-    const snaps = await Promise.all(
-      ['player1','player2','player3','player4'].map(id => db.collection('characters').doc(id).get())
-    );
-    const results = snaps
-      .filter(d => d.exists && d.data()['f-name'] && d.data()['f-name'].trim())
-      .map(d => ({
-        charId: d.id,
-        name: d.data()['f-name'],
-        modifier: parseInt(d.data()['f-init'] || '0') || 0,
-        roll: Math.floor(Math.random() * 20) + 1
-      }))
-      .map(r => ({ ...r, total: r.roll + r.modifier }))
-      .sort((a, b) => b.total - a.total);
-    if (!results.length) { alert('No characters found in Firestore.'); return; }
-    db.collection('campaign').doc('broadcast').set({
-      active: true, type: 'initiative', title: '⚔ Initiative!',
-      results, revealMs: 700,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  } finally {
-    btn.textContent = '🎲 Roll Initiative for All Players';
-    btn.disabled = false;
-  }
 }
 
 // Request Folder
@@ -1221,18 +936,70 @@ function downloadTemplate() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  const name = localStorage.getItem('campaign-name');
   const banner = localStorage.getItem('campaign-banner');
+  if (name) document.getElementById('site-title').textContent = name;
   if (banner) applyBanner(banner);
-  if (db) {
-    db.collection('campaign').doc('settings').get().then(doc => {
-      if (doc.exists && doc.data().campaignName) {
-        document.getElementById('site-title').textContent = doc.data().campaignName;
-      }
-    });
-  }
 });
 </script>
-<script src="auth.js"></script>
-<script src="broadcast.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+firebase.initializeApp(firebaseConfig);
+
+// Get campaign ID from URL
+const campaignId = new URLSearchParams(window.location.search).get('c');
+if (!campaignId) { 
+  window.location.href = 'dashboard.html'; 
+}
+
+// Auth guard + init
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'home.html';
+    return;
+  }
+
+  try {
+    const db = firebase.firestore();
+
+    // Update nav links to include campaign param
+    document.querySelectorAll('a[data-base]').forEach(a => {
+      a.href = a.dataset.base + '?c=' + campaignId;
+    });
+
+    [1,2,3,4].forEach(n => {
+      db.collection('campaigns').doc(campaignId).collection('characters').doc('player'+n).onSnapshot(doc => {
+        if (!doc.exists) return;
+        const d = doc.data();
+        if (d['f-name'] && d['f-name'].trim()) {
+          const nameEl = document.getElementById('p'+n+'-name');
+          nameEl.textContent = d['f-name'];
+          nameEl.style.cssText = '';
+          document.getElementById('card-'+n).classList.remove('empty');
+          const badge = document.getElementById('p'+n+'-badge');
+          if (badge) badge.style.display = 'none';
+        }
+        const cls = [d['f-class'], d['f-race']].filter(Boolean).join(' · ');
+        if (cls) document.getElementById('p'+n+'-class').textContent = cls;
+        const curhp = d['f-curhp'] || '—';
+        const maxhp = d['f-maxhp'] || '';
+        document.getElementById('p'+n+'-hp').textContent = curhp;
+        document.getElementById('p'+n+'-ac').textContent = d['f-ac'] || '—';
+        document.getElementById('p'+n+'-gp').textContent = d['f-gold'] || '—';
+        if (curhp !== '—' && maxhp) {
+          const pct = Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0;
+          const bar = document.getElementById('p'+n+'-bar');
+          bar.style.width = pct + '%';
+          bar.className = 'hp-bar' + (pct < 25 ? ' low' : pct < 50 ? ' mid' : '');
+        }
+      });
+    });
+  } catch(e) { /* Firebase unavailable */ }
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Campaign Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --parchment: #f5ead2;
+      --parchment-dark: #e8d5a8;
+      --ink: #1a1208;
+      --ink-light: #4a3520;
+      --red: #7a1515;
+      --gold: #9a7000;
+      --gold-light: #c4920a;
+      --border: #7a5a28;
+      --border-light: #b08840;
+      --green: #285a18;
+      --bg: #111008;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
+      font-family: 'Crimson Text', serif;
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .landing-container {
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 1s ease-out;
+    }
+
+    .landing-branding {
+      margin-bottom: 60px;
+    }
+
+    .site-title {
+      font-family: 'Cinzel', serif;
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: var(--gold-light);
+      letter-spacing: 0.1em;
+      text-shadow: 0 2px 20px rgba(184,134,11,0.4);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .site-tagline {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--border-light);
+      margin-bottom: 20px;
+    }
+
+    .divider {
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0 auto 30px;
+    }
+
+    .tagline-sub {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.1rem;
+      color: var(--parchment-dark);
+      line-height: 1.6;
+      margin-bottom: 40px;
+      font-style: italic;
+    }
+
+    .google-signin-container {
+      margin-bottom: 40px;
+    }
+
+    #google-signin-btn {
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
+      color: var(--ink);
+      border: 2px solid var(--border);
+      border-radius: 3px;
+      padding: 14px 32px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 0 2px #1a0e04, 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    #google-signin-btn:hover {
+      background: linear-gradient(160deg, #fefaf5 0%, #f5e8c6 50%, #fbf3da 100%);
+      box-shadow: 0 0 0 2px #1a0e04, 0 6px 25px rgba(156,122,10,0.3);
+      transform: translateY(-2px);
+    }
+
+    #google-signin-btn:active {
+      transform: translateY(0);
+    }
+
+    #google-signin-btn.loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(26,18,8,0.3);
+      border-top-color: var(--ink);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      display: none;
+      background: rgba(122,21,21,0.1);
+      border: 1px solid var(--red);
+      border-radius: 3px;
+      color: var(--red);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    .error-message.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .footer-note {
+      font-size: 0.75rem;
+      color: var(--border);
+      margin-top: 30px;
+      line-height: 1.5;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 480px) {
+      .site-title { font-size: 2.5rem; }
+      .tagline-sub { font-size: 0.95rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-container">
+    <div class="landing-branding">
+      <div class="site-title">⚔ D&D Tracker</div>
+      <div class="site-tagline">Campaign Hub</div>
+      <div class="divider"></div>
+      <div class="tagline-sub">Manage campaigns, track characters, and lead your next adventure.</div>
+    </div>
+
+    <div class="error-message" id="error-message"></div>
+
+    <div class="google-signin-container">
+      <button id="google-signin-btn" onclick="signInWithGoogle()">
+        <span style="font-size:1.1em;margin-right:8px;">🔑</span> Continue with Google
+      </button>
+    </div>
+
+    <div class="footer-note">
+      <p>Sign in with your Google account to access your campaigns and join your friends' games.</p>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <script>
+    // Check if already logged in
+    firebase.initializeApp(firebaseConfig);
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        window.location.href = 'dashboard.html';
+      }
+    });
+
+    function signInWithGoogle() {
+      const btn = document.getElementById('google-signin-btn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+
+      firebase.auth().signInWithPopup(provider)
+        .then(result => {
+          // Redirect to dashboard on success (onAuthStateChanged will handle it)
+        })
+        .catch(error => {
+          btn.classList.remove('loading');
+          btn.disabled = false;
+          const errorEl = document.getElementById('error-message');
+          let errorMsg = 'Sign-in failed. Please try again.';
+
+          if (error.code === 'auth/popup-blocked') {
+            errorMsg = 'Sign-in popup was blocked. Please allow popups for this site.';
+          } else if (error.code === 'auth/unauthorized-domain') {
+            errorMsg = 'This domain is not authorized. Please check Firebase Console settings.';
+          } else if (error.code === 'auth/user-cancelled') {
+            errorMsg = 'Sign-in was cancelled.';
+          }
+
+          errorEl.textContent = errorMsg;
+          errorEl.classList.add('show');
+          setTimeout(() => errorEl.classList.remove('show'), 5000);
+        });
+    }
+  </script>
+</body>
+</html>

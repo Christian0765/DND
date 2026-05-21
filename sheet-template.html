@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Character Sheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
 <style>
   :root {
     --parchment: #f5ead2;
@@ -240,7 +237,7 @@
 <body>
 
 <div class="top-bar">
-  <a class="back-link" href="index.html">← Party Overview</a>
+  <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div class="sync-bar">
     <span class="sync-status offline" id="sync-status">Connecting…</span>
   </div>
@@ -317,23 +314,12 @@
         <div class="ability-saves"><span>Save</span><span>Decep.</span><span>Intimid.</span><span>Perform.</span><span>Persuas.</span></div>
       </div>
       <div class="st">Proficiencies</div>
-      <div class="prof-item"><strong>Armor</strong><span style="font-style:italic;color:var(--ink-light);">Fill in from AI summary</span></div>
-      <div class="prof-item"><strong>Weapons</strong><span style="font-style:italic;color:var(--ink-light);">Fill in from AI summary</span></div>
-      <div class="prof-item"><strong>Tools</strong><span style="font-style:italic;color:var(--ink-light);">Fill in from AI summary</span></div>
-      <div class="prof-item"><strong>Languages</strong><span style="font-style:italic;color:var(--ink-light);">Fill in from AI summary</span></div>
+      <textarea class="editable" id="f-profs" style="font-style:normal;min-height:80px;" placeholder="Armor, Weapons, Tools, Languages..."></textarea>
     </div>
 
     <div>
-      <div class="st">Weapons</div>
-      <table class="atk-table">
-        <colgroup><col style="width:30%"><col style="width:16%"><col style="width:28%"><col style="width:26%"></colgroup>
-        <thead><tr><th>Weapon</th><th>Atk</th><th>Damage</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td><em style="color:var(--ink-light);">Weapon 1</em></td><td><span class="atk-val">—</span></td><td>—</td><td style="font-size:0.68rem;color:var(--ink-light);">fill in</td></tr>
-          <tr><td><em style="color:var(--ink-light);">Weapon 2</em></td><td><span class="atk-val">—</span></td><td>—</td><td style="font-size:0.68rem;color:var(--ink-light);">fill in</td></tr>
-          <tr><td><em style="color:var(--ink-light);">Weapon 3</em></td><td><span class="atk-val">—</span></td><td>—</td><td style="font-size:0.68rem;color:var(--ink-light);">fill in</td></tr>
-        </tbody>
-      </table>
+      <div class="st">Weapons & Attacks</div>
+      <textarea class="editable" id="f-weapons" style="font-style:normal;min-height:130px;font-size:0.78rem;" placeholder="Weapon · Atk Bonus · Damage · Notes&#10;e.g. Longsword · +5 · 1d8+3 slashing · Versatile&#10;e.g. Shortbow · +4 · 1d6+2 piercing · Ranged 80ft"></textarea>
 
       <div class="st" style="margin-top:14px;">Hit Dice Tracker</div>
       <div style="font-size:0.73rem;color:var(--ink-light);margin-bottom:4px;">Click to mark used · recharge on short/long rest</div>
@@ -344,12 +330,8 @@
       </div>
       <button class="die-reset" onclick="document.querySelectorAll('.die-box').forEach(d=>d.classList.remove('used'))">Reset on rest</button>
 
-      <div class="st">Class & Racial Features</div>
-      <ul class="feature-list">
-        <li><strong>Feature 1</strong><em style="color:var(--ink-light);">Fill in from AI summary</em></li>
-        <li><strong>Feature 2</strong><em style="color:var(--ink-light);">Fill in from AI summary</em></li>
-        <li><strong>Feature 3</strong><em style="color:var(--ink-light);">Fill in from AI summary</em></li>
-      </ul>
+      <div class="st">Features & Abilities</div>
+      <textarea class="editable" id="f-features" style="font-style:normal;min-height:200px;font-size:0.78rem;" placeholder="Feature Name: Description&#10;e.g. Second Wind: Bonus action, regain 1d10+level HP, once per rest&#10;e.g. Sneak Attack: Extra 2d6 damage when you have advantage"></textarea>
     </div>
 
     <div>
@@ -364,9 +346,7 @@
       <textarea class="editable" id="f-flaws" placeholder="Fill in from AI summary…"></textarea>
 
       <div class="st">Equipment</div>
-      <ul class="equip-list">
-        <li><em style="color:var(--ink-light);">Fill in from AI summary</em></li>
-      </ul>
+      <textarea class="editable" id="f-equipment" style="font-style:normal;min-height:100px;" placeholder="List your items here..."></textarea>
       <div class="gold-box"><strong>Gold</strong><input class="editable" id="f-gold2" value="" placeholder="0"> GP</div>
     </div>
   </div>
@@ -374,9 +354,7 @@
   <div class="footer">
     <div>
       <div class="st" style="margin-top:0">Backstory</div>
-      <div class="backstory-note">
-        <textarea class="editable" id="f-notes" style="font-style:normal;min-height:80px;background:transparent;border:none;border-bottom:1px dashed var(--border-light);" placeholder="Fill in from AI summary…"></textarea>
-      </div>
+      <textarea class="editable" id="f-backstory" style="font-style:normal;min-height:120px;font-size:0.82rem;" placeholder="Your character's history, motivations, and secrets..."></textarea>
     </div>
     <div>
       <div class="st" style="margin-top:0">Death Saves</div>
@@ -401,7 +379,7 @@
       <div class="st">Inspiration</div>
       <div id="insp" onclick="this.style.background=this.style.background?'':'var(--gold)'" title="Toggle inspiration"></div>
       <div class="st" style="margin-top:12px;">Session Notes</div>
-      <textarea class="editable" style="font-style:normal;min-height:60px;" placeholder="Notes from this session…"></textarea>
+      <textarea class="editable" id="f-notes" style="font-style:normal;min-height:60px;" placeholder="Notes from this session..."></textarea>
     </div>
   </div>
 
@@ -417,17 +395,89 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-// DM: change this to the player number e.g. '2', '3', '4'
-const CHAR_ID = 'CHANGE_ME';
+// Set this to 'player1', 'player2', 'player3', or 'player4'
+const PLAYER_ID = 'player1';
+
+// Get campaign ID from URL
+const campaignId = new URLSearchParams(window.location.search).get('c');
+if (!campaignId) { 
+  window.location.href = 'dashboard.html'; 
+}
+
+firebase.initializeApp(firebaseConfig);
+
+// Auth guard + init
+let db = null;
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'home.html';
+    return;
+  }
+  db = firebase.firestore();
+  loadFromFirestore();
+});
+
+function goBack() {
+  window.location.href = 'index.html?c=' + campaignId;
+}
 
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
   'f-ac','f-init','f-speed','f-curhp','f-maxhp','f-hd','f-pp','f-gold','f-carry',
   'f-str','f-strmod','f-dex','f-dexmod','f-con','f-conmod',
   'f-int','f-intmod','f-wis','f-wismod','f-cha','f-chamod',
-  'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2'
+  'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2',
+  'f-weapons','f-features','f-equipment','f-profs','f-backstory'
 ];
+
+function setStatus(type, text) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + type;
+  el.textContent = text;
+}
+
+async function saveToFirestore() {
+  if (!db) { setStatus('offline', 'Offline'); return; }
+  setStatus('saving', 'Saving...');
+  const data = {};
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value || '';
+  });
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    setStatus('ok', 'Saved ✓');
+    setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
+  } catch (e) {
+    setStatus('error', 'Save Failed');
+  }
+}
+
+function loadFromFirestore() {
+  if (!db) { setStatus('offline', 'Offline'); return; }
+  setStatus('saving', 'Connecting...');
+  db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+    if (!doc.exists) { setStatus('ok', 'Ready'); return; }
+    const data = doc.data();
+    FIELDS.forEach(id => {
+      if (data[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el) el.value = data[id];
+      }
+    });
+    setStatus('ok', 'Live ✓');
+  }, () => setStatus('error', 'Connection error'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+});
+
 const FIELD_LABELS = {
   'f-name':'Character Name','f-class':'Class & Level','f-race':'Race',
   'f-bg':'Background','f-align':'Alignment','f-player':'Player',
@@ -439,53 +489,12 @@ const FIELD_LABELS = {
   'f-int':'INT','f-intmod':'INT Modifier','f-wis':'WIS','f-wismod':'WIS Modifier',
   'f-cha':'CHA','f-chamod':'CHA Modifier','f-traits':'Personality Traits',
   'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
-  'f-notes':'Session Notes','f-gold2':'Gold (Equipment)'
+  'f-notes':'Session Notes','f-gold2':'Gold (Equipment)',
+  'f-weapons':'Weapons','f-features':'Features','f-equipment':'Equipment',
+  'f-profs':'Proficiencies','f-backstory':'Backstory'
 };
-const HISTORY_KEY = 'edit-history-sheet-' + CHAR_ID;
+const HISTORY_KEY = 'edit-history-sheet-' + PLAYER_ID;
 const MAX_HISTORY = 100;
-
-function setStatus(type, text) {
-  const el = document.getElementById('sync-status');
-  if (el) { el.className = 'sync-status ' + type; el.textContent = text; }
-}
-
-let db;
-let saveTimer;
-try {
-  if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.firestore();
-  if (CHAR_ID !== 'CHANGE_ME') {
-    db.collection('characters').doc(CHAR_ID)
-      .onSnapshot({includeMetadataChanges: true}, doc => {
-        if (doc.metadata.hasPendingWrites) return;
-        if (doc.exists) {
-          const data = doc.data();
-          FIELDS.forEach(id => {
-            if (data[id] !== undefined) {
-              const el = document.getElementById(id);
-              if (el && document.activeElement !== el) el.value = data[id];
-            }
-          });
-        }
-        setStatus('ok', 'Live ✓');
-      }, () => setStatus('error', 'Sync Error'));
-  } else {
-    setStatus('offline', 'Set CHAR_ID to go live');
-  }
-} catch(e) {
-  setStatus('offline', 'Offline — fill in locally');
-}
-
-function saveToFirestore() {
-  if (!db || CHAR_ID === 'CHANGE_ME') return;
-  const data = {};
-  FIELDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) data[id] = el.value || '';
-  });
-  db.collection('characters').doc(CHAR_ID).set(data)
-    .catch(() => setStatus('error', 'Save Failed'));
-}
 
 function recordEdit(fieldId, oldVal, newVal) {
   if (oldVal === newVal) return;
@@ -528,8 +537,7 @@ function clearHistory() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', renderHistory);
-
+let saveTimer;
 FIELDS.forEach(id => {
   const el = document.getElementById(id);
   if (el) {
@@ -537,9 +545,9 @@ FIELDS.forEach(id => {
     el.addEventListener('focus', () => { oldValue = el.value; });
     el.addEventListener('blur', () => { recordEdit(id, oldValue, el.value); });
     el.addEventListener('input', () => {
-      setStatus('saving', 'Saving…');
+      setStatus('saving', 'Unsaved changes');
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveToFirestore, 1500);
+      saveTimer = setTimeout(saveToFirestore, 2000);
     });
   }
 });

@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Combat Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <style>
   :root {
@@ -156,7 +157,7 @@
   }
   .add-form {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
     gap: 8px;
     align-items: end;
   }
@@ -416,89 +417,6 @@
     font-size: 0.88rem;
   }
 
-  /* CHARACTER EXPAND SECTION */
-  .char-expand {
-    margin-top: 8px;
-    border-top: 1px dotted var(--border-light);
-    padding-top: 6px;
-  }
-  .char-expand-toggle {
-    font-family: 'Cinzel', serif;
-    font-size: 0.52rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--gold-light);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 2px 0;
-    margin-right: 12px;
-    transition: color 0.15s;
-  }
-  .char-expand-toggle:hover { color: var(--gold); }
-  .char-expand-body {
-    margin-top: 6px;
-    font-size: 0.78rem;
-    color: var(--ink-light);
-    white-space: pre-wrap;
-    line-height: 1.5;
-    background: rgba(255,255,255,0.25);
-    border: 1px solid var(--border-light);
-    border-radius: 2px;
-    padding: 6px 8px;
-  }
-  .char-expand-body.hidden { display: none; }
-
-  /* CONDITIONS SUMMARY BAR */
-  .conditions-summary {
-    max-width: 900px;
-    margin: 0 auto 12px;
-    background: linear-gradient(160deg, #1a0e04 0%, #0d0802 100%);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 10px 16px;
-    display: none;
-  }
-  .conditions-summary.visible { display: block; }
-  .cs-title {
-    font-family: 'Cinzel', serif;
-    font-size: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: var(--border-light);
-    margin-bottom: 8px;
-  }
-  .cs-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 0;
-    border-bottom: 1px dotted rgba(176,136,64,0.2);
-  }
-  .cs-row:last-child { border-bottom: none; }
-  .cs-name {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    color: var(--parchment-dark);
-    min-width: 110px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .cs-badges { display: flex; flex-wrap: wrap; gap: 3px; }
-  .cs-badge {
-    font-family: 'Cinzel', serif;
-    font-size: 0.42rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 1px 5px;
-    border-radius: 2px;
-    background: rgba(122,21,21,0.25);
-    border: 1px solid rgba(220,60,60,0.4);
-    color: #e06060;
-  }
-  .cs-none { font-size: 0.65rem; font-style: italic; color: rgba(176,136,64,0.4); }
-
   @media (max-width: 600px) {
     .add-form { grid-template-columns: 1fr 1fr; }
     .combatant-top { grid-template-columns: 28px 1fr auto; }
@@ -508,7 +426,7 @@
 <body>
 
 <div class="top-bar">
-  <a class="back-link" href="index.html">← Party Overview</a>
+  <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div></div>
 </div>
 
@@ -548,15 +466,9 @@
     </div>
     <div>
       <label>Type</label>
-      <select id="add-type" onchange="onTypeChange()">
+      <select id="add-type">
         <option value="player">Player</option>
         <option value="enemy">Enemy</option>
-      </select>
-    </div>
-    <div id="char-select-wrap">
-      <label>Character</label>
-      <select id="add-char">
-        <option value="">— none —</option>
       </select>
     </div>
     <div style="display:flex;gap:6px;align-items:flex-end;">
@@ -565,70 +477,56 @@
   </div>
 </div>
 
-<!-- CONDITIONS SUMMARY -->
-<div class="conditions-summary" id="conditions-summary">
-  <div class="cs-title">Team Conditions At A Glance</div>
-  <div id="cs-rows"></div>
-</div>
-
 <!-- COMBATANT LIST -->
 <div class="combatant-list" id="combatant-list">
   <div class="empty-state" id="empty-state">No combatants yet — add players and enemies above to begin.</div>
 </div>
 
 <script>
+firebase.initializeApp(firebaseConfig);
+
+// Get campaign ID from URL
+const campaignId = new URLSearchParams(window.location.search).get('c');
+if (!campaignId) { 
+  window.location.href = 'dashboard.html'; 
+}
+
 const CONDITIONS = ['Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated','Paralyzed','Poisoned','Prone','Restrained','Stunned','Unconscious'];
-const PLAYER_IDS = ['player1','player2','player3','player4'];
 
 let state = { round: 1, combatants: [] };
 let db;
-let charCache = {};  // { player1: {name, weapons, features, ...}, ... }
 
-try {
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-
-  // Load character data for player panels
-  PLAYER_IDS.forEach(id => {
-    db.collection('characters').doc(id).onSnapshot(doc => {
-      if (doc.exists) charCache[id] = doc.data();
-    });
-  });
-
-  // Populate character select dropdown
-  db.collection('characters').get().then(snap => {
-    const sel = document.getElementById('add-char');
-    snap.forEach(doc => {
-      const name = doc.data()['f-name'] || doc.id;
-      const opt = document.createElement('option');
-      opt.value = doc.id;
-      opt.textContent = name;
-      sel.appendChild(opt);
-    });
-  });
-
-  db.collection('combat').doc('state').onSnapshot({includeMetadataChanges: true}, doc => {
-    if (doc.metadata.hasPendingWrites) return;
-    if (doc.exists) {
-      const data = doc.data();
-      if (data && Array.isArray(data.combatants)) { state = data; render(); }
-    } else {
-      render();
-    }
-  });
-} catch(e) {
-  console.warn('Firebase not configured — using local state');
-  render();
+function goBack() {
+  window.location.href = 'index.html?c=' + campaignId;
 }
 
-function onTypeChange() {
-  const isPlayer = document.getElementById('add-type').value === 'player';
-  document.getElementById('char-select-wrap').style.display = isPlayer ? '' : 'none';
-}
+// Auth guard + init
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'home.html';
+    return;
+  }
+
+  try {
+    db = firebase.firestore();
+    db.collection('campaigns').doc(campaignId).collection('combat').doc('state').onSnapshot({includeMetadataChanges: true}, doc => {
+      if (doc.metadata.hasPendingWrites) return;
+      if (doc.exists) {
+        const data = doc.data();
+        if (data && Array.isArray(data.combatants)) { state = data; render(); }
+      } else {
+        render();
+      }
+    });
+  } catch(e) {
+    console.warn('Firebase not configured — using local state');
+    render();
+  }
+});
 
 function save() {
   if (db) {
-    db.collection('combat').doc('state').set(JSON.parse(JSON.stringify(state)));
+    db.collection('campaigns').doc(campaignId).collection('combat').doc('state').set(JSON.parse(JSON.stringify(state)));
   }
 }
 
@@ -649,8 +547,6 @@ function resetCombat() {
 function addCombatant() {
   const name = document.getElementById('add-name').value.trim();
   if (!name) { document.getElementById('add-name').focus(); return; }
-  const typeVal = document.getElementById('add-type').value;
-  const charId = typeVal === 'player' ? (document.getElementById('add-char').value || null) : null;
   const maxHp = parseInt(document.getElementById('add-hp').value) || 10;
   state.combatants.push({
     id: Date.now(),
@@ -659,8 +555,7 @@ function addCombatant() {
     hp: maxHp,
     maxHp,
     ac: parseInt(document.getElementById('add-ac').value) || 10,
-    type: typeVal,
-    charId: charId || null,
+    type: document.getElementById('add-type').value,
     conditions: []
   });
   state.combatants.sort((a, b) => b.init - a.init);
@@ -670,7 +565,6 @@ function addCombatant() {
   document.getElementById('add-init').value = '';
   document.getElementById('add-hp').value = '';
   document.getElementById('add-ac').value = '';
-  document.getElementById('add-char').value = '';
   document.getElementById('add-name').focus();
 }
 
@@ -716,46 +610,6 @@ function removeCombatant(id) {
   render();
 }
 
-function buildCharExpandHtml(c) {
-  if (!c.charId) return '';
-  const cd = charCache[c.charId];
-  if (!cd) return '';
-  const weapons = cd['f-weapons'] ? cd['f-weapons'].trim() : '';
-  const features = cd['f-features'] ? cd['f-features'].trim() : '';
-  if (!weapons && !features) return '';
-  return `<div class="char-expand">
-    ${weapons ? `<button class="char-expand-toggle" onclick="toggleExpand('wpn-${c.id}')">⚔ Weapons</button>` : ''}
-    ${features ? `<button class="char-expand-toggle" onclick="toggleExpand('ftr-${c.id}')">✦ Features</button>` : ''}
-    ${weapons ? `<div id="wpn-${c.id}" class="char-expand-body hidden">${escHtml(weapons)}</div>` : ''}
-    ${features ? `<div id="ftr-${c.id}" class="char-expand-body hidden">${escHtml(features)}</div>` : ''}
-  </div>`;
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function toggleExpand(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle('hidden');
-}
-
-function renderSummary() {
-  const bar = document.getElementById('conditions-summary');
-  const rows = document.getElementById('cs-rows');
-  if (!state.combatants.length) { bar.classList.remove('visible'); return; }
-  bar.classList.add('visible');
-  rows.innerHTML = state.combatants.map(c => {
-    const badges = c.conditions.length
-      ? c.conditions.map(cond => `<span class="cs-badge">${cond}</span>`).join('')
-      : `<span class="cs-none">—</span>`;
-    return `<div class="cs-row">
-      <span class="cs-name">${c.name}</span>
-      <div class="cs-badges">${badges}</div>
-    </div>`;
-  }).join('');
-}
-
 function render() {
   document.getElementById('round-num').textContent = state.round;
   const list = document.getElementById('combatant-list');
@@ -765,7 +619,6 @@ function render() {
     list.innerHTML = '';
     list.appendChild(empty);
     empty.style.display = 'block';
-    renderSummary();
     return;
   }
   empty.style.display = 'none';
@@ -805,11 +658,8 @@ function render() {
       <div class="conditions-row">
         ${CONDITIONS.map(cond => `<span class="cond-tag${c.conditions.includes(cond) ? ' active' : ''}" id="cond-${c.id}-${cond}" onclick="toggleCondition(${c.id},'${cond}')">${cond}</span>`).join('')}
       </div>
-      ${buildCharExpandHtml(c)}
     </div>`;
   }).join('');
-
-  renderSummary();
 }
 
 // Drag to reorder
@@ -830,6 +680,5 @@ function drop(e, i) {
 
 document.getElementById('add-name').addEventListener('keydown', e => { if (e.key === 'Enter') addCombatant(); });
 </script>
-<script src="broadcast.js"></script>
 </body>
 </html>

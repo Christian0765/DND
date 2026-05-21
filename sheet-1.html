@@ -5,10 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dracula — Sheet 1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="firebase-config.js"></script>
 <style>
   :root {
     --parchment: #f5ead2;
@@ -297,16 +293,8 @@
 </head>
 <body>
 
-<div id="auth-overlay" class="auth-overlay" style="display:flex;">
-  <div class="auth-overlay-box">
-    <div class="auth-overlay-title">Sign In Required</div>
-    <p class="auth-overlay-sub">Sign in with your Google account to access your character sheet.</p>
-    <button class="auth-btn large" onclick="signInWithGoogle()">Sign in with Google</button>
-  </div>
-</div>
-
 <div class="top-bar">
-  <a class="back-link" href="index.html">← Party Overview</a>
+  <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div class="sync-bar">
     <span class="sync-status offline" id="sync-status">Connecting...</span>
     <button class="save-btn" onclick="saveToFirestore()">Save</button>
@@ -524,9 +512,36 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const CHAR_ID = 'player1';
-window.SHEET_CHAR_ID = CHAR_ID;
+const PLAYER_ID = 'player1';
+
+// Get campaign ID from URL
+const campaignId = new URLSearchParams(window.location.search).get('c');
+if (!campaignId) { 
+  window.location.href = 'dashboard.html'; 
+}
+
+firebase.initializeApp(firebaseConfig);
+
+// Auth guard + init
+let db = null;
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'home.html';
+    return;
+  }
+  db = firebase.firestore();
+  loadFromFirestore();
+});
+
+function goBack() {
+  window.location.href = 'index.html?c=' + campaignId;
+}
+
 const FIELDS = [
   'f-name','f-class','f-race','f-bg','f-align','f-player','f-prof',
   'f-ac','f-init','f-speed','f-curhp','f-maxhp','f-hd','f-pp','f-gold','f-carry',
@@ -534,6 +549,50 @@ const FIELDS = [
   'f-int','f-intmod','f-wis','f-wismod','f-cha','f-chamod',
   'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2'
 ];
+
+function setStatus(type, text) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + type;
+  el.textContent = text;
+}
+
+async function saveToFirestore() {
+  if (!db) { setStatus('offline', 'Offline'); return; }
+  setStatus('saving', 'Saving...');
+  const data = {};
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value || '';
+  });
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    setStatus('ok', 'Saved ✓');
+    setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
+  } catch (e) {
+    setStatus('error', 'Save Failed');
+  }
+}
+
+function loadFromFirestore() {
+  if (!db) { setStatus('offline', 'Offline'); return; }
+  setStatus('saving', 'Connecting...');
+  db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+    if (!doc.exists) { setStatus('ok', 'Ready'); return; }
+    const data = doc.data();
+    FIELDS.forEach(id => {
+      if (data[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el) el.value = data[id];
+      }
+    });
+    setStatus('ok', 'Live ✓');
+  }, () => setStatus('error', 'Connection error'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderHistory();
+});
+
 const FIELD_LABELS = {
   'f-name':'Character Name','f-class':'Class & Level','f-race':'Race',
   'f-bg':'Background','f-align':'Alignment','f-player':'Player',
@@ -547,50 +606,9 @@ const FIELD_LABELS = {
   'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
   'f-notes':'Session Notes','f-gold2':'Gold (Equipment)'
 };
-const HISTORY_KEY = 'edit-history-sheet' + CHAR_ID;
+const HISTORY_KEY = 'edit-history-sheet1';
 const MAX_HISTORY = 100;
 
-function setStatus(type, text) {
-  const el = document.getElementById('sync-status');
-  if (el) { el.className = 'sync-status ' + type; el.textContent = text; }
-}
-
-// Firebase
-let db;
-let saveTimer;
-try {
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  db.collection('characters').doc(CHAR_ID)
-    .onSnapshot({includeMetadataChanges: true}, doc => {
-      if (doc.metadata.hasPendingWrites) return;
-      if (doc.exists) {
-        const data = doc.data();
-        FIELDS.forEach(id => {
-          if (data[id] !== undefined) {
-            const el = document.getElementById(id);
-            if (el && document.activeElement !== el) el.value = data[id];
-          }
-        });
-      }
-      setStatus('ok', 'Live ✓');
-    }, () => setStatus('error', 'Sync Error'));
-} catch(e) {
-  setStatus('offline', 'Offline');
-}
-
-function saveToFirestore() {
-  if (!db) { setStatus('offline', 'Offline'); return; }
-  const data = {};
-  FIELDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) data[id] = el.value || '';
-  });
-  db.collection('characters').doc(CHAR_ID).set(data)
-    .catch(() => setStatus('error', 'Save Failed'));
-}
-
-// Edit history
 function recordEdit(fieldId, oldVal, newVal) {
   if (oldVal === newVal) return;
   const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -632,8 +650,7 @@ function clearHistory() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', renderHistory);
-
+let saveTimer;
 FIELDS.forEach(id => {
   const el = document.getElementById(id);
   if (el) {
@@ -641,14 +658,12 @@ FIELDS.forEach(id => {
     el.addEventListener('focus', () => { oldValue = el.value; });
     el.addEventListener('blur', () => { recordEdit(id, oldValue, el.value); });
     el.addEventListener('input', () => {
-      setStatus('saving', 'Saving…');
+      setStatus('saving', 'Unsaved changes');
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveToFirestore, 1500);
+      saveTimer = setTimeout(saveToFirestore, 2000);
     });
   }
 });
 </script>
-<script src="auth.js"></script>
-<script src="broadcast.js"></script>
 </body>
 </html>
