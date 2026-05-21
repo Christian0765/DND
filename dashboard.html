@@ -1169,6 +1169,16 @@
       heartbeat();
       setInterval(heartbeat, 90000); // refresh every 90 s
 
+      // Backfill memberUids for campaigns joined before this field was written
+      db.collection('campaigns').get().then(snap => {
+        snap.forEach(doc => {
+          const d = doc.data();
+          if (d.players && d.players[currentUser.uid] && !(d.memberUids || []).includes(currentUser.uid)) {
+            doc.ref.update({ memberUids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }).catch(() => {});
+          }
+        });
+      }).catch(() => {});
+
       loadCampaigns();
       loadFriends();
       loadCampaignInvites();
@@ -1486,7 +1496,8 @@
             [`players.${currentUser.uid}`]: {
               slot: slotKey,
               joinedAt: firebase.firestore.Timestamp.now()
-            }
+            },
+            memberUids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
           }).then(() => {
             document.getElementById('join-code').value = '';
             showMessage(msg, 'Campaign joined!', 'success');
