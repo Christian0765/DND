@@ -549,37 +549,161 @@
     }
 
     @media (max-width: 600px) {
-      .dashboard-header {
-        flex-direction: column;
-        text-align: center;
-      }
+      .dashboard-header { flex-direction: column; text-align: center; }
+      .header-left { width: 100%; justify-content: center; }
+      .header-right { width: 100%; justify-content: center; }
+      .campaigns-grid { grid-template-columns: 1fr; }
+      .form-inline { grid-template-columns: 1fr; }
+      .friend-card { flex-direction: column; text-align: center; }
+      .friend-details { width: 100%; }
+    }
 
-      .header-left {
-        width: 100%;
-        justify-content: center;
-      }
+    /* ─── INLINE CAMPAIGN CREATOR ─── */
+    .cc-screen { display: none; }
+    .cc-screen.active { display: block; animation: fadeIn 0.3s ease; }
 
-      .header-right {
-        width: 100%;
-        justify-content: center;
-      }
+    .cc-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 700px; margin: 0 auto 28px; }
+    .cc-mode-card {
+      background: linear-gradient(160deg,rgba(247,237,216,0.05) 0%,rgba(236,220,181,0.03) 100%);
+      border: 1px solid var(--border); border-radius: 4px; padding: 26px 22px;
+      cursor: pointer; transition: border-color .25s,background .25s,transform .2s,box-shadow .2s;
+      text-align: left; position: relative; overflow: hidden;
+    }
+    .cc-mode-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gold); opacity:0; transition:opacity .25s; }
+    .cc-mode-card:hover { border-color:var(--gold-light); background:linear-gradient(160deg,rgba(196,146,10,.08) 0%,rgba(154,112,0,.04) 100%); transform:translateY(-3px); box-shadow:0 12px 36px rgba(0,0,0,.5); }
+    .cc-mode-card:hover::before { opacity:1; }
+    .cc-mode-card.primary { border-color:rgba(196,146,10,.4); }
+    .cc-mode-card.primary::before { opacity:.5; }
+    .cc-mode-icon { font-size:1.9rem; margin-bottom:12px; display:block; }
+    .cc-mode-label { font-family:'Cinzel',serif; font-size:.95rem; font-weight:900; color:var(--parchment); margin-bottom:5px; }
+    .cc-mode-sub { font-family:'Cinzel',serif; font-size:.48rem; text-transform:uppercase; letter-spacing:.2em; color:var(--gold); margin-bottom:8px; }
+    .cc-mode-desc { font-size:.83rem; color:var(--parchment-dark); opacity:.7; line-height:1.6; }
+    .cc-mode-time { display:inline-block; margin-top:12px; font-family:'Cinzel',serif; font-size:.46rem; text-transform:uppercase; letter-spacing:.18em; color:var(--border-light); border:1px solid var(--border); padding:3px 8px; border-radius:2px; }
 
-      .campaigns-grid {
-        grid-template-columns: 1fr;
-      }
+    .parchment-card {
+      background: linear-gradient(160deg,#f7edd8 0%,#ecdcb5 100%);
+      border:1px solid var(--border); box-shadow:0 0 0 2px #1a0e04,0 8px 32px rgba(0,0,0,.7); border-radius:3px;
+      padding:26px 30px; position:relative; max-width:700px; margin:0 auto;
+    }
+    .parchment-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
 
-      .form-inline {
-        grid-template-columns: 1fr;
-      }
+    .cc-creator-title { font-family:'Cinzel',serif; font-size:1.35rem; font-weight:900; color:var(--gold-light); text-align:center; margin-bottom:4px; }
+    .cc-creator-sub { font-family:'Cinzel',serif; font-size:.52rem; text-transform:uppercase; letter-spacing:.28em; color:var(--border-light); text-align:center; margin-bottom:24px; }
 
-      .friend-card {
-        flex-direction: column;
-        text-align: center;
-      }
+    .cc-field-group { margin-bottom:18px; }
+    .cc-field-label { font-family:'Cinzel',serif; font-size:.54rem; text-transform:uppercase; letter-spacing:.17em; color:var(--ink-light); display:block; margin-bottom:5px; }
+    .cc-field-input { font-family:'Crimson Text',serif; font-size:.96rem; background:rgba(255,255,255,.5); border:1px solid var(--border-light); border-radius:2px; color:var(--ink); padding:8px 11px; width:100%; outline:none; transition:border-color .15s,background .15s; }
+    .cc-field-input:focus { border-color:var(--gold); background:rgba(255,255,255,.85); }
+    .cc-field-textarea { font-family:'Crimson Text',serif; font-size:.9rem; background:rgba(255,255,255,.5); border:1px solid var(--border-light); border-radius:2px; color:var(--ink); padding:8px 11px; width:100%; outline:none; resize:vertical; min-height:65px; line-height:1.6; transition:border-color .15s,background .15s; }
+    .cc-field-textarea:focus { border-color:var(--gold); background:rgba(255,255,255,.85); }
+    .cc-field-row { display:grid; gap:13px; }
+    .cc-field-row.col2 { grid-template-columns:1fr 1fr; }
+    .cc-field-row.col3 { grid-template-columns:1fr 1fr 1fr; }
 
-      .friend-details {
-        width: 100%;
-      }
+    .cc-section-title { font-family:'Cinzel',serif; font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.15em; color:var(--red); border-bottom:2px double var(--border); padding-bottom:8px; margin-bottom:16px; }
+    .cc-divider { display:flex; align-items:center; gap:10px; margin:18px 0; }
+    .cc-divider::before,.cc-divider::after { content:''; flex:1; height:1px; background:rgba(122,90,40,.35); }
+    .cc-divider span { font-family:'Cinzel',serif; font-size:.48rem; text-transform:uppercase; letter-spacing:.2em; color:var(--border-light); white-space:nowrap; }
+
+    .cc-slot-picker { display:flex; gap:5px; flex-wrap:wrap; }
+    .cc-slot-btn { font-family:'Cinzel',serif; font-size:.82rem; font-weight:700; color:var(--ink-light); background:rgba(255,255,255,.4); border:1px solid var(--border-light); border-radius:2px; width:38px; height:38px; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; }
+    .cc-slot-btn:hover { border-color:var(--gold); color:var(--gold-light); background:rgba(154,112,0,.1); }
+    .cc-slot-btn.active { background:var(--red); color:var(--parchment); border-color:var(--red); }
+
+    .cc-toggle-row { display:flex; align-items:center; gap:11px; margin-bottom:9px; }
+    .cc-toggle-label { font-size:.87rem; color:var(--ink-light); }
+    .cc-toggle { position:relative; width:38px; height:20px; background:rgba(122,90,40,.25); border-radius:10px; border:1px solid var(--border-light); cursor:pointer; transition:background .2s; flex-shrink:0; }
+    .cc-toggle::after { content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; background:var(--border-light); border-radius:50%; transition:transform .2s,background .2s; }
+    .cc-toggle.on { background:rgba(40,90,24,.5); border-color:var(--green); }
+    .cc-toggle.on::after { transform:translateX(18px); background:var(--green); }
+
+    .cc-chip-group { display:flex; flex-wrap:wrap; gap:5px; }
+    .cc-chip { font-family:'Cinzel',serif; font-size:.46rem; text-transform:uppercase; letter-spacing:.12em; padding:4px 9px; border-radius:2px; border:1px solid var(--border-light); background:rgba(255,255,255,.3); color:var(--ink-light); cursor:pointer; transition:all .15s; }
+    .cc-chip:hover { border-color:var(--gold); color:var(--gold-light); }
+    .cc-chip.active { background:rgba(122,21,21,.12); border-color:var(--red); color:var(--red); font-weight:600; }
+
+    .cc-action-row { display:flex; justify-content:flex-end; gap:9px; margin-top:22px; padding-top:16px; border-top:1px solid rgba(122,90,40,.3); }
+    .cc-btn { font-family:'Cinzel',serif; font-size:.58rem; text-transform:uppercase; letter-spacing:.14em; padding:8px 16px; border-radius:2px; cursor:pointer; transition:all .15s; border:1px solid; }
+    .cc-btn-ghost { color:var(--border-light); background:none; border-color:var(--border); }
+    .cc-btn-ghost:hover { color:var(--parchment); border-color:var(--border-light); }
+    .cc-btn-gold { color:var(--gold-light); background:none; border-color:var(--gold); }
+    .cc-btn-gold:hover { background:rgba(154,112,0,.15); }
+    .cc-btn-green { color:var(--parchment); background:var(--green); border-color:var(--green); }
+    .cc-btn-green:hover { background:#1e4410; }
+    .cc-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+    .cc-error { background:rgba(122,21,21,.15); border:1px solid var(--red); border-radius:2px; color:var(--red); font-size:.8rem; font-style:italic; padding:9px 13px; margin-top:10px; display:none; }
+    .cc-error.show { display:block; }
+
+    .cc-accordion { background:linear-gradient(160deg,rgba(20,14,6,.95) 0%,rgba(12,9,3,.95) 100%); border:1px solid var(--border); border-radius:3px; margin-bottom:9px; overflow:hidden; max-width:860px; margin-left:auto; margin-right:auto; }
+    .cc-accordion.open { box-shadow:0 0 0 1px rgba(196,146,10,.3),0 8px 24px rgba(0,0,0,.5); }
+    .cc-acc-header { display:flex; align-items:center; gap:13px; padding:15px 20px; cursor:pointer; user-select:none; transition:background .15s; }
+    .cc-acc-header:hover { background:rgba(196,146,10,.05); }
+    .cc-acc-icon { font-size:1.15rem; flex-shrink:0; }
+    .cc-acc-title { font-family:'Cinzel',serif; font-size:.8rem; font-weight:600; color:var(--parchment); letter-spacing:.06em; }
+    .cc-acc-sub { font-size:.73rem; color:var(--border-light); font-style:italic; margin-top:2px; }
+    .cc-acc-arrow { margin-left:auto; color:var(--border-light); font-size:.68rem; transition:transform .2s; }
+    .cc-accordion.open .cc-acc-arrow { transform:rotate(180deg); color:var(--gold); }
+    .cc-acc-body { display:none; padding:0 20px 20px; }
+    .cc-accordion.open .cc-acc-body { display:block; }
+
+    .cc-module-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+    .cc-module-item { background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:2px; padding:9px 11px; cursor:pointer; transition:border-color .15s,background .15s; display:flex; align-items:center; gap:9px; }
+    .cc-module-item:hover { border-color:var(--gold); background:rgba(196,146,10,.05); }
+    .cc-module-item.on { border-color:#3a7a22; background:rgba(40,90,24,.08); }
+    .cc-module-dot { width:9px; height:9px; border-radius:50%; background:var(--border); flex-shrink:0; transition:background .15s; }
+    .cc-module-item.on .cc-module-dot { background:var(--green); box-shadow:0 0 6px rgba(40,90,24,.6); }
+    .cc-module-label { font-family:'Cinzel',serif; font-size:.56rem; text-transform:uppercase; letter-spacing:.1em; color:var(--parchment-dark); }
+    .cc-module-desc { font-size:.68rem; color:var(--border-light); font-style:italic; margin-top:2px; }
+
+    .cc-rule-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:12px; }
+    .cc-rule-preset { border:1px solid var(--border); border-radius:2px; padding:9px 11px; cursor:pointer; transition:border-color .15s,background .15s; position:relative; }
+    .cc-rule-preset:hover { border-color:var(--gold-light); }
+    .cc-rule-preset.active { border-color:var(--gold); background:rgba(196,146,10,.08); }
+    .cc-rule-preset.locked { opacity:.4; cursor:not-allowed; }
+    .cc-rule-name { font-family:'Cinzel',serif; font-size:.64rem; color:var(--parchment); font-weight:600; }
+    .cc-rule-tag { font-family:'Cinzel',serif; font-size:.4rem; text-transform:uppercase; letter-spacing:.14em; padding:2px 5px; border-radius:2px; border:1px solid; position:absolute; top:5px; right:5px; }
+    .cc-rule-tag.soon { color:var(--border-light); border-color:var(--border); }
+    .cc-rule-tag.live { color:var(--green); border-color:#3a7a22; }
+
+    .cc-layout-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .cc-layout-card { border:1px solid var(--border); border-radius:3px; padding:11px 9px; cursor:pointer; transition:border-color .2s,background .2s; text-align:center; }
+    .cc-layout-card:hover { border-color:var(--gold); background:rgba(196,146,10,.05); }
+    .cc-layout-card.active { border-color:var(--gold); background:rgba(196,146,10,.1); }
+    .cc-layout-preview { display:grid; gap:3px; margin-bottom:7px; height:42px; opacity:.6; }
+    .cc-lp-box { background:rgba(196,146,10,.25); border-radius:1px; }
+    .cc-layout-name { font-family:'Cinzel',serif; font-size:.5rem; text-transform:uppercase; letter-spacing:.12em; color:var(--parchment-dark); }
+
+    .cc-banner-upload { border:2px dashed var(--border-light); border-radius:3px; padding:16px; text-align:center; cursor:pointer; transition:border-color .15s,background .15s; position:relative; overflow:hidden; background:rgba(255,255,255,.2); }
+    .cc-banner-upload:hover { border-color:var(--gold); }
+    .cc-banner-upload input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+    .cc-banner-preview { width:100%; max-height:110px; object-fit:cover; border-radius:2px; display:none; margin-top:7px; }
+
+    .cc-success-panel { max-width:480px; margin:16px auto; text-align:center; padding:30px 24px; background:linear-gradient(160deg,rgba(20,14,6,.95) 0%,rgba(12,9,3,.95) 100%); border:1px solid var(--gold); border-radius:4px; box-shadow:0 0 0 1px rgba(196,146,10,.3),0 8px 32px rgba(0,0,0,.6); animation:fadeIn .4s ease; }
+    .cc-success-icon { font-size:2.8rem; margin-bottom:12px; }
+    .cc-success-title { font-family:'Cinzel',serif; font-size:1.45rem; font-weight:900; color:var(--gold-light); margin-bottom:5px; }
+    .cc-success-sub { font-size:.88rem; color:var(--parchment-dark); margin-bottom:20px; opacity:.8; }
+    .cc-invite-box { display:inline-flex; align-items:center; gap:10px; background:rgba(196,146,10,.1); border:1px solid var(--gold); border-radius:3px; padding:11px 16px; margin-bottom:20px; }
+    .cc-invite-code { font-family:'Cinzel',serif; font-size:1.5rem; font-weight:900; color:var(--gold-light); letter-spacing:.2em; }
+    .cc-copy-btn { font-family:'Cinzel',serif; font-size:.44rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); background:none; border:1px solid var(--gold); border-radius:2px; padding:4px 7px; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .cc-copy-btn:hover { background:rgba(154,112,0,.2); }
+    .cc-success-btns { display:flex; gap:9px; justify-content:center; flex-wrap:wrap; }
+
+    /* Friend requests */
+    .cc-req-title { font-family:'Cinzel',serif; font-size:.62rem; text-transform:uppercase; letter-spacing:.15em; color:var(--gold); margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid rgba(196,146,10,.25); }
+    .cc-req-card { background:linear-gradient(160deg,rgba(196,146,10,.08) 0%,rgba(154,112,0,.04) 100%); border:1px solid rgba(196,146,10,.35); border-radius:3px; padding:12px 15px; display:flex; align-items:center; gap:12px; margin-bottom:7px; animation:fadeIn .3s ease; }
+    .cc-req-avatar { width:36px; height:36px; border-radius:50%; background:var(--parchment-dark); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .cc-req-name { font-family:'Cinzel',serif; font-size:.88rem; font-weight:600; color:var(--gold-light); flex:1; }
+    .cc-req-accept { font-family:'Cinzel',serif; font-size:.54rem; text-transform:uppercase; letter-spacing:.1em; padding:5px 11px; background:var(--green); color:var(--parchment); border:none; border-radius:2px; cursor:pointer; margin-right:5px; }
+    .cc-req-decline { font-family:'Cinzel',serif; font-size:.54rem; text-transform:uppercase; letter-spacing:.1em; padding:5px 11px; background:transparent; color:var(--border-light); border:1px solid var(--border); border-radius:2px; cursor:pointer; }
+
+    @media (max-width:600px) {
+      .cc-mode-grid { grid-template-columns:1fr; }
+      .cc-field-row.col2,.cc-field-row.col3 { grid-template-columns:1fr; }
+      .cc-module-grid,.cc-rule-grid,.cc-layout-grid { grid-template-columns:1fr; }
+      .parchment-card { padding:18px 15px; }
+      .cc-action-row { flex-wrap:wrap; }
+      .cc-invite-box { flex-direction:column; }
     }
   </style>
 </head>
@@ -621,9 +745,13 @@
       <div style="max-width: 600px; margin: 0 auto;">
         <div class="add-friend-form">
           <input type="email" id="friend-email" class="form-input" placeholder="Friend's email address...">
-          <button onclick="addFriend()" class="btn-add-friend">Add</button>
+          <button onclick="addFriend()" class="btn-add-friend">Send Request</button>
         </div>
         <div class="message" id="friend-message"></div>
+        <div id="friend-requests-section" style="display:none;margin-bottom:20px;">
+          <div class="cc-req-title">📨 Incoming Friend Requests</div>
+          <div id="friend-requests-list"></div>
+        </div>
         <div class="friends-list" id="friends-list">
           <div style="text-align: center; color: var(--border-light); padding: 40px 20px;">
             <div style="font-size: 2rem; margin-bottom: 12px;">👥</div>
@@ -635,47 +763,315 @@
 
     <!-- TAB: CREATE & JOIN -->
     <div id="create-join" class="tab-content">
-      <div class="tab-content active" id="tab-create" style="display:block;">
 
-        <!-- GM Command Center CTA -->
-        <div style="background:linear-gradient(135deg,rgba(196,146,10,0.1) 0%,rgba(122,21,21,0.06) 100%);border:1px solid rgba(196,146,10,0.3);border-radius:3px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-          <div>
-            <div style="font-family:'Cinzel',serif;font-size:0.85rem;font-weight:900;color:#c4920a;margin-bottom:4px;">🏰 Full Campaign Creator</div>
-            <div style="font-size:0.82rem;color:#4a3520;line-height:1.5;">World systems, dashboard layout, rules, permissions, modules &amp; more — the complete DM experience.</div>
+      <!-- ── MODE SELECT ── -->
+      <div id="cc-select" class="cc-screen active">
+        <div class="cc-mode-grid">
+          <div class="cc-mode-card primary" onclick="ccShowQuick()">
+            <span class="cc-mode-icon">⚡</span>
+            <div class="cc-mode-label">Quick Start</div>
+            <div class="cc-mode-sub">Ready in under a minute</div>
+            <div class="cc-mode-desc">Name, theme, player count — get your campaign live fast. Expand everything later from settings.</div>
+            <div class="cc-mode-time">Under 60 seconds</div>
           </div>
-          <a href="campaign-creator.html" style="font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.15em;color:#f5ead2;background:#7a1515;border:1px solid #7a1515;border-radius:2px;padding:9px 16px;text-decoration:none;white-space:nowrap;flex-shrink:0;">Launch Creator →</a>
-        </div>
-
-        <div class="form-container">
-          <div class="form-title">✨ Quick Campaign</div>
-
-          <div class="form-group">
-            <label class="form-label">Campaign Name</label>
-            <input type="text" id="create-name" class="form-input" placeholder="e.g. Dragon Veil Chronicles">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Campaign Type</label>
-            <input type="text" id="create-type" class="form-input" placeholder="e.g. Fantasy, Sci-Fi, Horror">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Max Player Count</label>
-            <input type="number" id="create-slots" class="form-input" value="4" min="2" max="10" placeholder="2-10 players">
-          </div>
-
-          <div class="message" id="create-message"></div>
-
-          <div class="form-buttons">
-            <button class="btn-form primary" onclick="createCampaign()">✓ Create Campaign</button>
+          <div class="cc-mode-card" onclick="ccShowAdvanced()">
+            <span class="cc-mode-icon">🏰</span>
+            <div class="cc-mode-label">Advanced Setup</div>
+            <div class="cc-mode-sub">Full configuration</div>
+            <div class="cc-mode-desc">Rules, modules, world systems, dashboard layout, and permissions — all from the start.</div>
+            <div class="cc-mode-time">5–10 minutes</div>
           </div>
         </div>
       </div>
 
-      <div id="tab-join" style="margin-top: 40px;">
+      <!-- ── QUICK START ── -->
+      <div id="cc-quick" class="cc-screen">
+        <div class="cc-creator-title">Quick Start</div>
+        <div class="cc-creator-sub">Essential settings · Everything else configurable later</div>
+        <div class="parchment-card">
+          <div class="cc-section-title">Campaign Identity</div>
+          <div class="cc-field-group">
+            <label class="cc-field-label">Campaign Name <span style="color:var(--red)">*</span></label>
+            <input class="cc-field-input" id="qs-name" type="text" placeholder="e.g. The Dragon Veil Chronicles" maxlength="80" autocomplete="off">
+          </div>
+          <div class="cc-field-group">
+            <label class="cc-field-label">Short Description</label>
+            <textarea class="cc-field-textarea" id="qs-desc" placeholder="A brief summary of your campaign's premise…" rows="3"></textarea>
+          </div>
+          <div class="cc-field-group">
+            <label class="cc-field-label">Theme</label>
+            <div class="cc-chip-group" id="qs-themes">
+              <div class="cc-chip active" data-val="High Fantasy" onclick="ccPickTheme(this,'qs')">High Fantasy</div>
+              <div class="cc-chip" data-val="Dark Fantasy" onclick="ccPickTheme(this,'qs')">Dark Fantasy</div>
+              <div class="cc-chip" data-val="Political Intrigue" onclick="ccPickTheme(this,'qs')">Political Intrigue</div>
+              <div class="cc-chip" data-val="Horror" onclick="ccPickTheme(this,'qs')">Horror</div>
+              <div class="cc-chip" data-val="Exploration" onclick="ccPickTheme(this,'qs')">Exploration</div>
+              <div class="cc-chip" data-val="Homebrew" onclick="ccPickTheme(this,'qs')">Homebrew</div>
+            </div>
+          </div>
+          <div class="cc-divider"><span>Players &amp; Level</span></div>
+          <div class="cc-field-row col2">
+            <div class="cc-field-group">
+              <label class="cc-field-label">Max Players</label>
+              <div class="cc-slot-picker">
+                <button class="cc-slot-btn" data-n="2" onclick="ccPickSlots(this,'qs')">2</button>
+                <button class="cc-slot-btn" data-n="3" onclick="ccPickSlots(this,'qs')">3</button>
+                <button class="cc-slot-btn active" data-n="4" onclick="ccPickSlots(this,'qs')">4</button>
+                <button class="cc-slot-btn" data-n="5" onclick="ccPickSlots(this,'qs')">5</button>
+                <button class="cc-slot-btn" data-n="6" onclick="ccPickSlots(this,'qs')">6</button>
+              </div>
+            </div>
+            <div class="cc-field-group">
+              <label class="cc-field-label">Starting Level</label>
+              <input class="cc-field-input" id="qs-level" type="number" min="1" max="20" value="1" style="max-width:110px;">
+            </div>
+          </div>
+          <div class="cc-divider"><span>Privacy</span></div>
+          <div class="cc-toggle-row">
+            <div class="cc-toggle on" id="qs-private-toggle" onclick="this.classList.toggle('on')"></div>
+            <span class="cc-toggle-label">Private — players join via invite code only</span>
+          </div>
+          <div class="cc-toggle-row">
+            <div class="cc-toggle" id="qs-draft-toggle" onclick="this.classList.toggle('on')"></div>
+            <span class="cc-toggle-label">Save as Draft — don't generate invite code yet</span>
+          </div>
+          <div class="cc-error" id="qs-error"></div>
+          <div class="cc-action-row">
+            <button class="cc-btn cc-btn-ghost" onclick="ccShowSelect()">← Back</button>
+            <button class="cc-btn cc-btn-green" id="qs-btn" onclick="ccCreateQuick()">Create Campaign →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADVANCED SETUP ── -->
+      <div id="cc-advanced" class="cc-screen">
+        <div class="cc-creator-title">Advanced Setup</div>
+        <div class="cc-creator-sub">Full DM Command Center configuration</div>
+
+        <div class="cc-accordion open" id="cca-basics">
+          <div class="cc-acc-header" onclick="ccToggleAcc('cca-basics')">
+            <span class="cc-acc-icon">📜</span>
+            <div><div class="cc-acc-title">Campaign Basics</div><div class="cc-acc-sub">Name, description, theme, banner, and schedule</div></div>
+            <span class="cc-acc-arrow">▼</span>
+          </div>
+          <div class="cc-acc-body">
+            <div class="parchment-card" style="margin:0;box-shadow:none;border:none;background:transparent;">
+              <div class="cc-field-group">
+                <label class="cc-field-label">Campaign Name <span style="color:var(--red)">*</span></label>
+                <input class="cc-field-input" id="adv-name" type="text" placeholder="e.g. Shadows of the Sunless Sea" maxlength="80">
+              </div>
+              <div class="cc-field-row col2">
+                <div class="cc-field-group">
+                  <label class="cc-field-label">Tone</label>
+                  <select class="cc-field-input" id="adv-tone">
+                    <option>Heroic Epic</option><option>Gritty Realism</option>
+                    <option>Dark &amp; Mature</option><option>Whimsical &amp; Light</option>
+                    <option>Mystery &amp; Intrigue</option><option>Survival Horror</option>
+                  </select>
+                </div>
+                <div class="cc-field-group">
+                  <label class="cc-field-label">XP Progression</label>
+                  <select class="cc-field-input" id="adv-xp">
+                    <option value="milestone">Milestone (story beats)</option>
+                    <option value="xp">Standard XP</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="dm">DM Discretion</option>
+                  </select>
+                </div>
+              </div>
+              <div class="cc-field-group">
+                <label class="cc-field-label">Theme</label>
+                <div class="cc-chip-group" id="adv-themes">
+                  <div class="cc-chip active" data-val="High Fantasy" onclick="ccPickTheme(this,'adv')">High Fantasy</div>
+                  <div class="cc-chip" data-val="Dark Fantasy" onclick="ccPickTheme(this,'adv')">Dark Fantasy</div>
+                  <div class="cc-chip" data-val="Political Intrigue" onclick="ccPickTheme(this,'adv')">Political Intrigue</div>
+                  <div class="cc-chip" data-val="Horror" onclick="ccPickTheme(this,'adv')">Horror</div>
+                  <div class="cc-chip" data-val="Exploration" onclick="ccPickTheme(this,'adv')">Exploration</div>
+                  <div class="cc-chip" data-val="Dungeon Crawl" onclick="ccPickTheme(this,'adv')">Dungeon Crawl</div>
+                  <div class="cc-chip" data-val="Homebrew" onclick="ccPickTheme(this,'adv')">Homebrew</div>
+                </div>
+              </div>
+              <div class="cc-field-group">
+                <label class="cc-field-label">Description / Premise</label>
+                <textarea class="cc-field-textarea" id="adv-desc" placeholder="Describe the setting, premise, and world your players will inhabit…" rows="4"></textarea>
+              </div>
+              <div class="cc-field-group">
+                <label class="cc-field-label">Campaign Banner</label>
+                <div class="cc-banner-upload">
+                  <input type="file" accept="image/*" onchange="ccHandleBanner(event)">
+                  <div style="font-size:1.5rem;margin-bottom:3px;">🖼</div>
+                  <div style="font-family:'Cinzel',serif;font-size:.5rem;text-transform:uppercase;letter-spacing:.12em;color:var(--border-light);">Click or drag · JPG, PNG, WebP</div>
+                  <img class="cc-banner-preview" id="adv-banner-preview">
+                </div>
+              </div>
+              <div class="cc-field-row col3">
+                <div class="cc-field-group">
+                  <label class="cc-field-label">Max Players</label>
+                  <div class="cc-slot-picker">
+                    <button class="cc-slot-btn" data-n="2" onclick="ccPickSlots(this,'adv')">2</button>
+                    <button class="cc-slot-btn" data-n="3" onclick="ccPickSlots(this,'adv')">3</button>
+                    <button class="cc-slot-btn active" data-n="4" onclick="ccPickSlots(this,'adv')">4</button>
+                    <button class="cc-slot-btn" data-n="5" onclick="ccPickSlots(this,'adv')">5</button>
+                    <button class="cc-slot-btn" data-n="6" onclick="ccPickSlots(this,'adv')">6</button>
+                  </div>
+                </div>
+                <div class="cc-field-group">
+                  <label class="cc-field-label">Starting Level</label>
+                  <input class="cc-field-input" id="adv-level" type="number" min="1" max="20" value="1">
+                </div>
+                <div class="cc-field-group">
+                  <label class="cc-field-label">Session Frequency</label>
+                  <select class="cc-field-input" id="adv-freq">
+                    <option>Weekly</option><option>Bi-weekly</option>
+                    <option>Monthly</option><option>Irregular</option>
+                  </select>
+                </div>
+              </div>
+              <div class="cc-field-row col2">
+                <div class="cc-field-group">
+                  <label class="cc-field-label">Session Day &amp; Time</label>
+                  <input class="cc-field-input" id="adv-schedule" type="text" placeholder="e.g. Saturdays at 7pm EST">
+                </div>
+                <div class="cc-field-group">
+                  <label class="cc-field-label">Privacy</label>
+                  <select class="cc-field-input" id="adv-privacy">
+                    <option value="private">Private (invite code only)</option>
+                    <option value="dm-approve">DM Approval Required</option>
+                    <option value="open">Open (anyone with code)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="cc-toggle-row">
+                <div class="cc-toggle" id="adv-draft-toggle" onclick="this.classList.toggle('on')"></div>
+                <span class="cc-toggle-label">Save as Draft — generate invite code later</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-accordion" id="cca-rules">
+          <div class="cc-acc-header" onclick="ccToggleAcc('cca-rules')">
+            <span class="cc-acc-icon">📚</span>
+            <div><div class="cc-acc-title">Rule System</div><div class="cc-acc-sub">Homebrew rules, house rules, and gameplay modifiers</div></div>
+            <span class="cc-acc-arrow">▼</span>
+          </div>
+          <div class="cc-acc-body">
+            <div style="color:var(--parchment-dark);">
+              <div class="cc-rule-grid">
+                <div class="cc-rule-preset active" onclick="ccPickRule(this)"><span class="cc-rule-tag live">Active</span><div class="cc-rule-name">Homebrew / Custom</div><div style="font-size:.72rem;color:var(--border-light);font-style:italic;margin-top:3px;">Full DM control</div></div>
+                <div class="cc-rule-preset locked"><span class="cc-rule-tag soon">Soon</span><div class="cc-rule-name">D&amp;D 5e (2014)</div></div>
+                <div class="cc-rule-preset locked"><span class="cc-rule-tag soon">Soon</span><div class="cc-rule-name">D&amp;D 2024</div></div>
+                <div class="cc-rule-preset locked"><span class="cc-rule-tag soon">Soon</span><div class="cc-rule-name">Pathfinder 2e</div></div>
+              </div>
+              <div class="cc-divider"><span>House Rules</span></div>
+              <div class="cc-module-grid">
+                <div class="cc-module-item on" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Critical Hit System</div><div class="cc-module-desc">Custom crit effects</div></div></div>
+                <div class="cc-module-item" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Flanking Rules</div><div class="cc-module-desc">Positional advantage</div></div></div>
+                <div class="cc-module-item" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Gritty Rest System</div><div class="cc-module-desc">Short/long rest rules</div></div></div>
+                <div class="cc-module-item" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Heroic Death Saves</div><div class="cc-module-desc">Cinematic death rules</div></div></div>
+              </div>
+              <div class="cc-field-group" style="margin-top:14px;">
+                <label class="cc-field-label" style="color:var(--parchment-dark);">Custom House Rule Notes</label>
+                <textarea class="cc-field-textarea" id="adv-houserules" placeholder="Document your custom rules…" rows="3" style="background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--parchment-dark);"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-accordion" id="cca-modules">
+          <div class="cc-acc-header" onclick="ccToggleAcc('cca-modules')">
+            <span class="cc-acc-icon">🌍</span>
+            <div><div class="cc-acc-title">World &amp; Campaign Systems</div><div class="cc-acc-sub">Enable the modules your campaign needs</div></div>
+            <span class="cc-acc-arrow">▼</span>
+          </div>
+          <div class="cc-acc-body">
+            <div style="color:var(--parchment-dark);margin-bottom:10px;font-size:.8rem;font-style:italic;">Click to enable or disable. All can be changed later.</div>
+            <div class="cc-module-grid">
+              <div class="cc-module-item on" id="cc-mod-quests" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">⚔ Quest Board</div><div class="cc-module-desc">Main, side &amp; hidden quests</div></div></div>
+              <div class="cc-module-item on" id="cc-mod-shop" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">🏪 Shop Inventories</div><div class="cc-module-desc">Stores, stock &amp; restock</div></div></div>
+              <div class="cc-module-item on" id="cc-mod-bulletin" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">📋 Bulletin Board</div><div class="cc-module-desc">Rumors &amp; faction notices</div></div></div>
+              <div class="cc-module-item on" id="cc-mod-reputation" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">⚖ Reputation System</div><div class="cc-module-desc">Faction standings</div></div></div>
+              <div class="cc-module-item on" id="cc-mod-sessions" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">📅 Session Tracker</div><div class="cc-module-desc">Notes, recaps &amp; scheduling</div></div></div>
+              <div class="cc-module-item on" id="cc-mod-maps" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">🗺 Campaign Maps</div><div class="cc-module-desc">Region maps with pins</div></div></div>
+              <div class="cc-module-item" id="cc-mod-npc" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">🧙 NPC Compendium</div><div class="cc-module-desc">NPC notes &amp; tracking</div></div></div>
+              <div class="cc-module-item" id="cc-mod-loot" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">💎 Loot Tracker</div><div class="cc-module-desc">Party loot distribution</div></div></div>
+              <div class="cc-module-item" id="cc-mod-dmnotes" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">🔒 DM Secret Vault</div><div class="cc-module-desc">Private notes &amp; spoilers</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-accordion" id="cca-layout">
+          <div class="cc-acc-header" onclick="ccToggleAcc('cca-layout')">
+            <span class="cc-acc-icon">🖥</span>
+            <div><div class="cc-acc-title">Dashboard Layout</div><div class="cc-acc-sub">Choose your starting workspace preset</div></div>
+            <span class="cc-acc-arrow">▼</span>
+          </div>
+          <div class="cc-acc-body">
+            <div class="cc-layout-grid">
+              <div class="cc-layout-card active" onclick="ccPickLayout(this,'session-prep')">
+                <div class="cc-layout-preview" style="display:grid;grid-template-columns:2fr 1fr;gap:3px;"><div class="cc-lp-box" style="height:100%;"></div><div style="display:grid;gap:3px;"><div class="cc-lp-box"></div><div class="cc-lp-box"></div></div></div>
+                <div class="cc-layout-name">Session Prep</div>
+              </div>
+              <div class="cc-layout-card" onclick="ccPickLayout(this,'combat')">
+                <div class="cc-layout-preview" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;"><div class="cc-lp-box" style="height:100%;"></div><div style="display:grid;gap:3px;"><div class="cc-lp-box"></div><div class="cc-lp-box"></div><div class="cc-lp-box"></div></div></div>
+                <div class="cc-layout-name">Combat Mode</div>
+              </div>
+              <div class="cc-layout-card" onclick="ccPickLayout(this,'notes')">
+                <div class="cc-layout-preview" style="display:flex;flex-direction:column;gap:3px;"><div class="cc-lp-box" style="flex:1;"></div><div class="cc-lp-box" style="flex:1;"></div></div>
+                <div class="cc-layout-name">Notes Focus</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-accordion" id="cca-perms">
+          <div class="cc-acc-header" onclick="ccToggleAcc('cca-perms')">
+            <span class="cc-acc-icon">🔐</span>
+            <div><div class="cc-acc-title">Permissions &amp; Players</div><div class="cc-acc-sub">Control what players can see and edit</div></div>
+            <span class="cc-acc-arrow">▼</span>
+          </div>
+          <div class="cc-acc-body">
+            <div class="cc-module-grid">
+              <div class="cc-module-item on" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Activity Logs</div><div class="cc-module-desc">Track all player edits</div></div></div>
+              <div class="cc-module-item on" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">DM Approval</div><div class="cc-module-desc">Review join requests</div></div></div>
+              <div class="cc-module-item" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Player Quest Edits</div><div class="cc-module-desc">Players update quests</div></div></div>
+              <div class="cc-module-item on" onclick="this.classList.toggle('on')"><div class="cc-module-dot"></div><div><div class="cc-module-label">Shared Session Notes</div><div class="cc-module-desc">Players view recaps</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cc-error" id="adv-error" style="max-width:860px;margin:0 auto 0;"></div>
+        <div class="cc-action-row" style="max-width:860px;margin:0 auto;">
+          <button class="cc-btn cc-btn-ghost" onclick="ccShowSelect()">← Back</button>
+          <button class="cc-btn cc-btn-gold" onclick="ccCreateAdvanced('draft')">Save as Draft</button>
+          <button class="cc-btn cc-btn-green" id="adv-btn" onclick="ccCreateAdvanced('active')">Launch Campaign →</button>
+        </div>
+      </div>
+
+      <!-- ── SUCCESS ── -->
+      <div id="cc-success" class="cc-screen">
+        <div class="cc-success-panel">
+          <div class="cc-success-icon">🏰</div>
+          <div class="cc-success-title" id="cc-success-title">Campaign Ready!</div>
+          <div class="cc-success-sub" id="cc-success-sub">Your world is ready.</div>
+          <div class="cc-invite-box" id="cc-invite-box" style="display:none;">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:.44rem;text-transform:uppercase;letter-spacing:.2em;color:var(--border-light);margin-bottom:3px;">Invite Code</div>
+              <div class="cc-invite-code" id="cc-invite-code">——</div>
+            </div>
+            <button class="cc-copy-btn" onclick="ccCopyInvite()">Copy Link</button>
+          </div>
+          <div class="cc-success-btns">
+            <button onclick="ccShowSelect()" class="cc-btn cc-btn-ghost">Create Another</button>
+            <a id="cc-enter-btn" href="dashboard.html" class="cc-btn cc-btn-green" style="text-decoration:none;">Enter Campaign →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── JOIN ── -->
+      <div style="margin-top:32px;">
         <div class="form-container">
           <div class="form-title">🔗 Join a Campaign</div>
-
           <div class="form-group">
             <label class="form-label">Invite Code</label>
             <div class="join-input-container">
@@ -683,7 +1079,6 @@
               <button class="btn-join" onclick="joinCampaign()">Join</button>
             </div>
           </div>
-
           <div class="message" id="join-message"></div>
         </div>
       </div>
@@ -818,37 +1213,56 @@
 
     function loadFriends() {
       const list = document.getElementById('friends-list');
+      const reqSection = document.getElementById('friend-requests-section');
+      const reqList = document.getElementById('friend-requests-list');
 
       db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
-        if (!doc.exists || !doc.data().friends || doc.data().friends.length === 0) {
-          list.innerHTML = `
-            <div style="text-align: center; color: var(--border-light); padding: 40px 20px;">
-              <div style="font-size: 2rem; margin-bottom: 12px;">👥</div>
-              <div>No friends added yet.</div>
+        const data = doc.exists ? doc.data() : {};
+
+        // Render incoming requests
+        const requests = data.friendRequests || [];
+        if (requests.length > 0) {
+          reqSection.style.display = 'block';
+          reqList.innerHTML = requests.map(r => `
+            <div class="cc-req-card">
+              <div class="cc-req-avatar">${(r.fromName || '?').charAt(0).toUpperCase()}</div>
+              <div class="cc-req-name">${escHtml(r.fromName || 'Someone')}</div>
+              <button class="cc-req-accept" onclick="acceptFriendRequest('${r.from}','${escHtml(r.fromName||'').replace(/'/g,"\\'")}')">Accept</button>
+              <button class="cc-req-decline" onclick="declineFriendRequest('${r.from}','${escHtml(r.fromName||'').replace(/'/g,"\\'")}')">Decline</button>
             </div>
-          `;
-          return;
+          `).join('');
+        } else {
+          reqSection.style.display = 'none';
+          reqList.innerHTML = '';
         }
 
-        const friendIds = doc.data().friends || [];
+        // Render friends list
+        const friendIds = data.friends || [];
+        if (friendIds.length === 0) {
+          list.innerHTML = `
+            <div style="text-align:center;color:var(--border-light);padding:40px 20px;">
+              <div style="font-size:2rem;margin-bottom:12px;">👥</div>
+              <div>No friends yet. Send a request above!</div>
+            </div>`;
+          return;
+        }
         Promise.all(friendIds.map(uid => db.collection('users').doc(uid).get()))
           .then(docs => {
-            list.innerHTML = docs.map(doc => {
-              if (!doc.exists) return '';
-              const friend = doc.data();
-              const avatar = (friend.displayName?.charAt(0) || '👤').toUpperCase();
+            list.innerHTML = docs.map(d => {
+              if (!d.exists) return '';
+              const f = d.data();
+              const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
               return `
                 <div class="friend-card">
                   <div class="friend-info">
                     <div class="friend-avatar">${avatar}</div>
                     <div class="friend-details">
-                      <div class="friend-name">${friend.displayName || 'Unknown'}</div>
-                      <div class="friend-campaign">${friend.displayName} is offline</div>
+                      <div class="friend-name">${escHtml(f.displayName || 'Unknown')}</div>
+                      <div class="friend-campaign">${escHtml(f.email || '')}</div>
                     </div>
                   </div>
-                  <button class="friend-action" onclick="removeFriend('${doc.id}')">Remove</button>
-                </div>
-              `;
+                  <button class="friend-action" onclick="removeFriend('${d.id}')">Remove</button>
+                </div>`;
             }).join('');
           });
       });
@@ -857,43 +1271,70 @@
     function addFriend() {
       const email = document.getElementById('friend-email').value.trim();
       const msg = document.getElementById('friend-message');
+      if (!email) { showMessage(msg, 'Please enter your friend\'s email.', 'error'); return; }
 
-      if (!email) {
-        showMessage(msg, 'Please enter your friend\'s email.', 'error');
-        return;
-      }
-
-      // Find user by email
       db.collection('users').where('email', '==', email).limit(1).get()
         .then(snap => {
-          if (snap.empty) {
-            showMessage(msg, 'User not found.', 'error');
-            return;
-          }
-
+          if (snap.empty) { showMessage(msg, 'No account found with that email.', 'error'); return; }
           const friendUid = snap.docs[0].id;
-          if (friendUid === currentUser.uid) {
-            showMessage(msg, 'You can\'t add yourself.', 'error');
-            return;
+          if (friendUid === currentUser.uid) { showMessage(msg, 'You can\'t add yourself.', 'error'); return; }
+          const friendData = snap.docs[0].data();
+
+          // Check if already friends
+          const myFriends = friendData.friends || [];
+          if (myFriends.includes(currentUser.uid)) {
+            showMessage(msg, 'You\'re already friends!', 'error'); return;
           }
 
-          // Add to current user's friends
-          db.collection('users').doc(currentUser.uid).update({
-            friends: firebase.firestore.FieldValue.arrayUnion(friendUid)
-          });
-
-          // Add current user to friend's friends
+          // Send request to recipient's friendRequests array
           db.collection('users').doc(friendUid).update({
-            friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+            friendRequests: firebase.firestore.FieldValue.arrayUnion({
+              from: currentUser.uid,
+              fromName: currentUser.displayName || currentUser.email,
+              fromEmail: currentUser.email
+            })
+          }).then(() => {
+            document.getElementById('friend-email').value = '';
+            showMessage(msg, `Friend request sent to ${friendData.displayName || email}!`, 'success');
+            setTimeout(() => msg.classList.remove('show'), 3000);
           });
-
-          document.getElementById('friend-email').value = '';
-          showMessage(msg, 'Friend added!', 'success');
-          setTimeout(() => msg.classList.remove('show'), 3000);
         })
-        .catch(err => {
-          showMessage(msg, 'Error adding friend.', 'error');
+        .catch(() => showMessage(msg, 'Error sending request.', 'error'));
+    }
+
+    function acceptFriendRequest(fromUid, fromName) {
+      const myRequest = { from: fromUid, fromName };
+      // Add both to friends, remove the request
+      Promise.all([
+        db.collection('users').doc(currentUser.uid).update({
+          friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
+          friendRequests: firebase.firestore.FieldValue.arrayRemove(myRequest)
+        }),
+        db.collection('users').doc(fromUid).update({
+          friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+        })
+      ]).catch(err => {
+        // Fallback: remove by rebuilding array without this request
+        db.collection('users').doc(currentUser.uid).get().then(doc => {
+          const reqs = (doc.data().friendRequests || []).filter(r => r.from !== fromUid);
+          db.collection('users').doc(currentUser.uid).update({
+            friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
+            friendRequests: reqs
+          });
         });
+      });
+    }
+
+    function declineFriendRequest(fromUid, fromName) {
+      const myRequest = { from: fromUid, fromName };
+      db.collection('users').doc(currentUser.uid).update({
+        friendRequests: firebase.firestore.FieldValue.arrayRemove(myRequest)
+      }).catch(() => {
+        db.collection('users').doc(currentUser.uid).get().then(doc => {
+          const reqs = (doc.data().friendRequests || []).filter(r => r.from !== fromUid);
+          db.collection('users').doc(currentUser.uid).update({ friendRequests: reqs });
+        });
+      });
     }
 
     function removeFriend(friendUid) {
@@ -1003,6 +1444,156 @@
     function signOut() {
       firebase.auth().signOut().then(() => {
         window.location.href = 'home.html';
+      });
+    }
+
+    // ─── Inline Campaign Creator ───
+    let ccQsSlots = 4, ccAdvSlots = 4;
+    let ccQsTheme = 'High Fantasy', ccAdvTheme = 'High Fantasy';
+    let ccAdvLayout = 'session-prep';
+    let ccBanner = '';
+    let ccInviteCode = '';
+
+    function ccShowSelect() {
+      ['cc-quick','cc-advanced','cc-success'].forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById('cc-select').classList.add('active');
+    }
+    function ccShowQuick() {
+      document.getElementById('cc-select').classList.remove('active');
+      document.getElementById('cc-quick').classList.add('active');
+    }
+    function ccShowAdvanced() {
+      document.getElementById('cc-select').classList.remove('active');
+      document.getElementById('cc-advanced').classList.add('active');
+    }
+    function ccShowSuccess(id, code, name) {
+      ['cc-select','cc-quick','cc-advanced'].forEach(s => document.getElementById(s).classList.remove('active'));
+      document.getElementById('cc-success').classList.add('active');
+      document.getElementById('cc-success-title').textContent = name + ' is Ready!';
+      const box = document.getElementById('cc-invite-box');
+      if (code) {
+        box.style.display = 'inline-flex';
+        document.getElementById('cc-invite-code').textContent = code;
+        ccInviteCode = code;
+        document.getElementById('cc-success-sub').textContent = 'Share the invite code so your adventurers can join.';
+      } else {
+        box.style.display = 'none';
+        document.getElementById('cc-success-sub').textContent = 'Saved as Draft. Publish from your campaigns list when ready.';
+      }
+      document.getElementById('cc-enter-btn').href = 'index.html?c=' + id;
+    }
+    function ccToggleAcc(id) { document.getElementById(id).classList.toggle('open'); }
+    function ccPickSlots(btn, prefix) {
+      btn.closest('.cc-slot-picker').querySelectorAll('.cc-slot-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (prefix === 'qs') ccQsSlots = +btn.dataset.n; else ccAdvSlots = +btn.dataset.n;
+    }
+    function ccPickTheme(chip, prefix) {
+      chip.closest('.cc-chip-group').querySelectorAll('.cc-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      if (prefix === 'qs') ccQsTheme = chip.dataset.val; else ccAdvTheme = chip.dataset.val;
+    }
+    function ccPickRule(el) {
+      if (el.classList.contains('locked')) return;
+      document.querySelectorAll('.cc-rule-preset:not(.locked)').forEach(r => r.classList.remove('active'));
+      el.classList.add('active');
+    }
+    function ccPickLayout(el, key) {
+      document.querySelectorAll('.cc-layout-card').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      ccAdvLayout = key;
+    }
+    function ccHandleBanner(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        ccBanner = ev.target.result;
+        const p = document.getElementById('adv-banner-preview');
+        p.src = ccBanner; p.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    function ccGetModules() {
+      const map = {'cc-mod-quests':'quests','cc-mod-shop':'shop','cc-mod-bulletin':'bulletin','cc-mod-reputation':'reputation','cc-mod-sessions':'sessions','cc-mod-maps':'maps','cc-mod-npc':'npc','cc-mod-loot':'loot','cc-mod-dmnotes':'dmnotes'};
+      const res = {};
+      Object.entries(map).forEach(([id,k]) => { const el = document.getElementById(id); res[k] = el ? el.classList.contains('on') : false; });
+      return res;
+    }
+    async function ccCreateQuick() {
+      const name = document.getElementById('qs-name').value.trim();
+      const err = document.getElementById('qs-error');
+      err.className = 'cc-error';
+      if (!name) { err.textContent = 'Campaign name is required.'; err.classList.add('show'); document.getElementById('qs-name').focus(); return; }
+      const btn = document.getElementById('qs-btn');
+      btn.disabled = true; btn.textContent = 'Creating…';
+      const isDraft = document.getElementById('qs-draft-toggle').classList.contains('on');
+      const status = isDraft ? 'draft' : 'active';
+      const code = status === 'active' ? Math.random().toString(36).substring(2,8).toUpperCase() : '';
+      try {
+        const ref = db.collection('campaigns').doc();
+        const defaultMods = {quests:true,shop:true,bulletin:true,reputation:true,sessions:true,maps:true};
+        await ref.set({
+          name, description: document.getElementById('qs-desc').value.trim(),
+          theme: ccQsTheme, dmUid: currentUser.uid, status, inviteCode: code,
+          playerSlots: ccQsSlots, startingLevel: parseInt(document.getElementById('qs-level').value)||1,
+          players:{}, memberUids:[currentUser.uid], modules:defaultMods, layoutPreset:'session-prep',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection('users').doc(currentUser.uid).update({campaignIds: firebase.firestore.FieldValue.arrayUnion(ref.id)});
+        ccShowSuccess(ref.id, code, name);
+      } catch(e) {
+        err.textContent = 'Error: ' + e.message; err.classList.add('show');
+        btn.disabled = false; btn.textContent = 'Create Campaign →';
+      }
+    }
+    async function ccCreateAdvanced(status) {
+      const name = document.getElementById('adv-name').value.trim();
+      const err = document.getElementById('adv-error');
+      err.className = 'cc-error';
+      if (!name) {
+        err.textContent = 'Campaign name is required — fill in Campaign Basics first.';
+        err.classList.add('show');
+        document.getElementById('cca-basics').classList.add('open');
+        document.getElementById('adv-name').focus();
+        return;
+      }
+      const isDraft = document.getElementById('adv-draft-toggle').classList.contains('on');
+      const finalStatus = isDraft ? 'draft' : status;
+      const code = finalStatus === 'active' ? Math.random().toString(36).substring(2,8).toUpperCase() : '';
+      const btn = document.getElementById('adv-btn');
+      btn.disabled = true;
+      const mods = ccGetModules();
+      try {
+        const ref = db.collection('campaigns').doc();
+        await ref.set({
+          name, description: document.getElementById('adv-desc').value.trim(),
+          theme: ccAdvTheme, tone: document.getElementById('adv-tone').value,
+          xpProgression: document.getElementById('adv-xp').value,
+          sessionFrequency: document.getElementById('adv-freq').value,
+          sessionSchedule: document.getElementById('adv-schedule').value.trim(),
+          privacy: document.getElementById('adv-privacy').value,
+          houseRuleNotes: document.getElementById('adv-houserules').value.trim(),
+          banner: ccBanner, dmUid: currentUser.uid, status: finalStatus, inviteCode: code,
+          playerSlots: ccAdvSlots, startingLevel: parseInt(document.getElementById('adv-level').value)||1,
+          players:{}, memberUids:[currentUser.uid], modules:mods, layoutPreset:ccAdvLayout,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection('users').doc(currentUser.uid).update({campaignIds: firebase.firestore.FieldValue.arrayUnion(ref.id)});
+        ccShowSuccess(ref.id, code, name);
+      } catch(e) {
+        err.textContent = 'Error: ' + e.message; err.classList.add('show');
+        btn.disabled = false;
+      }
+    }
+    function ccCopyInvite() {
+      const url = `${location.origin}${location.pathname}?join=${ccInviteCode}`;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.querySelector('.cc-copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy Link', 2000);
       });
     }
 
