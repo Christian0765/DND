@@ -718,6 +718,37 @@
             <button class="dm-btn danger" onclick="closeBroadcast()">✕ Dismiss for All</button>
           </div>
         </div>
+
+        <div class="dm-section" style="margin-top:20px;">
+          <div class="dm-section-title">Dice</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button class="dm-btn" id="dice-mode-real" onclick="setDiceMode('real')" style="flex:1;">🎲 Real Dice</button>
+            <button class="dm-btn" id="dice-mode-digital" onclick="setDiceMode('digital')" style="flex:1;">💻 Digital Dice</button>
+          </div>
+          <div id="dice-digital-controls" style="display:none;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+              <button class="dm-btn" onclick="rollAndBroadcast('d4')" style="padding:6px 10px;font-size:0.65rem;">d4</button>
+              <button class="dm-btn" onclick="rollAndBroadcast('d6')" style="padding:6px 10px;font-size:0.65rem;">d6</button>
+              <button class="dm-btn" onclick="rollAndBroadcast('d8')" style="padding:6px 10px;font-size:0.65rem;">d8</button>
+              <button class="dm-btn" onclick="rollAndBroadcast('d10')" style="padding:6px 10px;font-size:0.65rem;">d10</button>
+              <button class="dm-btn" onclick="rollAndBroadcast('d12')" style="padding:6px 10px;font-size:0.65rem;">d12</button>
+              <button class="dm-btn" onclick="rollAndBroadcast('d20')" style="padding:6px 14px;font-size:0.65rem;border-color:var(--gold-light);color:var(--gold-light);">d20</button>
+              <button class="dm-btn" onclick="rollAndBroadcast('d100')" style="padding:6px 10px;font-size:0.65rem;">d%</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+              <select id="dm-dice-as" style="font-family:'Cinzel',serif;font-size:0.72rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:6px 8px;outline:none;flex:1;">
+                <option value="DM">Roll as: DM</option>
+                <option value="player1">Player 1</option>
+                <option value="player2">Player 2</option>
+                <option value="player3">Player 3</option>
+                <option value="player4">Player 4</option>
+              </select>
+              <input type="number" id="dm-dice-mod" value="0" style="font-family:'Cinzel',serif;font-size:0.8rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:6px 8px;width:64px;outline:none;text-align:center;" placeholder="+0">
+              <span style="font-size:0.6rem;color:var(--border-light);white-space:nowrap;">modifier</span>
+            </div>
+            <button class="dm-btn" onclick="rollInitiative()" style="width:100%;font-size:0.72rem;padding:10px;border-color:var(--gold-light);color:var(--gold-light);">🎲 Roll Initiative for All Players</button>
+          </div>
+        </div>
       </div>
 
       <!-- COLUMN 3: NOTES -->
@@ -911,6 +942,7 @@ function dmLogin() {
     document.getElementById('dm-error').style.display = 'none';
     document.getElementById('dm-controls').classList.add('open');
     document.getElementById('dm-header-logout').style.display = '';
+    setDiceMode(localStorage.getItem('dm-dice-mode') || 'real');
     loadDMData();
   } else {
     document.getElementById('dm-error').style.display = 'block';
@@ -1010,6 +1042,58 @@ function broadcastCombat() {
 function closeBroadcast() {
   if (!db) return;
   db.collection('campaign').doc('broadcast').set({ active: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+}
+
+// Dice
+function setDiceMode(mode) {
+  localStorage.setItem('dm-dice-mode', mode);
+  document.getElementById('dice-digital-controls').style.display = mode === 'digital' ? 'block' : 'none';
+  document.getElementById('dice-mode-real').style.opacity = mode === 'real' ? '1' : '0.5';
+  document.getElementById('dice-mode-digital').style.opacity = mode === 'digital' ? '1' : '0.5';
+}
+
+function rollAndBroadcast(dieType) {
+  if (!db) return;
+  const sides = parseInt(dieType.replace('d', ''));
+  const mod = parseInt(document.getElementById('dm-dice-mod').value) || 0;
+  const rolledBy = document.getElementById('dm-dice-as').value || 'DM';
+  const result = Math.floor(Math.random() * sides) + 1;
+  db.collection('campaign').doc('broadcast').set({
+    active: true, type: 'dice', dieType,
+    result, modifier: mod, total: result + mod, rolledBy,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function rollInitiative() {
+  if (!db) return;
+  const btn = event.target;
+  btn.textContent = 'Rolling…';
+  btn.disabled = true;
+  try {
+    const snaps = await Promise.all(
+      ['player1','player2','player3','player4'].map(id => db.collection('characters').doc(id).get())
+    );
+    const results = snaps
+      .filter(d => d.exists && d.data()['f-name'] && d.data()['f-name'].trim())
+      .map(d => ({
+        charId: d.id,
+        name: d.data()['f-name'],
+        modifier: parseInt(d.data()['f-init'] || '0') || 0,
+        roll: Math.floor(Math.random() * 20) + 1
+      }))
+      .map(r => ({ ...r, total: r.roll + r.modifier }))
+      .sort((a, b) => b.total - a.total);
+    if (!results.length) { alert('No characters found in Firestore.'); return; }
+    db.collection('campaign').doc('broadcast').set({
+      active: true, type: 'initiative', title: '⚔ Initiative!',
+      results, revealMs: 700,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } finally {
+    btn.textContent = '🎲 Roll Initiative for All Players';
+    btn.disabled = false;
+  }
 }
 
 // Request Folder

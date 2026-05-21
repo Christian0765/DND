@@ -43,7 +43,48 @@
     .bp-shop-desc { font-size: 0.78rem; color: #4a3520; font-style: italic; grid-column: 1 / -1; margin-top: -2px; }
     .bp-combat { text-align: center; padding: 20px 0; }
     .bp-combat-icon { font-size: 2.5rem; margin-bottom: 10px; }
-    .bp-combat-msg { font-family: 'Cinzel', serif; font-size: 1.1rem; color: #7a1515; font-weight: 600; }
+    .bp-combat-msg { font-family: 'Cinzel', serif; font-size: 1.1rem; color: #7a1515; font-weight: 600; margin-bottom: 16px; }
+    .bp-combat-link {
+      display: inline-block; font-family: 'Cinzel', serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.15em;
+      color: #c4920a; border: 1px solid #9a7000; border-radius: 2px;
+      padding: 8px 20px; text-decoration: none;
+      transition: background 0.15s;
+    }
+    .bp-combat-link:hover { background: rgba(154,112,0,0.15); }
+
+    /* Initiative reveal */
+    .bp-init-list { padding: 4px 0; }
+    .bp-init-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px dotted #b08840;
+      transition: opacity 0.4s ease;
+    }
+    .bp-init-row:last-child { border-bottom: none; }
+    .bp-init-rank { font-family: 'Cinzel', serif; font-size: 0.6rem; color: #b08840; min-width: 20px; }
+    .bp-init-name { font-family: 'Cinzel', serif; font-size: 0.9rem; font-weight: 600; color: #1a1208; flex: 1; }
+    .bp-init-roll { font-family: 'Cinzel', serif; font-size: 1.6rem; font-weight: 900; color: #7a1515; min-width: 44px; text-align: right; }
+    .bp-init-detail { font-size: 0.75rem; color: #7a5a28; font-style: italic; min-width: 60px; }
+
+    /* Dice corner widget */
+    .dice-corner {
+      position: fixed; bottom: 80px; right: 20px;
+      background: linear-gradient(160deg, #1a0e04 0%, #0d0802 100%);
+      border: 2px solid #9a7000; border-radius: 6px;
+      padding: 14px 20px; z-index: 8999;
+      text-align: center; min-width: 90px;
+      font-family: 'Cinzel', serif;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      animation: diceIn 0.3s ease;
+    }
+    @keyframes diceIn {
+      from { transform: scale(0.4) rotate(-180deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .dc-type { font-size: 0.55rem; color: #b08840; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 4px; }
+    .dc-num  { font-size: 2.8rem; font-weight: 900; color: #c4920a; line-height: 1; }
+    .dc-mod  { font-size: 0.65rem; color: #7a5a28; margin-top: 2px; }
+    .dc-by   { font-size: 0.58rem; color: #7a5a28; margin-top: 4px; border-top: 1px solid #2a1a06; padding-top: 4px; }
   `;
   document.head.appendChild(style);
 
@@ -62,8 +103,14 @@
   document.body.appendChild(panel);
 
   window.showBroadcast = function (data) {
+    if (data.type === 'dice') {
+      showDiceCorner(data);
+      return;
+    }
+
     document.getElementById('bp-title').textContent = data.title || 'DM Announcement';
     const body = document.getElementById('bp-body');
+
     if (data.type === 'text') {
       body.innerHTML = `<p>${(data.text || '').replace(/\n/g, '<br>')}</p>`;
     } else if (data.type === 'image') {
@@ -88,10 +135,69 @@
       body.innerHTML = `<div class="bp-combat">
         <div class="bp-combat-icon">⚔️</div>
         <div class="bp-combat-msg">${data.text || 'Combat has begun — prepare yourselves!'}</div>
+        <a href="combat.html" class="bp-combat-link">⚔ Open Combat Screen →</a>
       </div>`;
+    } else if (data.type === 'initiative') {
+      renderInitiativeReveal(data, body);
     }
+
     document.getElementById('broadcast-panel').classList.add('open');
   };
+
+  function showDiceCorner(data) {
+    let w = document.getElementById('dice-corner-widget');
+    if (w) w.remove();
+    w = document.createElement('div');
+    w.id = 'dice-corner-widget';
+    w.className = 'dice-corner';
+    const modStr = data.modifier && data.modifier !== 0
+      ? (data.modifier > 0 ? ' + ' + data.modifier : ' − ' + Math.abs(data.modifier))
+      : '';
+    w.innerHTML = `
+      <div class="dc-type">${data.dieType || 'd20'}</div>
+      <div class="dc-num" id="dc-num">?</div>
+      ${modStr ? `<div class="dc-mod">${modStr} = <strong>${data.total}</strong></div>` : ''}
+      <div class="dc-by">${data.rolledBy || 'DM'}</div>
+    `;
+    document.body.appendChild(w);
+
+    const el = document.getElementById('dc-num');
+    const sides = parseInt((data.dieType || 'd20').replace('d', '')) || 20;
+    let ticks = 0;
+    const spin = setInterval(() => {
+      el.textContent = Math.floor(Math.random() * sides) + 1;
+      if (++ticks >= 18) {
+        clearInterval(spin);
+        el.textContent = data.result || data.total;
+        el.style.color = data.result >= sides ? '#5a9a3a' : data.result <= 1 ? '#7a1515' : '#c4920a';
+      }
+    }, 80);
+    setTimeout(() => { if (w && w.parentNode) w.remove(); }, 6000);
+  }
+
+  function renderInitiativeReveal(data, body) {
+    const results = data.results || [];
+    body.innerHTML = `<div class="bp-init-list">${
+      results.map((r, i) =>
+        `<div class="bp-init-row" id="bp-init-${i}" style="opacity:0">
+           <span class="bp-init-rank">#${i + 1}</span>
+           <span class="bp-init-name">${r.name}</span>
+           <span class="bp-init-roll">—</span>
+           <span class="bp-init-detail"></span>
+         </div>`
+      ).join('')
+    }</div>`;
+
+    results.forEach((r, i) => {
+      setTimeout(() => {
+        const row = document.getElementById('bp-init-' + i);
+        if (!row) return;
+        row.querySelector('.bp-init-roll').textContent = r.total;
+        row.querySelector('.bp-init-detail').textContent = `(${r.roll} + ${r.modifier})`;
+        row.style.opacity = '1';
+      }, i * (data.revealMs || 600));
+    });
+  }
 
   window.hideBroadcast = function () {
     document.getElementById('broadcast-panel').classList.remove('open');
