@@ -1200,61 +1200,88 @@
 
     function loadCampaigns() {
       const grid = document.getElementById('campaigns-grid');
-
       if (unsubscribeCampaigns) unsubscribeCampaigns();
 
-      unsubscribeCampaigns = db.collection('campaigns')
+      // Two query buckets merged by campaign ID
+      const asDM = {};
+      const asMember = {};
+
+      function renderAll() {
+        // DM entries take precedence (same campaign appears in both queries)
+        const seen = {};
+        const campaigns = [];
+        Object.values(asDM).forEach(c => { seen[c.id] = true; campaigns.push(c); });
+        Object.values(asMember).forEach(c => { if (!seen[c.id]) campaigns.push(c); });
+
+        if (campaigns.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column:1/-1;">
+              <div class="empty-state">
+                <div class="empty-state-icon">📜</div>
+                <div class="empty-state-text">No campaigns yet. Create one or join one to get started!</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = campaigns.map(c => {
+          const playerCount = Object.keys(c.players || {}).length;
+          const isActive = c.status === 'active';
+          const isDM = c.dmUid === currentUser.uid;
+          const href = isDM && !isActive ? `campaign-creator.html?edit=${c.id}` : (isActive ? `index.html?c=${c.id}` : '#');
+          const safeName = escHtml(c.name);
+          const safeCode = escHtml(c.inviteCode || '');
+          const roleLabel = isDM ? '👑 DM' : '⚔ Player';
+
+          return `
+            <div class="campaign-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+                <div class="campaign-name" style="flex:1;">${safeName}</div>
+                <span style="font-family:'Cinzel',serif;font-size:0.6rem;color:var(--border-light);letter-spacing:0.1em;padding-top:2px;">${roleLabel}</span>
+              </div>
+              <div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:8px;">${escHtml(c.type || 'General')}</div>
+              <div class="campaign-meta">
+                <div class="campaign-meta-item">👥 ${playerCount}/${c.playerSlots || '?'}</div>
+                <div class="campaign-meta-item">📋 ${isActive ? 'Active' : 'Draft'}</div>
+              </div>
+              ${isDM ? `
+              <div style="display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px;background:rgba(0,0,0,0.1);border-radius:2px;">
+                <span class="invite-code-display" id="code-${c.id}" style="font-family:monospace;font-size:0.85rem;color:var(--gold);font-weight:600;flex:1;opacity:0;transition:opacity 0.2s;">Invite: ${safeCode}</span>
+                <button class="invite-toggle" onclick="toggleCode('${c.id}', event)" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--border-light);transition:color 0.2s;">👁</button>
+              </div>` : ''}
+              <div class="status-badge status-${c.status}">${isActive ? 'ACTIVE' : 'DRAFT'}</div>
+              ${isDM && isActive ? `
+              <button onclick="event.stopPropagation();openInviteModal('${c.id}','${safeCode}','${safeName.replace(/'/g,"\\'")}')" style="width:100%;margin-top:8px;background:rgba(154,112,0,0.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;padding:6px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;">📨 Invite Friends</button>
+              ` : ''}
+              <div class="campaign-action" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                <a href="${href}" style="flex:1;color:inherit;" onclick="event.stopPropagation();">
+                  ${isActive ? 'Enter Campaign →' : (isDM ? 'Complete Setup →' : 'Awaiting DM →')}
+                </a>
+                ${isDM ? `<button onclick="event.stopPropagation();deleteCampaign('${c.id}','${safeName.replace(/'/g,"\\'")}',this)" style="background:rgba(122,21,21,0.15);border:1px solid var(--red);color:var(--red);border-radius:2px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.7rem;white-space:nowrap;" title="Delete campaign">🗑 Delete</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const unsub1 = db.collection('campaigns')
         .where('dmUid', '==', currentUser.uid)
         .onSnapshot(snap => {
-          const campaigns = [];
-          snap.forEach(doc => {
-            campaigns.push({ id: doc.id, ...doc.data() });
-          });
-
-          if (campaigns.length === 0) {
-            grid.innerHTML = `
-              <div style="grid-column:1/-1;">
-                <div class="empty-state">
-                  <div class="empty-state-icon">📜</div>
-                  <div class="empty-state-text">No campaigns yet. Create one to get started!</div>
-                </div>
-              </div>
-            `;
-            return;
-          }
-
-          grid.innerHTML = campaigns.map(c => {
-            const playerCount = Object.keys(c.players || {}).length;
-            const isActive = c.status === 'active';
-            const isDM = c.dmUid === currentUser.uid;
-            const href = isActive ? `index.html?c=${c.id}` : `campaign-creator.html?edit=${c.id}`;
-            const safeName = escHtml(c.name);
-            const safeCode = escHtml(c.inviteCode || '');
-
-            return `
-              <div class="campaign-card">
-                <div class="campaign-name">${safeName}</div>
-                <div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:8px;">${escHtml(c.type || 'General')}</div>
-                <div class="campaign-meta">
-                  <div class="campaign-meta-item">👥 ${playerCount}/${c.playerSlots}</div>
-                  <div class="campaign-meta-item">📋 ${isActive ? 'Active' : 'Draft'}</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px;background:rgba(0,0,0,0.1);border-radius:2px;">
-                  <span class="invite-code-display" id="code-${c.id}" style="font-family:monospace;font-size:0.85rem;color:var(--gold);font-weight:600;flex:1;opacity:0;transition:opacity 0.2s;">Invite: ${safeCode}</span>
-                  <button class="invite-toggle" onclick="toggleCode('${c.id}', event)" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--border-light);transition:color 0.2s;">👁</button>
-                </div>
-                <div class="status-badge status-${c.status}">${isActive ? 'ACTIVE' : 'DRAFT'}</div>
-                ${isDM && isActive ? `
-                <button onclick="event.stopPropagation();openInviteModal('${c.id}','${safeCode}','${safeName.replace(/'/g,"\\'")}')" style="width:100%;margin-top:8px;background:rgba(154,112,0,0.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;padding:6px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;">📨 Invite Friends</button>
-                ` : ''}
-                <div class="campaign-action" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-                  <a href="${href}" style="flex:1;color:inherit;" onclick="event.stopPropagation();">${isActive ? 'Enter Campaign →' : 'Complete Setup →'}</a>
-                  <button onclick="event.stopPropagation();deleteCampaign('${c.id}','${safeName.replace(/'/g,"\\'")}',this)" style="background:rgba(122,21,21,0.15);border:1px solid var(--red);color:var(--red);border-radius:2px;padding:4px 10px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.7rem;white-space:nowrap;" title="Delete campaign">🗑 Delete</button>
-                </div>
-              </div>
-            `;
-          }).join('');
+          Object.keys(asDM).forEach(k => delete asDM[k]);
+          snap.forEach(doc => { asDM[doc.id] = { id: doc.id, ...doc.data() }; });
+          renderAll();
         });
+
+      const unsub2 = db.collection('campaigns')
+        .where('memberUids', 'array-contains', currentUser.uid)
+        .onSnapshot(snap => {
+          Object.keys(asMember).forEach(k => delete asMember[k]);
+          snap.forEach(doc => { asMember[doc.id] = { id: doc.id, ...doc.data() }; });
+          renderAll();
+        });
+
+      unsubscribeCampaigns = () => { unsub1(); unsub2(); };
     }
 
     async function loadFriends() {
