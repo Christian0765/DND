@@ -1211,61 +1211,76 @@
         });
     }
 
-    function loadFriends() {
+    async function loadFriends() {
       const list = document.getElementById('friends-list');
       const reqSection = document.getElementById('friend-requests-section');
       const reqList = document.getElementById('friend-requests-list');
+      const uid = currentUser.uid;
 
-      db.collection('users').doc(currentUser.uid).onSnapshot(doc => {
-        const data = doc.exists ? doc.data() : {};
+      try {
+        // Read own doc for my explicit friends + who I've already processed
+        const ownDoc = await db.collection('users').doc(uid).get();
+        const ownData = ownDoc.exists ? ownDoc.data() : {};
+        const myFriendUids = ownData.friends || [];
+        const processed = ownData.processedRequests || [];
+        const sentRequests = ownData.sentRequests || [];
 
-        // Render incoming requests
-        const requests = data.friendRequests || [];
-        if (requests.length > 0) {
+        // Incoming requests: other users who have me in their sentRequests
+        const reqSnap = await db.collection('users').where('sentRequests', 'array-contains', uid).get();
+        const incoming = reqSnap.docs.filter(d => !processed.includes(d.id) && !myFriendUids.includes(d.id));
+
+        if (incoming.length > 0) {
           reqSection.style.display = 'block';
-          reqList.innerHTML = requests.map(r => `
-            <div class="cc-req-card">
-              <div class="cc-req-avatar">${(r.fromName || '?').charAt(0).toUpperCase()}</div>
-              <div class="cc-req-name">${escHtml(r.fromName || 'Someone')}</div>
-              <button class="cc-req-accept" onclick="acceptFriendRequest('${r.from}','${escHtml(r.fromName||'').replace(/'/g,"\\'")}')">Accept</button>
-              <button class="cc-req-decline" onclick="declineFriendRequest('${r.from}','${escHtml(r.fromName||'').replace(/'/g,"\\'")}')">Decline</button>
-            </div>
-          `).join('');
+          reqList.innerHTML = incoming.map(d => {
+            const f = d.data();
+            return `
+              <div class="cc-req-card">
+                <div class="cc-req-avatar">${(f.displayName || '?').charAt(0).toUpperCase()}</div>
+                <div class="cc-req-name">${escHtml(f.displayName || f.email || 'Someone')}</div>
+                <button class="cc-req-accept" onclick="acceptFriendRequest('${d.id}')">Accept</button>
+                <button class="cc-req-decline" onclick="declineFriendRequest('${d.id}')">Decline</button>
+              </div>`;
+          }).join('');
         } else {
           reqSection.style.display = 'none';
           reqList.innerHTML = '';
         }
 
-        // Render friends list
-        const friendIds = data.friends || [];
-        if (friendIds.length === 0) {
+        // Friends list: people I explicitly added + people who accepted my request
+        // (they have me in their friends array)
+        const theyAddedMeSnap = await db.collection('users').where('friends', 'array-contains', uid).get();
+        const theyAddedUids = theyAddedMeSnap.docs.map(d => d.id);
+        const allFriendUids = [...new Set([...myFriendUids, ...theyAddedUids])];
+
+        if (allFriendUids.length === 0) {
           list.innerHTML = `
             <div style="text-align:center;color:var(--border-light);padding:40px 20px;">
               <div style="font-size:2rem;margin-bottom:12px;">👥</div>
-              <div>No friends yet. Send a request above!</div>
+              <div>No friends yet. Enter a friend's email above!</div>
             </div>`;
           return;
         }
-        Promise.all(friendIds.map(uid => db.collection('users').doc(uid).get()))
-          .then(docs => {
-            list.innerHTML = docs.map(d => {
-              if (!d.exists) return '';
-              const f = d.data();
-              const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
-              return `
-                <div class="friend-card">
-                  <div class="friend-info">
-                    <div class="friend-avatar">${avatar}</div>
-                    <div class="friend-details">
-                      <div class="friend-name">${escHtml(f.displayName || 'Unknown')}</div>
-                      <div class="friend-campaign">${escHtml(f.email || '')}</div>
-                    </div>
-                  </div>
-                  <button class="friend-action" onclick="removeFriend('${d.id}')">Remove</button>
-                </div>`;
-            }).join('');
-          });
-      });
+
+        const friendDocs = await Promise.all(allFriendUids.map(fid => db.collection('users').doc(fid).get()));
+        list.innerHTML = friendDocs.filter(d => d.exists).map(d => {
+          const f = d.data();
+          const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
+          return `
+            <div class="friend-card">
+              <div class="friend-info">
+                <div class="friend-avatar">${avatar}</div>
+                <div class="friend-details">
+                  <div class="friend-name">${escHtml(f.displayName || 'Unknown')}</div>
+                  <div class="friend-campaign">${escHtml(f.email || '')}</div>
+                </div>
+              </div>
+              <button class="friend-action" onclick="removeFriend('${d.id}')">Remove</button>
+            </div>`;
+        }).join('');
+
+      } catch(e) {
+        list.innerHTML = `<div style="color:var(--red);padding:20px;text-align:center;">Error loading friends: ${escHtml(e.message)}</div>`;
+      }
     }
 
     function addFriend() {
@@ -1280,71 +1295,38 @@
           if (friendUid === currentUser.uid) { showMessage(msg, 'You can\'t add yourself.', 'error'); return; }
           const friendData = snap.docs[0].data();
 
-          // Check if already friends
-          const myFriends = friendData.friends || [];
-          if (myFriends.includes(currentUser.uid)) {
-            showMessage(msg, 'You\'re already friends!', 'error'); return;
-          }
-
-          // Send request to recipient's friendRequests array
-          db.collection('users').doc(friendUid).update({
-            friendRequests: firebase.firestore.FieldValue.arrayUnion({
-              from: currentUser.uid,
-              fromName: currentUser.displayName || currentUser.email,
-              fromEmail: currentUser.email
-            })
+          // Write only to OWN doc — no cross-user write needed
+          return db.collection('users').doc(currentUser.uid).update({
+            sentRequests: firebase.firestore.FieldValue.arrayUnion(friendUid)
           }).then(() => {
             document.getElementById('friend-email').value = '';
-            showMessage(msg, `Friend request sent to ${friendData.displayName || email}!`, 'success');
+            showMessage(msg, `Friend request sent to ${escHtml(friendData.displayName || email)}!`, 'success');
             setTimeout(() => msg.classList.remove('show'), 3000);
           });
         })
-        .catch(() => showMessage(msg, 'Error sending request.', 'error'));
+        .catch(err => showMessage(msg, 'Error: ' + err.message, 'error'));
     }
 
-    function acceptFriendRequest(fromUid, fromName) {
-      const myRequest = { from: fromUid, fromName };
-      // Add both to friends, remove the request
-      Promise.all([
-        db.collection('users').doc(currentUser.uid).update({
-          friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
-          friendRequests: firebase.firestore.FieldValue.arrayRemove(myRequest)
-        }),
-        db.collection('users').doc(fromUid).update({
-          friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-        })
-      ]).catch(err => {
-        // Fallback: remove by rebuilding array without this request
-        db.collection('users').doc(currentUser.uid).get().then(doc => {
-          const reqs = (doc.data().friendRequests || []).filter(r => r.from !== fromUid);
-          db.collection('users').doc(currentUser.uid).update({
-            friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
-            friendRequests: reqs
-          });
-        });
-      });
-    }
-
-    function declineFriendRequest(fromUid, fromName) {
-      const myRequest = { from: fromUid, fromName };
+    function acceptFriendRequest(fromUid) {
+      // Write only to OWN doc
       db.collection('users').doc(currentUser.uid).update({
-        friendRequests: firebase.firestore.FieldValue.arrayRemove(myRequest)
-      }).catch(() => {
-        db.collection('users').doc(currentUser.uid).get().then(doc => {
-          const reqs = (doc.data().friendRequests || []).filter(r => r.from !== fromUid);
-          db.collection('users').doc(currentUser.uid).update({ friendRequests: reqs });
-        });
-      });
+        friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
+        processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
+      }).then(() => loadFriends());
+    }
+
+    function declineFriendRequest(fromUid) {
+      // Write only to OWN doc
+      db.collection('users').doc(currentUser.uid).update({
+        processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
+      }).then(() => loadFriends());
     }
 
     function removeFriend(friendUid) {
+      // Write only to OWN doc
       db.collection('users').doc(currentUser.uid).update({
         friends: firebase.firestore.FieldValue.arrayRemove(friendUid)
-      });
-
-      db.collection('users').doc(friendUid).update({
-        friends: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
-      });
+      }).then(() => loadFriends());
     }
 
     function createCampaign() {
