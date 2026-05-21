@@ -200,30 +200,7 @@
 
     const auth = firebase.auth();
 
-    // Handle the result when Google redirects back to this page
-    auth.getRedirectResult()
-      .then(result => {
-        if (result && result.user) {
-          // onAuthStateChanged will redirect
-        }
-      })
-      .catch(error => {
-        const btn = document.getElementById('google-signin-btn');
-        btn.classList.remove('loading');
-        btn.disabled = false;
-        const errorEl = document.getElementById('error-message');
-        let msg = 'Sign-in failed. Please try again.';
-        if (error.code === 'auth/unauthorized-domain') {
-          msg = 'This domain is not authorized. Check Firebase Console → Authentication → Authorized domains.';
-        } else if (error.code === 'auth/account-exists-with-different-credential') {
-          msg = 'An account already exists with this email using a different sign-in method.';
-        }
-        errorEl.textContent = msg;
-        errorEl.classList.add('show');
-        setTimeout(() => errorEl.classList.remove('show'), 7000);
-      });
-
-    // Once signed in, redirect to dashboard (or ?next= URL)
+    // If already signed in, skip to dashboard
     auth.onAuthStateChanged(user => {
       if (user) {
         const next = new URLSearchParams(window.location.search).get('next');
@@ -233,17 +210,34 @@
 
     function signInWithGoogle() {
       const btn = document.getElementById('google-signin-btn');
+      const errorEl = document.getElementById('error-message');
       btn.classList.add('loading');
       btn.disabled = true;
-      btn.innerHTML = '<span class="loading-spinner"></span> Redirecting to Google…';
 
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('profile');
       provider.addScope('email');
 
-      // Use redirect instead of popup — works reliably across all browsers
-      // regardless of tracking protection or sessionStorage partitioning
-      auth.signInWithRedirect(provider);
+      auth.signInWithPopup(provider)
+        .catch(error => {
+          btn.classList.remove('loading');
+          btn.disabled = false;
+
+          let msg = 'Sign-in failed. Please try again.';
+          if (error.code === 'auth/popup-blocked') {
+            msg = 'Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.';
+          } else if (error.code === 'auth/unauthorized-domain') {
+            msg = 'This domain is not authorized. Add christian0765.github.io in Firebase Console → Authentication → Authorized domains.';
+          } else if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+            msg = 'Sign-in was cancelled.';
+          } else if (error.code === 'auth/missing-initial-state' || error.code === 'auth/web-storage-unsupported') {
+            msg = 'Your browser\'s privacy settings are blocking sign-in. Try using Chrome, or allow cross-site cookies for this site.';
+          }
+
+          errorEl.textContent = msg;
+          errorEl.classList.add('show');
+          setTimeout(() => errorEl.classList.remove('show'), 8000);
+        });
     }
   </script>
 </body>
