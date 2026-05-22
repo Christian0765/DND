@@ -652,6 +652,18 @@
   .item-card:hover .item-del-btn { opacity:1; }
   .item-del-btn:hover { color:var(--red); }
 
+  /* Inventory panel */
+  .inv-item-row { display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(122,90,40,0.15);flex-wrap:wrap; }
+  .inv-item-row:last-child { border-bottom:none; }
+  .inv-item-name { font-family:'Cinzel',serif;font-size:0.78rem;font-weight:600;color:var(--gold-light);flex:1;min-width:100px; }
+  .inv-qty-badge { font-family:'Cinzel',serif;font-size:0.6rem;background:rgba(154,112,0,0.2);border:1px solid rgba(154,112,0,0.4);color:var(--gold);padding:1px 6px;border-radius:10px;white-space:nowrap; }
+  .inv-cost-label { font-family:'Cinzel',serif;font-size:0.6rem;color:var(--border-light);white-space:nowrap; }
+  .inv-drop-btn { background:none;border:none;font-size:0.65rem;color:var(--border-light);cursor:pointer;padding:2px 5px;opacity:0;transition:opacity 0.15s;flex-shrink:0; }
+  .inv-item-row:hover .inv-drop-btn { opacity:1; }
+  .inv-drop-btn:hover { color:var(--red); }
+  .inv-filter-btn { font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.08em;padding:3px 8px;border:1px solid var(--border);border-radius:2px;background:none;color:var(--border-light);cursor:pointer;transition:all 0.15s; }
+  .inv-filter-btn.active { background:rgba(154,112,0,0.2);border-color:var(--gold);color:var(--gold-light); }
+
   /* Catalog picker in shop add-item form */
   .catalog-picker { max-height:180px;overflow-y:auto;background:#0d0802;border:1px solid var(--border);border-radius:2px;margin-top:4px; }
   .catalog-picker-item { display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;transition:background 0.1s;font-family:'Crimson Text',serif;font-size:0.8rem;color:var(--parchment-dark); }
@@ -1138,6 +1150,14 @@
   </div>
 </div>
 
+<!-- DM INVENTORY MODAL -->
+<div class="modal-overlay" id="dm-inv-modal" onclick="if(event.target===this)closeDMInventory()">
+  <div class="modal-box" style="max-width:560px;background:linear-gradient(160deg,#1e110a 0%,#0d0802 100%);border:1px solid var(--border);color:var(--parchment-dark);">
+    <button class="modal-close" onclick="closeDMInventory()" style="color:var(--border-light);">✕ Close</button>
+    <div id="dm-inv-content"></div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -1285,7 +1305,43 @@ async function loadMyCharacter() {
           </div>
           <div class="hp-bar-wrap"><div class="hp-bar${barClass}" style="width:${pct}%"></div></div>
           <div class="card-link">View &amp; Edit Sheet →</div>
-        </a>`;
+        </a>
+        <div style="margin-top:8px;">
+          <button class="nav-btn" onclick="toggleInventoryPanel()" id="inv-toggle-btn" style="font-size:0.6rem;padding:5px 14px;">🎒 Inventory</button>
+        </div>
+        <div id="inventory-panel" style="display:none;margin-top:10px;background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);border-radius:3px;padding:18px 22px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:14px;">🎒 ${escHtml(d['f-name'] || 'Inventory')}'s Bag</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="inv-filter-btn active" id="inv-f-all"       onclick="setInvFilter('all')">All</button>
+            <button class="inv-filter-btn" id="inv-f-weapons"          onclick="setInvFilter('weapons')">⚔️</button>
+            <button class="inv-filter-btn" id="inv-f-armor"            onclick="setInvFilter('armor')">🛡️</button>
+            <button class="inv-filter-btn" id="inv-f-resources"        onclick="setInvFilter('resources')">🌿</button>
+            <button class="inv-filter-btn" id="inv-f-magical"          onclick="setInvFilter('magical')">✨</button>
+            <button class="inv-filter-btn" id="inv-f-healing"          onclick="setInvFilter('healing')">💊</button>
+            <button class="inv-filter-btn" id="inv-f-food"             onclick="setInvFilter('food')">🍖</button>
+            <button class="inv-filter-btn" id="inv-f-misc"             onclick="setInvFilter('misc')">📦</button>
+          </div>
+          <div id="inv-item-list" style="min-height:32px;"></div>
+          <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+            <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-bottom:8px;">Add Item Manually</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">
+              <input id="inv-add-name" type="text" placeholder="Item name"
+                     style="font-family:'Crimson Text',serif;font-size:0.85rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:5px 8px;flex:2;min-width:110px;outline:none;">
+              <select id="inv-add-cat" style="font-family:'Crimson Text',serif;font-size:0.85rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;flex:1;min-width:90px;outline:none;">
+                <option value="weapons">⚔️ Weapons</option>
+                <option value="armor">🛡️ Armor</option>
+                <option value="resources">🌿 Resources</option>
+                <option value="magical">✨ Magical</option>
+                <option value="healing">💊 Healing</option>
+                <option value="food">🍖 Food</option>
+                <option value="misc" selected>📦 Misc</option>
+              </select>
+              <input id="inv-add-qty" type="number" min="1" value="1" placeholder="Qty"
+                     style="font-family:'Cinzel',serif;font-size:0.85rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:5px 8px;width:54px;outline:none;">
+              <button class="lands-save-btn" style="padding:5px 12px;" onclick="addInventoryItem()">+ Add</button>
+            </div>
+          </div>
+        </div>`;
       createBtn.style.display = '';
       createBtn.textContent = '+ Submit New Character';
       return;
@@ -2215,13 +2271,32 @@ async function buyShopItem(landId, shopId, itemIdx, cost, btn) {
     const shopRef = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
     const shopDoc = await shopRef.get();
     const items = [...(shopDoc.data().items || [])];
-    items[itemIdx] = { ...items[itemIdx], qty: Math.max(0, (items[itemIdx].qty || 1) - 1) };
+    const purchasedItem = items[itemIdx];
+    items[itemIdx] = { ...purchasedItem, qty: Math.max(0, (purchasedItem.qty || 1) - 1) };
     if (items[itemIdx].qty === 0) items.splice(itemIdx, 1);
     await shopRef.update({ items });
+
+    // Add purchased item to character inventory
+    const catalogMatch = _itemsCache.find(c => c.data.name.toLowerCase() === (purchasedItem.name || '').toLowerCase());
+    const category = catalogMatch ? catalogMatch.data.category : 'misc';
+    const existingInv = charDoc.data().inventory || [];
+    const existIdx = existingInv.findIndex(i => i.name === purchasedItem.name && i.category === category);
+    let updatedInv;
+    if (existIdx > -1) {
+      updatedInv = existingInv.map((it, i) => i === existIdx ? { ...it, qty: it.qty + 1 } : it);
+    } else {
+      updatedInv = [...existingInv, { id: String(Date.now()) + Math.random().toString(36).slice(2,6), name: purchasedItem.name, category, qty: 1, cost: costNum, acquiredAt: Date.now() }];
+    }
+    await charRef.update({ inventory: updatedInv });
+
     await loadLandEntries(landId, 'shops');
     const body = document.getElementById('shopbody-' + shopId);
     if (body) body.classList.add('open');
-    if (!_isDM) await loadMyCharacter();
+    if (!_isDM) {
+      await loadMyCharacter();
+      _myInventory = updatedInv;
+      if (document.getElementById('inventory-panel')?.style.display !== 'none') renderInventory();
+    }
     alert(`Purchased! ${costNum} gp deducted. You now have ${newGold} gp.`);
   } catch(e) {
     alert('Purchase failed: ' + e.message);
@@ -2404,8 +2479,9 @@ async function loadPlayersTab() {
               <div class="dm-player-name">${escHtml(u.displayName||u.email||'Unknown')}</div>
               <div class="dm-player-char">${hasChar ? `${charName}${charCls?' · '+charCls:''}` : '<em style="opacity:0.5;">No character yet</em>'}</div>
             </div>
-            <div style="display:flex;gap:6px;flex-shrink:0;">
+            <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
               ${hasChar ? `<a href="${escHtml(sheetUrl)}" class="dm-btn" style="padding:4px 10px;font-size:0.65rem;text-decoration:none;">View Sheet →</a>` : ''}
+              ${hasChar ? `<button class="dm-btn" onclick="showDMInventory('${safeSlot}','${escHtml(charName)}')" style="padding:4px 10px;font-size:0.65rem;">🎒 Bag</button>` : ''}
               <button class="dm-btn danger" onclick="removePlayer('${safeUid}','${safeSlot}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>
             </div>
           </div>
@@ -2972,6 +3048,124 @@ function renderShopBrowseHTML(shopData) {
   if (items.length === 0) return shopName + '<div style="color:var(--border-light);font-style:italic;font-size:0.82rem;">No items in stock.</div>';
   const rows = items.map(item => `<div class="shop-item-row" style="color:var(--parchment-dark);"><span class="shop-item-name" style="color:var(--parchment-dark);">${escHtml(item.name||'—')}</span>${item.qty!=null?`<span class="shop-item-qty">${escHtml(String(item.qty))}</span>`:''}${item.cost?`<span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);white-space:nowrap;">${escHtml(String(item.cost))} gp</span>`:''}</div>`).join('');
   return shopName + `<div style="border-top:1px solid var(--border);padding-top:8px;">${rows}</div>`;
+}
+
+// ─── PLAYER INVENTORY ────────────────────────────────────────────
+let _myInventory = [];
+let _invFilter = 'all';
+let _invLoaded = false;
+
+function toggleInventoryPanel() {
+  const panel = document.getElementById('inventory-panel');
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : '';
+  if (!isOpen && !_invLoaded) loadInventory();
+}
+
+async function loadInventory() {
+  _invLoaded = true;
+  const list = document.getElementById('inv-item-list');
+  if (list) list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div>';
+  try {
+    const doc = await db.collection('campaigns').doc(campaignId).collection('characters').doc(_myCharSlot).get();
+    _myInventory = (doc.exists ? doc.data().inventory : null) || [];
+  } catch(e) { _myInventory = []; }
+  renderInventory();
+}
+
+function renderInventory() {
+  const list = document.getElementById('inv-item-list');
+  if (!list) return;
+  const filtered = _invFilter === 'all' ? _myInventory : _myInventory.filter(it => it.category === _invFilter);
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Your inventory is empty.</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(item => {
+    const cat = _itemCatMeta[item.category] || _itemCatMeta.misc;
+    const costStr = item.cost > 0 ? item.cost + ' gp' : '';
+    return `<div class="inv-item-row">
+      <span class="item-category-badge cat-${escHtml(item.category||'misc')}" style="font-size:0.5rem;padding:1px 5px;">${cat.icon}</span>
+      <span class="inv-item-name">${escHtml(item.name||'—')}</span>
+      <span class="inv-qty-badge">×${escHtml(String(item.qty||1))}</span>
+      ${costStr ? `<span class="inv-cost-label">${escHtml(costStr)}</span>` : ''}
+      <button class="inv-drop-btn" onclick="removeInventoryItem('${escHtml(item.id||'')}')" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function setInvFilter(cat) {
+  _invFilter = cat;
+  document.querySelectorAll('.inv-filter-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('inv-f-' + cat);
+  if (btn) btn.classList.add('active');
+  renderInventory();
+}
+
+async function addInventoryItem() {
+  const name = (document.getElementById('inv-add-name')?.value || '').trim();
+  if (!name) return;
+  const category = document.getElementById('inv-add-cat')?.value || 'misc';
+  const qty = parseInt(document.getElementById('inv-add-qty')?.value) || 1;
+  const existIdx = _myInventory.findIndex(i => i.name === name && i.category === category);
+  let updated;
+  if (existIdx > -1) {
+    updated = _myInventory.map((it, i) => i === existIdx ? { ...it, qty: it.qty + qty } : it);
+  } else {
+    updated = [..._myInventory, { id: String(Date.now()) + Math.random().toString(36).slice(2,6), name, category, qty, cost: 0, acquiredAt: Date.now() }];
+  }
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(_myCharSlot).update({ inventory: updated });
+    _myInventory = updated;
+    document.getElementById('inv-add-name').value = '';
+    document.getElementById('inv-add-qty').value = '1';
+    renderInventory();
+  } catch(e) { alert('Failed to add item: ' + e.message); }
+}
+
+async function removeInventoryItem(id) {
+  const updated = _myInventory.filter(it => it.id !== id);
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(_myCharSlot).update({ inventory: updated });
+    _myInventory = updated;
+    renderInventory();
+  } catch(e) { alert('Failed to remove item: ' + e.message); }
+}
+
+// ─── DM VIEW PLAYER INVENTORY ────────────────────────────────────
+async function showDMInventory(slot, charName) {
+  const modal = document.getElementById('dm-inv-modal');
+  const content = document.getElementById('dm-inv-content');
+  if (!modal || !content) return;
+  content.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:8px 0;">Loading…</div>';
+  modal.classList.add('open');
+  try {
+    const doc = await db.collection('campaigns').doc(campaignId).collection('characters').doc(slot).get();
+    const inv = (doc.exists ? doc.data().inventory : null) || [];
+    const header = `<div style="font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:14px;">🎒 ${escHtml(charName)}'s Bag</div>`;
+    if (inv.length === 0) {
+      content.innerHTML = header + '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;">Inventory is empty.</div>';
+      return;
+    }
+    const rows = inv.map(item => {
+      const cat = _itemCatMeta[item.category] || _itemCatMeta.misc;
+      const costStr = item.cost > 0 ? item.cost + ' gp' : '';
+      return `<div class="inv-item-row">
+        <span class="item-category-badge cat-${escHtml(item.category||'misc')}" style="font-size:0.5rem;padding:1px 5px;">${cat.icon}</span>
+        <span class="inv-item-name">${escHtml(item.name||'—')}</span>
+        <span class="inv-qty-badge">×${escHtml(String(item.qty||1))}</span>
+        ${costStr ? `<span class="inv-cost-label">${escHtml(costStr)}</span>` : ''}
+      </div>`;
+    }).join('');
+    content.innerHTML = header + rows;
+  } catch(e) {
+    content.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+function closeDMInventory() {
+  document.getElementById('dm-inv-modal')?.classList.remove('open');
 }
 </script>
 </body>
