@@ -1141,7 +1141,6 @@ function saveDMNotes() {
 }
 
 async function loadPlayersTab() {
-  // Render into main content area for DM, or the side panel container
   const container = _isDM
     ? document.getElementById('my-char-content')
     : document.getElementById('dm-players-list');
@@ -1164,8 +1163,20 @@ async function loadPlayersTab() {
       const curhp = c['f-curhp'] || '—';
       const maxhp = c['f-maxhp'] || '?';
       const pct = (curhp !== '—' && maxhp !== '?') ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0 : 0;
-      const barClass = pct < 25 ? ' low' : pct < 50 ? ' mid' : '';
+      const barColor = pct < 25 ? 'var(--red)' : pct < 50 ? 'var(--gold)' : '#5a9a3a';
       const avatar = u.photoURL ? `<img class="dm-player-avatar" src="${escHtml(u.photoURL)}" onerror="this.style.display='none'">` : `<div class="dm-player-avatar">👤</div>`;
+      const safeSlot = escHtml(info.slot);
+      const safeUid = escHtml(uid);
+
+      const statInput = (field, value, color, barId, maxVal) => {
+        const safeVal = escHtml(String(value));
+        const barArg = barId ? `'${barId}',${+maxVal||0}` : "null,0";
+        return `<input type="text" value="${safeVal}"
+          style="font-family:'Cinzel',serif;font-size:0.9rem;color:${color};background:none;border:none;width:90%;text-align:center;padding:0;cursor:text;"
+          onblur="dmStatSave('${safeSlot}','${field}',this.value,${barArg})"
+          onkeydown="if(event.key==='Enter')this.blur()">`;
+      };
+
       return `
         <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;padding:14px 16px;margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:${hasChar?'10':'0'}px;">
@@ -1176,35 +1187,54 @@ async function loadPlayersTab() {
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;">
               ${hasChar ? `<a href="${escHtml(sheetUrl)}" class="dm-btn" style="padding:4px 10px;font-size:0.65rem;text-decoration:none;">View Sheet →</a>` : ''}
-              <button class="dm-btn danger" onclick="removePlayer('${escHtml(uid)}','${escHtml(info.slot)}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>
+              <button class="dm-btn danger" onclick="removePlayer('${safeUid}','${safeSlot}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>
             </div>
           </div>
           ${hasChar ? `
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
-            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
-              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:#5a9a3a;display:block;">${escHtml(String(curhp))}</span>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:6px 2px 4px;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:1px;">
+                ${_isDM ? statInput('f-curhp', curhp, '#5a9a3a', `hpbar-${uid}`, maxhp) : `<span style="font-family:'Cinzel',serif;font-size:0.9rem;color:#5a9a3a;">${escHtml(String(curhp))}</span>`}
+                <span style="font-family:'Cinzel',serif;font-size:0.6rem;color:var(--border-light);">/${escHtml(String(maxhp))}</span>
+              </div>
               <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">HP</span>
             </div>
-            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
-              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--red);display:block;">${escHtml(String(c['f-ac']||'—'))}</span>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:6px 2px 4px;">
+              ${_isDM ? statInput('f-ac', c['f-ac']||'—', 'var(--red)', null, 0) : `<span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--red);display:block;">${escHtml(String(c['f-ac']||'—'))}</span>`}
               <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">AC</span>
             </div>
-            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
-              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);display:block;">${escHtml(String(c['f-gold']||'—'))}</span>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:6px 2px 4px;">
+              ${_isDM ? statInput('f-gold', c['f-gold']||'—', 'var(--gold)', null, 0) : `<span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);display:block;">${escHtml(String(c['f-gold']||'—'))}</span>`}
               <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">GP</span>
             </div>
-            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
-              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--border-light);display:block;">${escHtml(String(c['f-pp']||'—'))}</span>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:6px 2px 4px;">
+              ${_isDM ? statInput('f-pp', c['f-pp']||'—', 'var(--border-light)', null, 0) : `<span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--border-light);display:block;">${escHtml(String(c['f-pp']||'—'))}</span>`}
               <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">PP</span>
             </div>
           </div>
           <div style="background:rgba(0,0,0,0.2);border-radius:2px;height:5px;overflow:hidden;">
-            <div style="height:100%;background:${pct<25?'var(--red)':pct<50?'var(--gold)':'#5a9a3a'};width:${pct}%;transition:width 0.4s;border-radius:2px;"></div>
+            <div id="hpbar-${uid}" style="height:100%;background:${barColor};width:${pct}%;transition:width 0.4s;border-radius:2px;"></div>
           </div>` : ''}
         </div>`;
     }));
     container.innerHTML = rows.join('');
   } catch(e) { container.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`; }
+}
+
+async function dmStatSave(slot, field, value, barId, maxhp) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(slot).update({ [field]: value });
+    if (barId && field === 'f-curhp') {
+      const pct = maxhp ? Math.min(100, Math.round((+value / maxhp) * 100)) || 0 : 0;
+      const bar = document.getElementById(barId);
+      if (bar) {
+        bar.style.width = pct + '%';
+        bar.style.background = pct < 25 ? 'var(--red)' : pct < 50 ? 'var(--gold)' : '#5a9a3a';
+      }
+    }
+  } catch(e) {
+    alert('Save failed: ' + e.message);
+  }
 }
 
 async function removePlayer(uid, slot, btn) {
