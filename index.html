@@ -651,6 +651,14 @@
   .item-del-btn { background:none;border:none;font-size:0.65rem;color:var(--border-light);cursor:pointer;padding:2px 5px;opacity:0;transition:opacity 0.15s; }
   .item-card:hover .item-del-btn { opacity:1; }
   .item-del-btn:hover { color:var(--red); }
+
+  /* Catalog picker in shop add-item form */
+  .catalog-picker { max-height:180px;overflow-y:auto;background:#0d0802;border:1px solid var(--border);border-radius:2px;margin-top:4px; }
+  .catalog-picker-item { display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;transition:background 0.1s;font-family:'Crimson Text',serif;font-size:0.8rem;color:var(--parchment-dark); }
+  .catalog-picker-item:hover { background:rgba(154,112,0,0.15); }
+  .catalog-picker-name { flex:1; }
+  .catalog-picker-cost { font-family:'Cinzel',serif;font-size:0.65rem;color:var(--gold); }
+  .catalog-picker-cat { font-family:'Cinzel',serif;font-size:0.5rem;color:var(--border-light);text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -2042,11 +2050,28 @@ async function loadLandEntries(landId, type) {
             : (it.cost && _myCharSlot && _myCharApproved ? `<button class="shop-buy-btn" onclick="buyShopItem('${escHtml(landId)}','${sid}',${i},'${escHtml(String(it.cost))}',this)">Buy</button>` : '')}
           </div>`).join('');
         const addItemForm = _isDM ? `
-          <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;">
-            <div class="lands-field" style="flex:2;margin:0;"><label>Item Name</label><input id="sitem-name-${sid}" type="text" placeholder="e.g. Longsword"></div>
-            <div class="lands-field" style="flex:1;margin:0;"><label>Cost (gp)</label><input id="sitem-cost-${sid}" type="text" placeholder="e.g. 15"></div>
-            <div class="lands-field" style="flex:1;margin:0;"><label>Qty</label><input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1"></div>
-            <button class="lands-save-btn" style="margin:0;padding:6px 12px;" onclick="addShopItem('${escHtml(landId)}','${sid}')">Add</button>
+          <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="lands-field" style="flex:2;min-width:120px;margin:0;"><label>Item Name</label><input id="sitem-name-${sid}" type="text" placeholder="e.g. Longsword"></div>
+            <div class="lands-field" style="flex:1;min-width:70px;margin:0;"><label>Cost (gp)</label><input id="sitem-cost-${sid}" type="text" placeholder="e.g. 15"></div>
+            <div class="lands-field" style="flex:1;min-width:55px;margin:0;"><label>Qty</label><input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1"></div>
+            <button class="lands-save-btn" style="margin:0;padding:6px 10px;background:rgba(154,112,0,0.1);border-color:var(--gold);color:var(--gold);flex-shrink:0;" onclick="toggleCatalogPicker('${sid}')" title="Pick from catalog">📖</button>
+            <button class="lands-save-btn" style="margin:0;padding:6px 12px;flex-shrink:0;" onclick="addShopItem('${escHtml(landId)}','${sid}')">Add</button>
+          </div>
+          <div id="catalog-picker-${sid}" class="catalog-picker" style="display:none;"></div>
+          <div style="margin-top:5px;font-size:0.72rem;color:var(--border-light);">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="sitem-save-cat-${sid}" onchange="document.getElementById('sitem-catsel-${sid}').style.display=this.checked?'inline-block':'none'" style="cursor:pointer;accent-color:var(--gold);">
+              <span>💾 Save to catalog as</span>
+              <select id="sitem-catsel-${sid}" style="display:none;font-family:'Crimson Text',serif;font-size:0.72rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:2px 6px;outline:none;">
+                <option value="weapons">⚔️ Weapons</option>
+                <option value="armor">🛡️ Armor</option>
+                <option value="resources">🌿 Resources</option>
+                <option value="magical">✨ Magical</option>
+                <option value="healing">💊 Healing</option>
+                <option value="food">🍖 Food</option>
+                <option value="misc" selected>📦 Misc</option>
+              </select>
+            </label>
           </div>` : '';
         return `<div class="shop-entry${_isDM && !isPublished ? ' unpublished' : ''}" id="shop-${sid}">
           <div class="shop-entry-header" onclick="toggleShop('${sid}')">
@@ -2115,11 +2140,25 @@ async function addShopItem(landId, shopId) {
     const item = { name, qty };
     if (cost) item.cost = cost;
     await ref.update({ items: firebase.firestore.FieldValue.arrayUnion(item) });
+
+    // Optionally also save to the item catalog
+    const saveCatEl = document.getElementById('sitem-save-cat-' + shopId);
+    if (saveCatEl && saveCatEl.checked) {
+      const catSelEl = document.getElementById('sitem-catsel-' + shopId);
+      const category = catSelEl ? catSelEl.value : 'misc';
+      await db.collection('campaigns').doc(campaignId).collection('items').add({
+        name, category, rarity: 'common', cost: parseFloat(cost) || 0,
+        description: '', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      _itemsLoaded = false;
+      saveCatEl.checked = false;
+      if (catSelEl) catSelEl.style.display = 'none';
+    }
+
     if (nameEl) nameEl.value = '';
     if (costEl) costEl.value = '';
     if (qtyEl) qtyEl.value = '1';
     await loadLandEntries(landId, 'shops');
-    // reopen the shop that was just edited
     const body = document.getElementById('shopbody-' + shopId);
     const chev = document.getElementById('shopchev-' + shopId);
     if (body) { body.classList.add('open'); }
@@ -2767,6 +2806,45 @@ function renderNPCCardHTML(d) {
     : `<div class="gnpc-portrait" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;">👤</div>`;
   const statsHtml = (d.hp || d.ac) ? `<div class="gnpc-stats">${d.hp?`<div class="gnpc-stat"><span class="gnpc-stat-val hp">${escHtml(String(d.hp))}</span><span class="gnpc-stat-label">HP</span></div>`:''}${d.ac?`<div class="gnpc-stat"><span class="gnpc-stat-val">${escHtml(String(d.ac))}</span><span class="gnpc-stat-label">AC</span></div>`:''}</div>` : '';
   return `<div class="gnpc-card" style="max-width:300px;margin:0 auto;">${portrait}<div class="gnpc-name">${escHtml(d.name)}</div><div class="gnpc-sub">${escHtml([d.race,d.align].filter(Boolean).join(' · ') || '')}</div>${statsHtml}${d.desc?`<div class="gnpc-desc">${escHtml(d.desc)}</div>`:''}</div>`;
+}
+
+// ─── CATALOG PICKER (shop ↔ items integration) ───────────────────
+async function ensureItemsLoaded() {
+  if (!_itemsLoaded) await loadItems();
+}
+
+async function toggleCatalogPicker(shopId) {
+  const picker = document.getElementById('catalog-picker-' + shopId);
+  if (!picker) return;
+  if (picker.style.display !== 'none') { picker.style.display = 'none'; return; }
+  picker.innerHTML = '<div style="padding:8px 10px;font-style:italic;color:var(--border-light);font-size:0.75rem;">Loading…</div>';
+  picker.style.display = '';
+  await ensureItemsLoaded();
+  if (_itemsCache.length === 0) {
+    picker.innerHTML = '<div style="padding:8px 10px;font-style:italic;color:var(--border-light);font-size:0.75rem;">No catalog items yet. Add some in the 🗡️ Items tab first.</div>';
+    return;
+  }
+  picker.innerHTML = _itemsCache.map(item => {
+    const d = item.data;
+    const cat = _itemCatMeta[d.category] || _itemCatMeta.misc;
+    const costStr = d.cost > 0 ? d.cost + ' gp' : '';
+    const safeName = (d.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeCost = String(d.cost || '').replace(/'/g,"\\'");
+    return `<div class="catalog-picker-item" onclick="pickCatalogItem('${escHtml(shopId)}','${safeName}','${safeCost}')">
+      <span class="catalog-picker-name">${escHtml(d.name || '—')}</span>
+      <span class="catalog-picker-cat">${cat.icon} ${escHtml(cat.label)}</span>
+      ${costStr ? `<span class="catalog-picker-cost">${escHtml(costStr)}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function pickCatalogItem(shopId, name, cost) {
+  const nameEl = document.getElementById('sitem-name-' + shopId);
+  const costEl = document.getElementById('sitem-cost-' + shopId);
+  if (nameEl) nameEl.value = name;
+  if (costEl) costEl.value = cost;
+  const picker = document.getElementById('catalog-picker-' + shopId);
+  if (picker) picker.style.display = 'none';
 }
 
 // ─── ITEM CATALOG ────────────────────────────────────────────────
