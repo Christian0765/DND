@@ -546,6 +546,41 @@
   .gnpc-del { position:absolute;top:6px;right:6px;background:none;border:none;font-size:0.65rem;color:var(--border-light);cursor:pointer;display:none; }
   .gnpc-card:hover .gnpc-del { display:block; }
   .gnpc-del:hover { color:var(--red); }
+  /* NPC type selector buttons */
+  .gnpc-type-btn { font-family:'Cinzel',serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--border-light);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;padding:10px 6px;cursor:pointer;text-align:center;transition:all 0.15s; }
+  .gnpc-type-btn:hover,.gnpc-type-btn.active { color:var(--gold-light);border-color:var(--gold);background:rgba(154,112,0,0.12); }
+  /* Goon card */
+  .goon-card { background:linear-gradient(160deg,#1a0808,#0d0404);border:1px solid #7a1515;box-shadow:0 0 0 2px #1a0e04;border-radius:3px;padding:14px;position:relative;overflow:hidden; }
+  .goon-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--red); }
+  .goon-name { font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:#e06060;text-align:center;margin-bottom:6px; }
+  .goon-stats { display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px; }
+  .goon-stat { text-align:center;background:rgba(255,255,255,0.06);border:1px solid #7a1515;border-radius:2px;padding:3px 7px;min-width:38px; }
+  .goon-stat-val { font-family:'Cinzel',serif;font-size:0.82rem;font-weight:700;color:#e06060;display:block; }
+  .goon-stat-val.hp { color:#5a9a3a; }
+  .goon-stat-label { font-family:'Cinzel',serif;font-size:0.38rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block; }
+  .goon-notes { font-size:0.72rem;color:var(--border-light);font-style:italic;text-align:center;margin-top:4px; }
+  /* Full NPC expandable card */
+  .gnpc-full-card { background:linear-gradient(160deg,#f7edd8,#ecdcb5);border:1px solid var(--border);box-shadow:0 0 0 2px #1a0e04;border-radius:3px;padding:0;position:relative;overflow:hidden;cursor:pointer; }
+  .gnpc-full-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold); }
+  .gnpc-full-header { display:flex;align-items:center;gap:10px;padding:12px 14px; }
+  .gnpc-full-body { display:none;border-top:1px solid var(--border-light);padding:14px;background:rgba(255,255,255,0.2); }
+  .gnpc-full-body.open { display:block; }
+  .gnpc-full-stat-grid { display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:10px 0; }
+  .gnpc-full-stat { text-align:center;background:rgba(255,255,255,0.4);border:1px solid var(--border-light);border-radius:2px;padding:4px 2px; }
+  .gnpc-full-stat-val { font-family:'Cinzel',serif;font-size:0.85rem;font-weight:700;color:var(--red);display:block; }
+  .gnpc-full-stat-lbl { font-family:'Cinzel',serif;font-size:0.38rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-light);display:block; }
+  /* Shop expandable entry */
+  .shop-entry { background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.4);border-radius:2px;margin-bottom:7px;overflow:hidden; }
+  .shop-entry-header { display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;transition:background 0.15s; }
+  .shop-entry-header:hover { background:rgba(255,255,255,0.04); }
+  .shop-entry-body { display:none;border-top:1px solid rgba(122,90,40,0.3);padding:10px 12px; }
+  .shop-entry-body.open { display:block; }
+  .shop-item-row { display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(122,90,40,0.2); }
+  .shop-item-row:last-child { border-bottom:none; }
+  .shop-item-name { flex:1;font-size:0.82rem;color:var(--parchment-dark); }
+  .shop-item-qty { font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold);background:rgba(154,112,0,0.15);border:1px solid var(--border);border-radius:2px;padding:2px 8px;min-width:36px;text-align:center; }
+  .shop-qty-btn { font-family:'Cinzel',serif;font-size:0.7rem;color:var(--border-light);background:none;border:1px solid var(--border);border-radius:2px;width:22px;height:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .shop-qty-btn:hover { color:var(--gold);border-color:var(--gold); }
   .dm-section { margin-bottom:20px; }
   .dm-section-title { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:12px; }
   .dm-field { margin-bottom:10px; }
@@ -635,27 +670,108 @@
         <div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>
       </div>
       <button class="lands-add-trigger" id="add-gnpc-btn" onclick="toggleGeneralNPCForm()" style="display:none;">+ Add Public NPC</button>
-      <div class="lands-add-form" id="gnpc-form" style="display:none;">
-        <div class="lands-field"><label>NPC Name *</label><input id="gn-name" type="text" placeholder="e.g. Lord Aldric"></div>
-        <div class="lands-row">
-          <div class="lands-field"><label>Race / Class</label><input id="gn-race" type="text" placeholder="e.g. Human Paladin"></div>
-          <div class="lands-field"><label>Alignment</label><input id="gn-align" type="text" placeholder="e.g. Lawful Good"></div>
+      <div id="gnpc-form" style="display:none;">
+        <!-- TYPE SELECTOR -->
+        <div id="gnpc-type-select" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+          <button class="gnpc-type-btn active" onclick="selectGNPCType('simple',this)">
+            <div style="font-size:1.2rem;margin-bottom:3px;">🧙</div>
+            <div>Simple NPC</div>
+            <div style="font-size:0.62rem;opacity:0.7;margin-top:1px;">Name, portrait, stats</div>
+          </button>
+          <button class="gnpc-type-btn" onclick="selectGNPCType('full',this)">
+            <div style="font-size:1.2rem;margin-bottom:3px;">📜</div>
+            <div>Full Sheet</div>
+            <div style="font-size:0.62rem;opacity:0.7;margin-top:1px;">Complete character sheet</div>
+          </button>
+          <button class="gnpc-type-btn" onclick="selectGNPCType('goon',this)">
+            <div style="font-size:1.2rem;margin-bottom:3px;">⚔️</div>
+            <div>Goon</div>
+            <div style="font-size:0.62rem;opacity:0.7;margin-top:1px;">Attack stats only</div>
+          </button>
         </div>
-        <div class="lands-row">
-          <div class="lands-field"><label>HP</label><input id="gn-hp" type="text" placeholder="e.g. 42"></div>
-          <div class="lands-field"><label>AC</label><input id="gn-ac" type="text" placeholder="e.g. 18"></div>
-        </div>
-        <div class="lands-field"><label>Public Description</label><textarea id="gn-desc" placeholder="What the players know about this NPC…" style="min-height:60px;"></textarea></div>
-        <div class="lands-field">
-          <label>Portrait (optional)</label>
-          <div class="upload-area" id="gn-upload" style="padding:10px;" ondragover="event.preventDefault()" ondrop="handleGNPCPortraitDrop(event)">
-            <input type="file" accept="image/*" onchange="handleGNPCPortraitFile(event.target.files[0])">
-            <div class="upload-icon" style="font-size:1rem;">👤</div>
-            <div class="upload-label" id="gn-upload-label">Click or drop image</div>
-            <img id="gn-preview" style="display:none;max-width:80px;max-height:80px;border-radius:50%;margin-top:6px;object-fit:cover;border:2px solid var(--border);">
+
+        <!-- SIMPLE FORM -->
+        <div class="lands-add-form" id="gnpc-form-simple">
+          <div class="lands-field"><label>NPC Name *</label><input id="gn-name" type="text" placeholder="e.g. Lord Aldric"></div>
+          <div class="lands-row">
+            <div class="lands-field"><label>Race / Class</label><input id="gn-race" type="text" placeholder="e.g. Human Paladin"></div>
+            <div class="lands-field"><label>Alignment</label><input id="gn-align" type="text" placeholder="e.g. Lawful Good"></div>
           </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>HP</label><input id="gn-hp" type="text" placeholder="e.g. 42"></div>
+            <div class="lands-field"><label>AC</label><input id="gn-ac" type="text" placeholder="e.g. 18"></div>
+          </div>
+          <div class="lands-field"><label>Public Description</label><textarea id="gn-desc" placeholder="What the players know about this NPC…" style="min-height:60px;"></textarea></div>
+          <div class="lands-field">
+            <label>Portrait (optional)</label>
+            <div class="upload-area" style="padding:10px;" ondragover="event.preventDefault()" ondrop="handleGNPCPortraitDrop(event)">
+              <input type="file" accept="image/*" onchange="handleGNPCPortraitFile(event.target.files[0])">
+              <div class="upload-icon" style="font-size:1rem;">👤</div>
+              <div class="upload-label" id="gn-upload-label">Click or drop image</div>
+              <img id="gn-preview" style="display:none;max-width:80px;max-height:80px;border-radius:50%;margin-top:6px;object-fit:cover;border:2px solid var(--border);">
+            </div>
+          </div>
+          <button class="lands-save-btn" onclick="saveGeneralNPC('simple')">Save NPC</button>
         </div>
-        <button class="lands-save-btn" onclick="saveGeneralNPC()">Save NPC</button>
+
+        <!-- FULL SHEET FORM -->
+        <div class="lands-add-form" id="gnpc-form-full" style="display:none;">
+          <div class="lands-field"><label>NPC Name *</label><input id="gf-name" type="text" placeholder="e.g. Queen Seraphine"></div>
+          <div class="lands-row">
+            <div class="lands-field"><label>Race</label><input id="gf-race" type="text" placeholder="e.g. High Elf"></div>
+            <div class="lands-field"><label>Class &amp; Level</label><input id="gf-class" type="text" placeholder="e.g. Wizard 12"></div>
+          </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>Alignment</label><input id="gf-align" type="text" placeholder="e.g. Neutral Good"></div>
+            <div class="lands-field"><label>Background</label><input id="gf-bg" type="text" placeholder="e.g. Noble"></div>
+          </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>HP</label><input id="gf-hp" type="text" placeholder="e.g. 84"></div>
+            <div class="lands-field"><label>AC</label><input id="gf-ac" type="text" placeholder="e.g. 15"></div>
+            <div class="lands-field"><label>Speed</label><input id="gf-speed" type="text" placeholder="30 ft"></div>
+          </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>STR</label><input id="gf-str" type="text" placeholder="10"></div>
+            <div class="lands-field"><label>DEX</label><input id="gf-dex" type="text" placeholder="10"></div>
+            <div class="lands-field"><label>CON</label><input id="gf-con" type="text" placeholder="10"></div>
+            <div class="lands-field"><label>INT</label><input id="gf-int" type="text" placeholder="10"></div>
+            <div class="lands-field"><label>WIS</label><input id="gf-wis" type="text" placeholder="10"></div>
+            <div class="lands-field"><label>CHA</label><input id="gf-cha" type="text" placeholder="10"></div>
+          </div>
+          <div class="lands-field"><label>Traits / Notes</label><textarea id="gf-traits" placeholder="Personality traits, ideals, bonds, flaws…" style="min-height:60px;"></textarea></div>
+          <div class="lands-field"><label>Description</label><textarea id="gf-desc" placeholder="What the players see and know…" style="min-height:50px;"></textarea></div>
+          <div class="lands-field">
+            <label>Portrait (optional)</label>
+            <div class="upload-area" style="padding:10px;" ondragover="event.preventDefault()" ondrop="handleGNPCPortraitDrop(event)">
+              <input type="file" accept="image/*" onchange="handleGNPCPortraitFile(event.target.files[0])">
+              <div class="upload-icon" style="font-size:1rem;">👤</div>
+              <div class="upload-label" id="gf-upload-label">Click or drop image</div>
+              <img id="gf-preview" style="display:none;max-width:80px;max-height:80px;border-radius:50%;margin-top:6px;object-fit:cover;border:2px solid var(--border);">
+            </div>
+          </div>
+          <button class="lands-save-btn" onclick="saveGeneralNPC('full')">Save Full Sheet NPC</button>
+        </div>
+
+        <!-- GOON FORM -->
+        <div class="lands-add-form" id="gnpc-form-goon" style="display:none;">
+          <div class="lands-field"><label>Goon Name *</label><input id="gg-name" type="text" placeholder="e.g. City Guard, Bandit"></div>
+          <div class="lands-row">
+            <div class="lands-field"><label>HP</label><input id="gg-hp" type="text" placeholder="e.g. 16"></div>
+            <div class="lands-field"><label>AC</label><input id="gg-ac" type="text" placeholder="e.g. 13"></div>
+            <div class="lands-field"><label>Speed</label><input id="gg-speed" type="text" placeholder="30 ft"></div>
+          </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>Attack Bonus</label><input id="gg-atk" type="text" placeholder="e.g. +4"></div>
+            <div class="lands-field"><label>Damage</label><input id="gg-dmg" type="text" placeholder="e.g. 1d8+2"></div>
+            <div class="lands-field"><label>Damage Type</label><input id="gg-dtype" type="text" placeholder="e.g. Slashing"></div>
+          </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>CR / Level</label><input id="gg-cr" type="text" placeholder="e.g. 1/4"></div>
+            <div class="lands-field"><label>Passive Perc.</label><input id="gg-pp" type="text" placeholder="e.g. 11"></div>
+          </div>
+          <div class="lands-field"><label>Special Abilities / Notes</label><textarea id="gg-notes" placeholder="Pack tactics, multiattack, resistances…" style="min-height:55px;"></textarea></div>
+          <button class="lands-save-btn" onclick="saveGeneralNPC('goon')">Save Goon</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1307,11 +1423,62 @@ async function loadGeneralNPCs() {
 }
 
 function renderGNPCCard(id, d) {
+  const type = d.npcType || 'simple';
+  const delBtn = _isDM ? `<button class="gnpc-del" onclick="deleteGeneralNPC('${escHtml(id)}',event)" title="Delete">✕</button>` : '';
+
+  if (type === 'goon') {
+    const stats = [
+      d.hp  ? `<div class="goon-stat"><span class="goon-stat-val hp">${escHtml(String(d.hp))}</span><span class="goon-stat-label">HP</span></div>` : '',
+      d.ac  ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.ac))}</span><span class="goon-stat-label">AC</span></div>` : '',
+      d.speed ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.speed))}</span><span class="goon-stat-label">Spd</span></div>` : '',
+      d.atk ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.atk))}</span><span class="goon-stat-label">Atk</span></div>` : '',
+      d.dmg ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.dmg))}</span><span class="goon-stat-label">Dmg</span></div>` : '',
+      d.cr  ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.cr))}</span><span class="goon-stat-label">CR</span></div>` : '',
+    ].filter(Boolean).join('');
+    return `<div class="goon-card">
+      ${delBtn}
+      <div class="goon-name">⚔️ ${escHtml(d.name||'Unknown')}</div>
+      <div class="goon-stats">${stats}</div>
+      ${d.dtype ? `<div class="goon-notes">${escHtml(d.dtype)} damage</div>` : ''}
+      ${d.notes ? `<div class="goon-notes">${escHtml(d.notes)}</div>` : ''}
+    </div>`;
+  }
+
+  if (type === 'full') {
+    const portrait = d.portrait
+      ? `<img class="gnpc-portrait" style="width:40px;height:40px;flex-shrink:0;" src="${escHtml(d.portrait)}" onerror="this.style.display='none'">`
+      : `<div style="width:40px;height:40px;border-radius:50%;background:#ecdcb5;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">👤</div>`;
+    const abilityRow = ['str','dex','con','int','wis','cha'].map(a =>
+      `<div class="gnpc-full-stat"><span class="gnpc-full-stat-val">${escHtml(String(d[a]||'—'))}</span><span class="gnpc-full-stat-lbl">${a.toUpperCase()}</span></div>`
+    ).join('');
+    return `<div class="gnpc-full-card" onclick="toggleGNPCFull('${escHtml(id)}')">
+      ${delBtn}
+      <div class="gnpc-full-header">
+        ${portrait}
+        <div style="flex:1;min-width:0;">
+          <div class="gnpc-name" style="text-align:left;margin:0 0 2px;">${escHtml(d.name||'Unknown')}</div>
+          <div class="gnpc-sub" style="text-align:left;">${escHtml([d.class, d.race, d.align].filter(Boolean).join(' · ') || '')}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          ${d.hp ? `<div class="gnpc-stat"><span class="gnpc-stat-val hp">${escHtml(String(d.hp))}</span><span class="gnpc-stat-label">HP</span></div>` : ''}
+          ${d.ac ? `<div class="gnpc-stat"><span class="gnpc-stat-val">${escHtml(String(d.ac))}</span><span class="gnpc-stat-label">AC</span></div>` : ''}
+        </div>
+        <span style="font-size:0.55rem;color:var(--border-light);margin-left:8px;">▶</span>
+      </div>
+      <div class="gnpc-full-body" id="gnpc-full-${escHtml(id)}">
+        <div class="gnpc-full-stat-grid">${abilityRow}</div>
+        ${d.speed ? `<div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:6px;">Speed: ${escHtml(String(d.speed))}</div>` : ''}
+        ${d.traits ? `<div style="font-size:0.78rem;color:var(--ink-light);font-style:italic;margin-top:6px;">${escHtml(d.traits)}</div>` : ''}
+        ${d.desc ? `<div style="font-size:0.78rem;color:var(--ink-light);margin-top:6px;">${escHtml(d.desc)}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // simple (default)
   const portrait = d.portrait
     ? `<img class="gnpc-portrait" src="${escHtml(d.portrait)}" onerror="this.outerHTML='<div class=\\'gnpc-portrait\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;\\'>👤</div>'">`
     : `<div class="gnpc-portrait" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;">👤</div>`;
   const statsHtml = (d.hp || d.ac) ? `<div class="gnpc-stats">${d.hp?`<div class="gnpc-stat"><span class="gnpc-stat-val hp">${escHtml(String(d.hp))}</span><span class="gnpc-stat-label">HP</span></div>`:''}${d.ac?`<div class="gnpc-stat"><span class="gnpc-stat-val">${escHtml(String(d.ac))}</span><span class="gnpc-stat-label">AC</span></div>`:''}</div>` : '';
-  const delBtn = _isDM ? `<button class="gnpc-del" onclick="deleteGeneralNPC('${escHtml(id)}',event)" title="Delete">✕</button>` : '';
   return `<div class="gnpc-card">
     ${delBtn}
     ${portrait}
@@ -1320,6 +1487,22 @@ function renderGNPCCard(id, d) {
     ${statsHtml}
     ${d.desc ? `<div class="gnpc-desc">${escHtml(d.desc)}</div>` : ''}
   </div>`;
+}
+
+function toggleGNPCFull(id) {
+  const body = document.getElementById('gnpc-full-' + id);
+  if (body) body.classList.toggle('open');
+}
+
+let _gnpcType = 'simple';
+
+function selectGNPCType(type, btn) {
+  _gnpcType = type;
+  document.querySelectorAll('.gnpc-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['simple','full','goon'].forEach(t => {
+    document.getElementById('gnpc-form-' + t).style.display = t === type ? '' : 'none';
+  });
 }
 
 function toggleGeneralNPCForm() {
@@ -1338,39 +1521,77 @@ function handleGNPCPortraitFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     _gnpcPortrait = e.target.result;
-    const preview = document.getElementById('gn-preview');
-    preview.src = _gnpcPortrait;
-    preview.style.display = 'block';
-    document.getElementById('gn-upload-label').textContent = file.name;
+    // update whichever preview is visible
+    ['gn-preview','gf-preview'].forEach(pid => {
+      const el = document.getElementById(pid);
+      if (el) { el.src = _gnpcPortrait; el.style.display = 'block'; }
+    });
+    ['gn-upload-label','gf-upload-label'].forEach(lid => {
+      const el = document.getElementById(lid);
+      if (el) el.textContent = file.name;
+    });
   };
   reader.readAsDataURL(file);
 }
 
-async function saveGeneralNPC() {
+async function saveGeneralNPC(type) {
   const btn = event.target;
-  const name = document.getElementById('gn-name').value.trim();
-  if (!name) { alert('Name is required.'); return; }
+  let data = { npcType: type, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  let nameId, resetIds;
+
+  if (type === 'simple') {
+    data.name  = document.getElementById('gn-name').value.trim();
+    data.race  = document.getElementById('gn-race').value.trim();
+    data.align = document.getElementById('gn-align').value.trim();
+    data.hp    = document.getElementById('gn-hp').value.trim();
+    data.ac    = document.getElementById('gn-ac').value.trim();
+    data.desc  = document.getElementById('gn-desc').value.trim();
+    if (_gnpcPortrait) data.portrait = _gnpcPortrait;
+    resetIds = ['gn-name','gn-race','gn-align','gn-hp','gn-ac','gn-desc'];
+  } else if (type === 'full') {
+    data.name   = document.getElementById('gf-name').value.trim();
+    data.race   = document.getElementById('gf-race').value.trim();
+    data.class  = document.getElementById('gf-class').value.trim();
+    data.align  = document.getElementById('gf-align').value.trim();
+    data.bg     = document.getElementById('gf-bg').value.trim();
+    data.hp     = document.getElementById('gf-hp').value.trim();
+    data.ac     = document.getElementById('gf-ac').value.trim();
+    data.speed  = document.getElementById('gf-speed').value.trim();
+    data.str    = document.getElementById('gf-str').value.trim();
+    data.dex    = document.getElementById('gf-dex').value.trim();
+    data.con    = document.getElementById('gf-con').value.trim();
+    data.int    = document.getElementById('gf-int').value.trim();
+    data.wis    = document.getElementById('gf-wis').value.trim();
+    data.cha    = document.getElementById('gf-cha').value.trim();
+    data.traits = document.getElementById('gf-traits').value.trim();
+    data.desc   = document.getElementById('gf-desc').value.trim();
+    if (_gnpcPortrait) data.portrait = _gnpcPortrait;
+    resetIds = ['gf-name','gf-race','gf-class','gf-align','gf-bg','gf-hp','gf-ac','gf-speed','gf-str','gf-dex','gf-con','gf-int','gf-wis','gf-cha','gf-traits','gf-desc'];
+  } else {
+    data.name   = document.getElementById('gg-name').value.trim();
+    data.hp     = document.getElementById('gg-hp').value.trim();
+    data.ac     = document.getElementById('gg-ac').value.trim();
+    data.speed  = document.getElementById('gg-speed').value.trim();
+    data.atk    = document.getElementById('gg-atk').value.trim();
+    data.dmg    = document.getElementById('gg-dmg').value.trim();
+    data.dtype  = document.getElementById('gg-dtype').value.trim();
+    data.cr     = document.getElementById('gg-cr').value.trim();
+    data.pp     = document.getElementById('gg-pp').value.trim();
+    data.notes  = document.getElementById('gg-notes').value.trim();
+    resetIds = ['gg-name','gg-hp','gg-ac','gg-speed','gg-atk','gg-dmg','gg-dtype','gg-cr','gg-pp','gg-notes'];
+  }
+
+  if (!data.name) { alert('Name is required.'); return; }
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
-    const data = {
-      name,
-      race:  document.getElementById('gn-race').value.trim(),
-      align: document.getElementById('gn-align').value.trim(),
-      hp:    document.getElementById('gn-hp').value.trim(),
-      ac:    document.getElementById('gn-ac').value.trim(),
-      desc:  document.getElementById('gn-desc').value.trim(),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    if (_gnpcPortrait) data.portrait = _gnpcPortrait;
     await db.collection('campaigns').doc(campaignId).collection('general_npcs').add(data);
-    // reset
-    ['gn-name','gn-race','gn-align','gn-hp','gn-ac','gn-desc'].forEach(id => document.getElementById(id).value = '');
+    resetIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     _gnpcPortrait = null;
-    document.getElementById('gn-preview').style.display = 'none';
-    document.getElementById('gn-upload-label').textContent = 'Click or drop image';
+    ['gn-preview','gf-preview'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     document.getElementById('gnpc-form').style.display = 'none';
     await loadGeneralNPCs();
-    btn.textContent = 'Save NPC'; btn.disabled = false;
+    btn.textContent = type === 'goon' ? 'Save Goon' : type === 'full' ? 'Save Full Sheet NPC' : 'Save NPC';
+    btn.disabled = false;
   } catch(e) {
     alert('Failed: ' + e.message);
     btn.textContent = 'Save NPC'; btn.disabled = false;
@@ -1506,30 +1727,127 @@ async function loadLandEntries(landId, type) {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).orderBy('createdAt').get();
-    if (snap.empty) {
-      list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">None yet.</div>';
-      return;
+    if (snap.empty) { list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">None yet.</div>'; return; }
+
+    if (type === 'shops') {
+      list.innerHTML = snap.docs.map(doc => {
+        const d = doc.data();
+        const sid = escHtml(doc.id);
+        const sub = [d.loc, d.type].filter(Boolean).map(escHtml).join(' · ');
+        const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','shops','${sid}',this)" style="margin-left:auto;">✕</button>` : '';
+        const items = (d.items || []);
+        const itemRows = items.map((it, i) => `
+          <div class="shop-item-row">
+            <span class="shop-item-name">${escHtml(it.name||'?')}</span>
+            ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},-1)">−</button>` : ''}
+            <span class="shop-item-qty">×${escHtml(String(it.qty||1))}</span>
+            ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},1)">+</button>
+            <button class="lands-del-btn" onclick="removeShopItem('${escHtml(landId)}','${sid}',${i})">✕</button>` : ''}
+          </div>`).join('');
+        const addItemForm = _isDM ? `
+          <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;">
+            <div class="lands-field" style="flex:2;margin:0;"><label>Item Name</label><input id="sitem-name-${sid}" type="text" placeholder="e.g. Longsword"></div>
+            <div class="lands-field" style="flex:1;margin:0;"><label>Qty</label><input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1"></div>
+            <button class="lands-save-btn" style="margin:0;padding:6px 12px;" onclick="addShopItem('${escHtml(landId)}','${sid}')">Add</button>
+          </div>` : '';
+        return `<div class="shop-entry" id="shop-${sid}">
+          <div class="shop-entry-header" onclick="toggleShop('${sid}')">
+            <span style="font-size:1rem;">🏪</span>
+            <div style="flex:1;min-width:0;">
+              <div class="lands-entry-name">${escHtml(d.name||'—')}</div>
+              ${sub ? `<div class="lands-entry-sub">${sub}</div>` : ''}
+            </div>
+            <span style="font-size:0.55rem;color:var(--border-light);margin-right:4px;">${items.length} item${items.length===1?'':'s'}</span>
+            <span class="land-chevron" id="shopchev-${sid}">▶</span>
+            ${delBtn}
+          </div>
+          <div class="shop-entry-body" id="shopbody-${sid}">
+            ${items.length ? itemRows : '<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">No items yet.</div>'}
+            ${addItemForm}
+            ${d.notes ? `<div class="lands-entry-sub" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(122,90,40,0.2);">${escHtml(d.notes)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      list.innerHTML = snap.docs.map(doc => {
+        const d = doc.data();
+        let sub = '';
+        if (type === 'npcs') sub = [d.race, d.align, d.loc, d.notes].filter(Boolean).map(escHtml).join(' · ');
+        if (type === 'maps') sub = [d.loc, d.notes].filter(Boolean).map(escHtml).join(' · ');
+        const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:130px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
+        const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','${type}','${escHtml(doc.id)}',this)">✕</button>` : '';
+        return `<div class="lands-entry">
+          <div class="lands-entry-body">
+            <div class="lands-entry-name">${escHtml(d.name||'—')}</div>
+            ${sub ? `<div class="lands-entry-sub">${sub}</div>` : ''}
+            ${mapImg}
+          </div>
+          ${delBtn}
+        </div>`;
+      }).join('');
     }
-    list.innerHTML = snap.docs.map(doc => {
-      const d = doc.data();
-      let sub = '';
-      if (type === 'shops') sub = [d.loc, d.type, d.notes].filter(Boolean).join(' · ');
-      if (type === 'npcs')  sub = [d.race, d.align, d.loc, d.notes].filter(Boolean).join(' · ');
-      if (type === 'maps')  sub = [d.loc, d.notes].filter(Boolean).join(' · ');
-      const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:130px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
-      const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','${type}','${escHtml(doc.id)}',this)">✕</button>` : '';
-      return `<div class="lands-entry">
-        <div class="lands-entry-body">
-          <div class="lands-entry-name">${escHtml(d.name||'—')}</div>
-          ${sub ? `<div class="lands-entry-sub">${escHtml(sub)}</div>` : ''}
-          ${mapImg}
-        </div>
-        ${delBtn}
-      </div>`;
-    }).join('');
   } catch(e) {
     list.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`;
   }
+}
+
+function toggleShop(sid) {
+  const body = document.getElementById('shopbody-' + sid);
+  const chev = document.getElementById('shopchev-' + sid);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+}
+
+async function addShopItem(landId, shopId) {
+  const nameEl = document.getElementById('sitem-name-' + shopId);
+  const qtyEl  = document.getElementById('sitem-qty-' + shopId);
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { alert('Item name required.'); return; }
+  const qty = parseInt(qtyEl ? qtyEl.value : '1') || 1;
+  try {
+    const ref = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
+    await ref.update({ items: firebase.firestore.FieldValue.arrayUnion({ name, qty }) });
+    if (nameEl) nameEl.value = '';
+    if (qtyEl) qtyEl.value = '1';
+    await loadLandEntries(landId, 'shops');
+    // reopen the shop that was just edited
+    const body = document.getElementById('shopbody-' + shopId);
+    const chev = document.getElementById('shopchev-' + shopId);
+    if (body) { body.classList.add('open'); }
+    if (chev) { chev.classList.add('open'); }
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function adjustShopItem(landId, shopId, idx, delta) {
+  try {
+    const ref = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
+    const doc = await ref.get();
+    const items = [...(doc.data().items || [])];
+    items[idx] = { ...items[idx], qty: Math.max(0, (items[idx].qty || 1) + delta) };
+    if (items[idx].qty === 0) items.splice(idx, 1);
+    await ref.update({ items });
+    await loadLandEntries(landId, 'shops');
+    const body = document.getElementById('shopbody-' + shopId);
+    const chev = document.getElementById('shopchev-' + shopId);
+    if (body) body.classList.add('open');
+    if (chev) chev.classList.add('open');
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function removeShopItem(landId, shopId, idx) {
+  if (!confirm('Remove this item?')) return;
+  try {
+    const ref = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
+    const doc = await ref.get();
+    const items = [...(doc.data().items || [])];
+    items.splice(idx, 1);
+    await ref.update({ items });
+    await loadLandEntries(landId, 'shops');
+    const body = document.getElementById('shopbody-' + shopId);
+    if (body) body.classList.add('open');
+  } catch(e) { alert('Failed: ' + e.message); }
 }
 
 function toggleLandEntryForm(landId, type) {
