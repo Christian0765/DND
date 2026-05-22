@@ -628,7 +628,7 @@
 <div class="nav-bar">
   <a class="nav-btn" href="dashboard.html">← Dashboard</a>
   <button class="nav-btn" id="dm-panel-btn" onclick="toggleDMPanel()" style="display:none;">🔐 DM Panel</button>
-  <button class="nav-btn" id="lands-btn" onclick="toggleLandsSection()">🗺 Lands</button>
+  <button class="nav-btn" id="lands-btn" onclick="toggleLandsSection()">📖 Encyclopedia</button>
   <a class="nav-btn" id="combat-link" href="#" style="display:none;">⚔ Combat Tracker</a>
 </div>
 
@@ -1754,14 +1754,17 @@ async function loadLandEntries(landId, type) {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).orderBy('createdAt').get();
-    if (snap.empty) { list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">None yet.</div>'; return; }
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published === true);
+    if (docs.length === 0) { list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">None yet.</div>'; return; }
 
     if (type === 'shops') {
-      list.innerHTML = snap.docs.map(doc => {
+      list.innerHTML = docs.map(doc => {
         const d = doc.data();
         const sid = escHtml(doc.id);
+        const isPublished = d.published === true;
         const sub = [d.loc, d.type].filter(Boolean).map(escHtml).join(' · ');
         const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','shops','${sid}',this)" style="margin-left:auto;">✕</button>` : '';
+        const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleLandEntryPublished('${escHtml(landId)}','shops','${sid}',${isPublished})">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
         const items = (d.items || []);
         const itemRows = items.map((it, i) => `
           <div class="shop-item-row">
@@ -1780,7 +1783,7 @@ async function loadLandEntries(landId, type) {
             <div class="lands-field" style="flex:1;margin:0;"><label>Qty</label><input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1"></div>
             <button class="lands-save-btn" style="margin:0;padding:6px 12px;" onclick="addShopItem('${escHtml(landId)}','${sid}')">Add</button>
           </div>` : '';
-        return `<div class="shop-entry" id="shop-${sid}">
+        return `<div class="shop-entry${_isDM && !isPublished ? ' unpublished' : ''}" id="shop-${sid}">
           <div class="shop-entry-header" onclick="toggleShop('${sid}')">
             <span style="font-size:1rem;">🏪</span>
             <div style="flex:1;min-width:0;">
@@ -1788,30 +1791,34 @@ async function loadLandEntries(landId, type) {
               ${sub ? `<div class="lands-entry-sub">${sub}</div>` : ''}
             </div>
             <span style="font-size:0.55rem;color:var(--border-light);margin-right:4px;">${items.length} item${items.length===1?'':'s'}</span>
+            ${pubBtn}
             <span class="land-chevron" id="shopchev-${sid}">▶</span>
             ${delBtn}
           </div>
           <div class="shop-entry-body" id="shopbody-${sid}">
             ${items.length ? itemRows : '<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">No items yet.</div>'}
             ${addItemForm}
-            ${d.notes ? `<div class="lands-entry-sub" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(122,90,40,0.2);">${escHtml(d.notes)}</div>` : ''}
+            ${d.notes && _isDM ? `<div class="lands-entry-sub" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(122,90,40,0.2);font-style:italic;">${escHtml(d.notes)}</div>` : ''}
           </div>
         </div>`;
       }).join('');
     } else {
-      list.innerHTML = snap.docs.map(doc => {
+      list.innerHTML = docs.map(doc => {
         const d = doc.data();
+        const isPublished = d.published === true;
         let sub = '';
-        if (type === 'npcs') sub = [d.race, d.align, d.loc, d.notes].filter(Boolean).map(escHtml).join(' · ');
-        if (type === 'maps') sub = [d.loc, d.notes].filter(Boolean).map(escHtml).join(' · ');
+        if (type === 'npcs') sub = (_isDM ? [d.race, d.align, d.loc, d.notes] : [d.race, d.align, d.loc]).filter(Boolean).map(escHtml).join(' · ');
+        if (type === 'maps') sub = (_isDM ? [d.loc, d.notes] : [d.loc]).filter(Boolean).map(escHtml).join(' · ');
         const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:130px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
         const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','${type}','${escHtml(doc.id)}',this)">✕</button>` : '';
-        return `<div class="lands-entry">
+        const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="toggleLandEntryPublished('${escHtml(landId)}','${type}','${escHtml(doc.id)}',${isPublished})">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
+        return `<div class="lands-entry${_isDM && !isPublished ? ' unpublished' : ''}">
           <div class="lands-entry-body">
             <div class="lands-entry-name">${escHtml(d.name||'—')}</div>
             ${sub ? `<div class="lands-entry-sub">${sub}</div>` : ''}
             ${mapImg}
           </div>
+          ${pubBtn}
           ${delBtn}
         </div>`;
       }).join('');
@@ -1930,7 +1937,7 @@ async function saveLandEntry(landId, type) {
   if (!name) { alert('Name is required.'); return; }
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
-    const data = { name, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const data = { name, published: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
     if (type === 'shops') {
       data.loc   = document.getElementById('li-' + landId + '-shops-loc').value.trim();
       data.type  = document.getElementById('li-' + landId + '-shops-type').value.trim();
@@ -2015,6 +2022,17 @@ async function toggleLandPublished(id, currentlyPublished) {
   try {
     await db.collection('campaigns').doc(campaignId).collection('lands').doc(id).update({ published: !currentlyPublished });
     await loadLandsList();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function toggleLandEntryPublished(landId, type, entryId, currentlyPublished) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).doc(entryId).update({ published: !currentlyPublished });
+    await loadLandEntries(landId, type);
+    if (type === 'shops') {
+      const body = document.getElementById('shopbody-' + entryId);
+      if (body && body.classList.contains('open')) body.classList.add('open');
+    }
   } catch(e) { alert('Failed: ' + e.message); }
 }
 
