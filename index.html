@@ -581,6 +581,9 @@
   .shop-item-qty { font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold);background:rgba(154,112,0,0.15);border:1px solid var(--border);border-radius:2px;padding:2px 8px;min-width:36px;text-align:center; }
   .shop-qty-btn { font-family:'Cinzel',serif;font-size:0.7rem;color:var(--border-light);background:none;border:1px solid var(--border);border-radius:2px;width:22px;height:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
   .shop-qty-btn:hover { color:var(--gold);border-color:var(--gold); }
+  .shop-buy-btn { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--parchment);background:var(--green);border:none;border-radius:2px;padding:3px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0; }
+  .shop-buy-btn:hover { opacity:0.85; }
+  .shop-buy-btn:disabled { opacity:0.4;cursor:not-allowed; }
   .dm-section { margin-bottom:20px; }
   .dm-section-title { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:12px; }
   .dm-field { margin-bottom:10px; }
@@ -1743,7 +1746,8 @@ async function loadLandEntries(landId, type) {
             ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},-1)">−</button>` : ''}
             <span class="shop-item-qty">×${escHtml(String(it.qty||1))}</span>
             ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},1)">+</button>
-            <button class="lands-del-btn" onclick="removeShopItem('${escHtml(landId)}','${sid}',${i})">✕</button>` : ''}
+            <button class="lands-del-btn" onclick="removeShopItem('${escHtml(landId)}','${sid}',${i})">✕</button>`
+            : (it.cost && _myCharSlot && _myCharApproved ? `<button class="shop-buy-btn" onclick="buyShopItem('${escHtml(landId)}','${sid}',${i},'${escHtml(String(it.cost))}',this)">Buy</button>` : '')}
           </div>`).join('');
         const addItemForm = _isDM ? `
           <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;">
@@ -1855,6 +1859,39 @@ async function removeShopItem(landId, shopId, idx) {
     const body = document.getElementById('shopbody-' + shopId);
     if (body) body.classList.add('open');
   } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function buyShopItem(landId, shopId, itemIdx, cost, btn) {
+  if (!_myCharSlot || !_myCharApproved) { alert('You need an approved character to buy items.'); return; }
+  const costNum = parseFloat(cost);
+  if (!costNum || costNum <= 0) { alert('Invalid item cost.'); return; }
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const charRef = db.collection('campaigns').doc(campaignId).collection('characters').doc(_myCharSlot);
+    const charDoc = await charRef.get();
+    if (!charDoc.exists) throw new Error('Character not found.');
+    const currentGold = parseFloat(charDoc.data()['f-gold'] || '0') || 0;
+    if (currentGold < costNum) {
+      alert(`Not enough gold! You have ${currentGold} gp but need ${costNum} gp.`);
+      btn.disabled = false; btn.textContent = 'Buy'; return;
+    }
+    const newGold = Math.round((currentGold - costNum) * 100) / 100;
+    await charRef.update({ 'f-gold': String(newGold) });
+    const shopRef = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
+    const shopDoc = await shopRef.get();
+    const items = [...(shopDoc.data().items || [])];
+    items[itemIdx] = { ...items[itemIdx], qty: Math.max(0, (items[itemIdx].qty || 1) - 1) };
+    if (items[itemIdx].qty === 0) items.splice(itemIdx, 1);
+    await shopRef.update({ items });
+    await loadLandEntries(landId, 'shops');
+    const body = document.getElementById('shopbody-' + shopId);
+    if (body) body.classList.add('open');
+    if (!_isDM) await loadMyCharacter();
+    alert(`Purchased! ${costNum} gp deducted. You now have ${newGold} gp.`);
+  } catch(e) {
+    alert('Purchase failed: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Buy';
+  }
 }
 
 function toggleLandEntryForm(landId, type) {
