@@ -1135,11 +1135,52 @@ async function loadPlayersTab() {
       ]);
       const u = userSnap.exists ? userSnap.data() : {};
       const c = charSnap.exists ? charSnap.data() : {};
-      const charName = c['f-name'] ? escHtml(c['f-name']) : '<em style="opacity:0.6;">No character yet</em>';
+      const hasChar = !!(c['f-name']);
+      const slotNum = info.slot.replace('player', '');
+      const sheetUrl = `sheet-${slotNum}.html?c=${campaignId}`;
+      const charName = hasChar ? escHtml(c['f-name']) : '—';
       const charCls = [c['f-class'], c['f-race']].filter(Boolean).map(escHtml).join(' · ');
-      const stats = [c['f-curhp'] ? `HP ${c['f-curhp']}/${c['f-maxhp']||'?'}` : '', c['f-ac'] ? `AC ${c['f-ac']}` : ''].filter(Boolean).join(' · ');
+      const curhp = c['f-curhp'] || '—';
+      const maxhp = c['f-maxhp'] || '?';
+      const pct = (curhp !== '—' && maxhp !== '?') ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0 : 0;
+      const barClass = pct < 25 ? ' low' : pct < 50 ? ' mid' : '';
       const avatar = u.photoURL ? `<img class="dm-player-avatar" src="${escHtml(u.photoURL)}" onerror="this.style.display='none'">` : `<div class="dm-player-avatar">👤</div>`;
-      return `<div class="dm-player-row">${avatar}<div class="dm-player-info"><div class="dm-player-name">${escHtml(u.displayName||u.email||'Unknown')}</div><div class="dm-player-char">${charName}${charCls?' · '+charCls:''}${stats?' | '+stats:''}</div></div><button class="dm-btn danger" onclick="removePlayer('${escHtml(uid)}','${escHtml(info.slot)}',this)" style="white-space:nowrap;padding:4px 10px;font-size:0.65rem;">Remove</button></div>`;
+      return `
+        <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;padding:14px 16px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:${hasChar?'10':'0'}px;">
+            ${avatar}
+            <div style="flex:1;min-width:0;">
+              <div class="dm-player-name">${escHtml(u.displayName||u.email||'Unknown')}</div>
+              <div class="dm-player-char">${hasChar ? `${charName}${charCls?' · '+charCls:''}` : '<em style="opacity:0.5;">No character yet</em>'}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              ${hasChar ? `<a href="${escHtml(sheetUrl)}" class="dm-btn" style="padding:4px 10px;font-size:0.65rem;text-decoration:none;">View Sheet →</a>` : ''}
+              <button class="dm-btn danger" onclick="removePlayer('${escHtml(uid)}','${escHtml(info.slot)}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>
+            </div>
+          </div>
+          ${hasChar ? `
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
+              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:#5a9a3a;display:block;">${escHtml(String(curhp))}</span>
+              <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">HP</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
+              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--red);display:block;">${escHtml(String(c['f-ac']||'—'))}</span>
+              <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">AC</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
+              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);display:block;">${escHtml(String(c['f-gold']||'—'))}</span>
+              <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">GP</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:2px;text-align:center;padding:4px 2px;">
+              <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--border-light);display:block;">${escHtml(String(c['f-pp']||'—'))}</span>
+              <span style="font-family:'Cinzel',serif;font-size:0.42rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);">PP</span>
+            </div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);border-radius:2px;height:5px;overflow:hidden;">
+            <div style="height:100%;background:${pct<25?'var(--red)':pct<50?'var(--gold)':'#5a9a3a'};width:${pct}%;transition:width 0.4s;border-radius:2px;"></div>
+          </div>` : ''}
+        </div>`;
     }));
     container.innerHTML = rows.join('');
   } catch(e) { container.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`; }
