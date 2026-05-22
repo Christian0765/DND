@@ -1334,8 +1334,8 @@
               <div class="cc-req-card">
                 <div class="cc-req-avatar">${(f.displayName || '?').charAt(0).toUpperCase()}</div>
                 <div class="cc-req-name">${escHtml(f.displayName || f.email || 'Someone')}</div>
-                <button class="cc-req-accept" onclick="acceptFriendRequest('${d.id}')">Accept</button>
-                <button class="cc-req-decline" onclick="declineFriendRequest('${d.id}')">Decline</button>
+                <button class="cc-req-accept" onclick="acceptFriendRequest('${d.id}',this)">Accept</button>
+                <button class="cc-req-decline" onclick="declineFriendRequest('${d.id}',this)">Decline</button>
               </div>`;
           }).join('');
         } else {
@@ -1409,21 +1409,32 @@
         .catch(err => showMessage(msg, 'Error: ' + err.message, 'error'));
     }
 
-    function acceptFriendRequest(fromUid) {
+    function acceptFriendRequest(fromUid, btn) {
       _markProcessed(fromUid);
+      if (btn) btn.closest('.cc-req-card').remove();
+      // Hide section if no more requests
+      if (!document.querySelector('#friend-requests-list .cc-req-card')) {
+        document.getElementById('friend-requests-section').style.display = 'none';
+        const badge = document.getElementById('friends-tab-btn').querySelector('.tab-badge');
+        if (badge) badge.remove();
+      }
       db.collection('users').doc(currentUser.uid).set({
         friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
-      }, { merge: true }).catch(e => console.error('Accept failed:', e));
-      loadFriends();
+      }, { merge: true }).then(() => loadFriends()).catch(e => console.error('Accept failed:', e));
     }
 
-    function declineFriendRequest(fromUid) {
+    function declineFriendRequest(fromUid, btn) {
       _markProcessed(fromUid);
+      if (btn) btn.closest('.cc-req-card').remove();
+      if (!document.querySelector('#friend-requests-list .cc-req-card')) {
+        document.getElementById('friend-requests-section').style.display = 'none';
+        const badge = document.getElementById('friends-tab-btn').querySelector('.tab-badge');
+        if (badge) badge.remove();
+      }
       db.collection('users').doc(currentUser.uid).set({
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
       }, { merge: true }).catch(e => console.error('Decline failed:', e));
-      loadFriends();
     }
 
     function removeFriend(friendUid) {

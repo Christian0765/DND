@@ -490,6 +490,37 @@
     .pending-card { flex-direction: column; align-items: flex-start; }
     .pending-actions { width: 100%; justify-content: flex-end; }
   }
+
+  /* DM PANEL */
+  .dm-tab-btn { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);background:none;border:none;border-bottom:2px solid transparent;padding:8px 16px;cursor:pointer;margin-bottom:-1px;transition:color 0.15s,border-color 0.15s; }
+  .dm-tab-btn.active { color:var(--gold-light);border-bottom-color:var(--gold); }
+  .dm-tab-btn:hover { color:var(--gold-light); }
+  .dm-tab-content { display:none; }
+  .dm-tab-content.active { display:block; }
+  .dm-section { margin-bottom:20px; }
+  .dm-section-title { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:12px; }
+  .dm-field { margin-bottom:10px; }
+  .dm-field label { font-family:'Cinzel',serif;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block;margin-bottom:4px; }
+  .dm-field input[type="text"] { font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;width:100%;outline:none; }
+  .dm-field input[type="text"]:focus { border-color:var(--gold); }
+  .dm-btn { font-family:'Cinzel',serif;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold-light);background:none;border:1px solid var(--gold);border-radius:2px;padding:8px 16px;cursor:pointer;transition:background 0.15s; }
+  .dm-btn:hover { background:rgba(154,112,0,0.2); }
+  .dm-btn.danger { color:var(--red);border-color:var(--red); }
+  .dm-btn.danger:hover { background:rgba(122,21,21,0.15); }
+  .dm-notes-area { width:100%;min-height:100px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);font-family:'Crimson Text',serif;font-size:0.85rem;padding:8px 10px;resize:vertical;outline:none;line-height:1.6; }
+  .dm-notes-area:focus { border-color:var(--gold); }
+  .upload-area { border:2px dashed var(--border);border-radius:3px;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.15s,background 0.15s;position:relative; }
+  .upload-area:hover { border-color:var(--gold);background:rgba(154,112,0,0.05); }
+  .upload-area input[type="file"] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%; }
+  .upload-icon { font-size:1.8rem;margin-bottom:6px; }
+  .upload-label { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light); }
+  .upload-preview { max-width:100%;max-height:120px;border-radius:2px;margin-top:10px;display:none;border:1px solid var(--border); }
+  .dm-player-row { display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(122,90,40,0.3); }
+  .dm-player-row:last-child { border-bottom:none; }
+  .dm-player-avatar { width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--border);object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem; }
+  .dm-player-info { flex:1;min-width:0; }
+  .dm-player-name { font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .dm-player-char { font-size:0.8rem;color:var(--border-light);font-style:italic;margin-top:2px; }
 </style>
 </head>
 <body>
@@ -503,7 +534,42 @@
 
 <div class="nav-bar">
   <a class="nav-btn" href="dashboard.html">← Dashboard</a>
+  <button class="nav-btn" id="dm-panel-btn" onclick="toggleDMPanel()" style="display:none;">🔐 DM Panel</button>
   <a class="nav-btn" id="combat-link" href="#" style="display:none;">⚔ Combat Tracker</a>
+</div>
+
+<!-- DM PANEL -->
+<div class="dm-panel" id="dm-panel" style="display:none;max-width:820px;margin:0 auto 32px;background:linear-gradient(160deg,#1a0e04 0%,#0d0802 100%);border:1px solid var(--border);box-shadow:0 0 0 3px #080604,0 8px 30px rgba(0,0,0,0.8);border-radius:3px;padding:24px 28px;">
+  <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;letter-spacing:0.05em;">🔐 Dungeon Master Panel</div>
+
+  <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);">
+    <button class="dm-tab-btn active" onclick="switchDMTab('campaign')">Campaign</button>
+    <button class="dm-tab-btn" onclick="switchDMTab('players')">Players</button>
+  </div>
+
+  <div id="dm-tab-campaign" class="dm-tab-content active">
+    <div class="dm-section">
+      <div class="dm-section-title">Campaign Identity</div>
+      <div class="dm-field"><label>Campaign Name</label><input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()"></div>
+      <div class="dm-field"><label>Campaign Banner / Logo</label>
+        <div class="upload-area" id="upload-area">
+          <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+          <div class="upload-icon">🖼</div>
+          <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
+          <img class="upload-preview" id="banner-preview">
+        </div>
+      </div>
+    </div>
+    <div class="dm-section">
+      <div class="dm-section-title">Secret DM Notes</div>
+      <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans...&#10;&#10;Players cannot see this section."></textarea>
+      <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
+    </div>
+  </div>
+
+  <div id="dm-tab-players" class="dm-tab-content">
+    <div id="dm-players-list"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Loading players…</div></div>
+  </div>
 </div>
 
 <!-- MY CHARACTER SECTION -->
@@ -642,11 +708,13 @@ firebase.auth().onAuthStateChanged(async user => {
       document.title = _campaignData.name + ' — Campaign Tracker';
     }
 
-    // Combat tracker link (DM only)
+    // DM-only controls
     const combatLink = document.getElementById('combat-link');
     if (_isDM) {
       combatLink.href = 'combat.html?c=' + campaignId;
       combatLink.style.display = '';
+      document.getElementById('dm-panel-btn').style.display = '';
+      loadDMData();
     }
 
     // Determine my slot
@@ -989,6 +1057,104 @@ async function submitCharacter() {
     msgEl.className = 'modal-msg error';
     btn.disabled = false;
   }
+}
+
+// ─── DM PANEL ────────────────────────────────────────────────
+function toggleDMPanel() {
+  if (!_isDM) return;
+  const panel = document.getElementById('dm-panel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : '';
+}
+
+function switchDMTab(tab) {
+  document.querySelectorAll('.dm-tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && tab === 'campaign') || (i === 1 && tab === 'players'));
+  });
+  document.getElementById('dm-tab-campaign').classList.toggle('active', tab === 'campaign');
+  document.getElementById('dm-tab-players').classList.toggle('active', tab === 'players');
+  if (tab === 'players') loadPlayersTab();
+}
+
+function loadDMData() {
+  const name = localStorage.getItem('campaign-name');
+  const banner = localStorage.getItem('campaign-banner');
+  const notes = localStorage.getItem('dm-notes');
+  if (name) { document.getElementById('dm-campaign-name').value = name; document.getElementById('site-title').textContent = name; }
+  if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
+  if (notes) document.getElementById('dm-notes').value = notes;
+}
+
+function updateCampaignName() {
+  const name = document.getElementById('dm-campaign-name').value;
+  document.getElementById('site-title').textContent = name || 'Campaign Tracker';
+  localStorage.setItem('campaign-name', name);
+}
+
+function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('banner-preview').src = e.target.result;
+    document.getElementById('banner-preview').style.display = 'block';
+    localStorage.setItem('campaign-banner', e.target.result);
+    applyBanner(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyBanner(src) {
+  let banner = document.getElementById('campaign-banner-img');
+  if (!banner) {
+    banner = document.createElement('img');
+    banner.id = 'campaign-banner-img';
+    banner.style.cssText = 'display:block;width:100%;max-height:200px;object-fit:cover;border-radius:3px;margin-bottom:20px;border:1px solid var(--border);box-shadow:0 0 0 3px #1a0e04;';
+    document.querySelector('.site-header').after(banner);
+  }
+  banner.src = src;
+}
+
+function saveDMNotes() {
+  localStorage.setItem('dm-notes', document.getElementById('dm-notes').value);
+  const btn = event.target;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => btn.textContent = 'Save Notes', 2000);
+}
+
+async function loadPlayersTab() {
+  const container = document.getElementById('dm-players-list');
+  container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Loading players…</div>';
+  try {
+    const entries = Object.entries(_campaignData.players || {});
+    if (!entries.length) { container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">No players have joined yet.</div>'; return; }
+    const rows = await Promise.all(entries.map(async ([uid, info]) => {
+      const [userSnap, charSnap] = await Promise.all([
+        db.collection('users').doc(uid).get(),
+        db.collection('campaigns').doc(campaignId).collection('characters').doc(info.slot).get()
+      ]);
+      const u = userSnap.exists ? userSnap.data() : {};
+      const c = charSnap.exists ? charSnap.data() : {};
+      const charName = c['f-name'] ? escHtml(c['f-name']) : '<em style="opacity:0.6;">No character yet</em>';
+      const charCls = [c['f-class'], c['f-race']].filter(Boolean).map(escHtml).join(' · ');
+      const stats = [c['f-curhp'] ? `HP ${c['f-curhp']}/${c['f-maxhp']||'?'}` : '', c['f-ac'] ? `AC ${c['f-ac']}` : ''].filter(Boolean).join(' · ');
+      const avatar = u.photoURL ? `<img class="dm-player-avatar" src="${escHtml(u.photoURL)}" onerror="this.style.display='none'">` : `<div class="dm-player-avatar">👤</div>`;
+      return `<div class="dm-player-row">${avatar}<div class="dm-player-info"><div class="dm-player-name">${escHtml(u.displayName||u.email||'Unknown')}</div><div class="dm-player-char">${charName}${charCls?' · '+charCls:''}${stats?' | '+stats:''}</div></div><button class="dm-btn danger" onclick="removePlayer('${escHtml(uid)}','${escHtml(info.slot)}',this)" style="white-space:nowrap;padding:4px 10px;font-size:0.65rem;">Remove</button></div>`;
+    }));
+    container.innerHTML = rows.join('');
+  } catch(e) { container.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`; }
+}
+
+async function removePlayer(uid, slot, btn) {
+  if (!confirm('Remove this player from the campaign? Their character data will be preserved.')) return;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    await db.collection('campaigns').doc(campaignId).update({
+      memberUids: firebase.firestore.FieldValue.arrayRemove(uid),
+      [`players.${uid}`]: firebase.firestore.FieldValue.delete()
+    });
+    await loadPlayersTab();
+  } catch(e) { btn.disabled = false; btn.textContent = 'Remove'; alert('Failed: ' + e.message); }
 }
 </script>
 </body>
