@@ -673,7 +673,7 @@
       <button id="ann-tab-text" class="dm-btn ann-tab-btn active" onclick="switchAnnounceMode('text')">✍ Text</button>
       <button id="ann-tab-image" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('image')">🖼 Image</button>
       <button id="ann-tab-npc" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('npc')">👤 NPC</button>
-      <button id="ann-tab-shop" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('shop')">🏪 Shop</button>
+      <button id="ann-tab-shop" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('shop')">🎪 Event</button>
     </div>
     <div id="ann-text-mode">
       <div class="dm-field">
@@ -2404,6 +2404,8 @@ function switchAnnounceMode(mode) {
     const tab = document.getElementById('ann-tab-' + m);
     if (tab) tab.classList.toggle('active', m === mode);
   });
+  if (mode === 'npc') loadAnnouncementNPCs();
+  if (mode === 'shop') loadAnnouncementLands();
 }
 
 let _announceImageData = null;
@@ -2549,7 +2551,7 @@ function readAnnounceImage(f) {
 function showAnnouncement(ann) {
   const content = document.getElementById('ann-modal-content');
   if (!content) return;
-  const label = { text: '📢 DM Announcement', image: '🖼 Scene', npc: '👤 New Encounter', shop: '🏪 Shop Available' }[ann.type] || '📢 Announcement';
+  const label = { text: '📢 DM Announcement', image: '🖼 Scene', npc: '👤 New Encounter', shop: '🎪 Event' }[ann.type] || '📢 Announcement';
   const header = `<div style="font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;">${label}</div>`;
   if (ann.type === 'text') {
     content.innerHTML = header + `<div style="font-family:'Crimson Text',serif;font-size:1.05rem;color:var(--parchment-dark);line-height:1.7;">${escHtml(ann.text || '').replace(/\n/g,'<br>')}</div>`;
