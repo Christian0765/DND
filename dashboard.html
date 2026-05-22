@@ -1403,18 +1403,16 @@
     }
 
     function acceptFriendRequest(fromUid) {
-      // Write only to OWN doc
-      db.collection('users').doc(currentUser.uid).update({
+      db.collection('users').doc(currentUser.uid).set({
         friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
-      }).then(() => loadFriends());
+      }, { merge: true }).then(() => loadFriends()).catch(e => console.error('Accept failed:', e));
     }
 
     function declineFriendRequest(fromUid) {
-      // Write only to OWN doc
-      db.collection('users').doc(currentUser.uid).update({
+      db.collection('users').doc(currentUser.uid).set({
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
-      }).then(() => loadFriends());
+      }, { merge: true }).then(() => loadFriends()).catch(e => console.error('Decline failed:', e));
     }
 
     function removeFriend(friendUid) {
