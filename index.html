@@ -1591,6 +1591,7 @@ function toggleDMPanel() {
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
+  document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   panel.style.display = isOpen ? 'none' : '';
 }
 
@@ -1656,7 +1657,12 @@ let _mapImgData = {};   // keyed by landId
 
 function toggleLandsSection() {
   const section = document.getElementById('lands-section');
-  _landsOpen = !_landsOpen;
+  const isOpen = section.style.display !== 'none';
+  document.getElementById('dm-panel').style.display = 'none';
+  document.getElementById('announcements-tab').style.display = 'none';
+  document.getElementById('announce-panel').style.display = 'none';
+  document.getElementById('items-tab').style.display = 'none';
+  _landsOpen = !isOpen;
   section.style.display = _landsOpen ? '' : 'none';
   if (_landsOpen && !_landsDataLoaded) {
     _landsDataLoaded = true;
@@ -2430,6 +2436,7 @@ function toggleAnnouncementsTab() {
   document.getElementById('dm-panel').style.display = 'none';
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
+  document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   tab.style.display = isOpen ? 'none' : '';
   if (!isOpen) {
     const seenKey = 'dnd-seen-notes-' + campaignId;
@@ -2512,6 +2519,7 @@ function toggleAnnouncePanel() {
   document.getElementById('dm-panel').style.display = 'none';
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
+  document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   panel.style.display = isOpen ? 'none' : '';
   if (!isOpen) {
     loadAnnouncementNPCs();
@@ -2784,6 +2792,7 @@ function toggleItemsTab() {
   document.getElementById('dm-panel').style.display = 'none';
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('announcements-tab').style.display = 'none';
+  document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   tab.style.display = isOpen ? 'none' : '';
   if (!isOpen && !_itemsLoaded) loadItems();
 }
