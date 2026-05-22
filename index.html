@@ -497,6 +497,31 @@
   .dm-tab-btn:hover { color:var(--gold-light); }
   .dm-tab-content { display:none; }
   .dm-tab-content.active { display:block; }
+
+  /* LANDS */
+  .lands-toggle { width:100%;display:flex;align-items:center;justify-content:space-between;font-family:'Cinzel',serif;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--gold-light);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:2px;padding:9px 14px;cursor:pointer;margin-bottom:6px;transition:background 0.15s; }
+  .lands-toggle:hover { background:rgba(255,255,255,0.08); }
+  .lands-toggle .lt-arrow { font-size:0.55rem;color:var(--border-light);transition:transform 0.2s; }
+  .lands-toggle.open .lt-arrow { transform:rotate(90deg); }
+  .lands-body { display:none;margin-bottom:14px;padding:0 4px; }
+  .lands-body.open { display:block; }
+  .lands-entry { display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.4);border-radius:2px;padding:10px 12px;margin-bottom:7px; }
+  .lands-entry-body { flex:1;min-width:0; }
+  .lands-entry-name { font-family:'Cinzel',serif;font-size:0.8rem;color:var(--parchment-dark);font-weight:600;margin-bottom:2px; }
+  .lands-entry-sub { font-size:0.78rem;color:var(--border-light);font-style:italic;white-space:pre-wrap;word-break:break-word; }
+  .lands-add-form { background:rgba(0,0,0,0.25);border:1px dashed var(--border);border-radius:2px;padding:12px 14px;margin-top:6px; }
+  .lands-field { margin-bottom:8px; }
+  .lands-field label { display:block;font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-bottom:3px; }
+  .lands-field input, .lands-field textarea, .lands-field select { width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:2px;padding:6px 8px;font-family:'Crimson Text',serif;font-size:0.85rem;color:var(--parchment-dark);resize:vertical; }
+  .lands-field textarea { min-height:60px; }
+  .lands-row { display:flex;gap:6px; }
+  .lands-row .lands-field { flex:1; }
+  .lands-save-btn { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--parchment);background:var(--green);border:none;border-radius:2px;padding:7px 16px;cursor:pointer;margin-top:4px; }
+  .lands-save-btn:hover { opacity:0.85; }
+  .lands-add-trigger { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);background:none;border:1px solid var(--border);border-radius:2px;padding:5px 12px;cursor:pointer;display:block;width:100%;margin-top:6px;transition:border-color 0.15s; }
+  .lands-add-trigger:hover { border-color:var(--gold); }
+  .lands-del-btn { font-size:0.65rem;color:var(--border-light);background:none;border:none;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1;margin-top:1px; }
+  .lands-del-btn:hover { color:var(--red); }
   .dm-section { margin-bottom:20px; }
   .dm-section-title { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:12px; }
   .dm-field { margin-bottom:10px; }
@@ -558,6 +583,71 @@
     <div class="dm-section-title">Secret DM Notes</div>
     <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans...&#10;&#10;Players cannot see this section."></textarea>
     <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
+  </div>
+
+  <div class="dm-section">
+    <div class="dm-section-title">Lands</div>
+
+    <!-- SHOPS -->
+    <button class="lands-toggle" id="lt-shops" onclick="toggleLands('shops')">
+      <span>🏪 Shops</span><span class="lt-arrow">▶</span>
+    </button>
+    <div class="lands-body" id="lb-shops">
+      <div id="lands-shops-list"></div>
+      <button class="lands-add-trigger" onclick="toggleLandsForm('shops')">+ Add Shop</button>
+      <div class="lands-add-form" id="lf-shops" style="display:none;">
+        <div class="lands-field"><label>Shop Name</label><input id="ls-name" type="text" placeholder="e.g. The Rusty Flagon"></div>
+        <div class="lands-row">
+          <div class="lands-field"><label>Location</label><input id="ls-location" type="text" placeholder="e.g. Market District"></div>
+          <div class="lands-field"><label>Type</label><input id="ls-type" type="text" placeholder="e.g. Weapons, Potions…"></div>
+        </div>
+        <div class="lands-field"><label>DM Notes</label><textarea id="ls-notes" placeholder="Owner, inventory, secret stock…"></textarea></div>
+        <button class="lands-save-btn" onclick="saveLandsEntry('shops')">Save Shop</button>
+      </div>
+    </div>
+
+    <!-- NPCS -->
+    <button class="lands-toggle" id="lt-npcs" onclick="toggleLands('npcs')">
+      <span>🧙 NPCs</span><span class="lt-arrow">▶</span>
+    </button>
+    <div class="lands-body" id="lb-npcs">
+      <div id="lands-npcs-list"></div>
+      <button class="lands-add-trigger" onclick="toggleLandsForm('npcs')">+ Add NPC</button>
+      <div class="lands-add-form" id="lf-npcs" style="display:none;">
+        <div class="lands-field"><label>NPC Name</label><input id="ln-name" type="text" placeholder="e.g. Mira Thornwood"></div>
+        <div class="lands-row">
+          <div class="lands-field"><label>Race / Class</label><input id="ln-race" type="text" placeholder="e.g. Half-Elf Rogue"></div>
+          <div class="lands-field"><label>Alignment</label><input id="ln-align" type="text" placeholder="e.g. Neutral Evil"></div>
+        </div>
+        <div class="lands-field"><label>Location</label><input id="ln-location" type="text" placeholder="e.g. The Rusty Flagon"></div>
+        <div class="lands-field"><label>Secret Notes</label><textarea id="ln-notes" placeholder="True motives, secrets, plot hooks…"></textarea></div>
+        <button class="lands-save-btn" onclick="saveLandsEntry('npcs')">Save NPC</button>
+      </div>
+    </div>
+
+    <!-- MAPS -->
+    <button class="lands-toggle" id="lt-maps" onclick="toggleLands('maps')">
+      <span>🗺 Maps</span><span class="lt-arrow">▶</span>
+    </button>
+    <div class="lands-body" id="lb-maps">
+      <div id="lands-maps-list"></div>
+      <button class="lands-add-trigger" onclick="toggleLandsForm('maps')">+ Add Map / Location</button>
+      <div class="lands-add-form" id="lf-maps" style="display:none;">
+        <div class="lands-field"><label>Location Name</label><input id="lm-name" type="text" placeholder="e.g. The Sunken Crypt"></div>
+        <div class="lands-field"><label>Region / Area</label><input id="lm-region" type="text" placeholder="e.g. Northern Wilds"></div>
+        <div class="lands-field"><label>Description / DM Notes</label><textarea id="lm-notes" placeholder="Hazards, secrets, notable features…"></textarea></div>
+        <div class="lands-field">
+          <label>Map Image (optional)</label>
+          <div class="upload-area" id="lm-upload" style="padding:12px;" ondragover="event.preventDefault();this.classList.add('drag-active')" ondragleave="this.classList.remove('drag-active')" ondrop="handleMapDrop(event)">
+            <input type="file" accept="image/*" onchange="handleMapFile(event.target.files[0])">
+            <div class="upload-icon" style="font-size:1.2rem;">🗺</div>
+            <div class="upload-label" id="lm-upload-label">Click or drop image</div>
+            <img id="lm-preview" style="display:none;max-width:100%;max-height:120px;margin-top:8px;border-radius:2px;object-fit:contain;">
+          </div>
+        </div>
+        <button class="lands-save-btn" onclick="saveLandsEntry('maps')">Save Location</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1138,6 +1228,126 @@ function saveDMNotes() {
   db.collection('campaigns').doc(campaignId).update({ dmNotes: notes })
     .then(() => { btn.textContent = 'Saved ✓'; setTimeout(() => btn.textContent = 'Save Notes', 2000); })
     .catch(e => { btn.textContent = 'Save Notes'; alert('Failed to save: ' + e.message); });
+}
+
+// ─── LANDS ───────────────────────────────────────────────────
+const _landsLoaded = {};
+let _mapImageData = null;
+
+function toggleLands(type) {
+  const btn = document.getElementById('lt-' + type);
+  const body = document.getElementById('lb-' + type);
+  const isOpen = body.classList.contains('open');
+  btn.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+  if (!isOpen && !_landsLoaded[type]) loadLands(type);
+}
+
+function toggleLandsForm(type) {
+  const form = document.getElementById('lf-' + type);
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+async function loadLands(type) {
+  _landsLoaded[type] = true;
+  const list = document.getElementById('lands-' + type + '-list');
+  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">Loading…</div>';
+  try {
+    const snap = await db.collection('campaigns').doc(campaignId).collection('lands_' + type).orderBy('createdAt', 'desc').get();
+    renderLandsList(type, snap.docs);
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);font-size:0.75rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderLandsList(type, docs) {
+  const list = document.getElementById('lands-' + type + '-list');
+  if (!docs.length) { list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">None yet.</div>'; return; }
+  list.innerHTML = docs.map(doc => {
+    const d = doc.data();
+    const name = escHtml(d.name || '—');
+    let sub = '';
+    if (type === 'shops') sub = [d.location, d.type].filter(Boolean).map(escHtml).join(' · ') + (d.notes ? '\n' + escHtml(d.notes) : '');
+    if (type === 'npcs')  sub = [d.race, d.align, d.location].filter(Boolean).map(escHtml).join(' · ') + (d.notes ? '\n' + escHtml(d.notes) : '');
+    if (type === 'maps')  sub = [d.region].filter(Boolean).map(escHtml).join(' · ') + (d.notes ? '\n' + escHtml(d.notes) : '');
+    const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:140px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
+    return `<div class="lands-entry">
+      <div class="lands-entry-body">
+        <div class="lands-entry-name">${name}</div>
+        ${sub ? `<div class="lands-entry-sub">${sub}</div>` : ''}
+        ${mapImg}
+      </div>
+      <button class="lands-del-btn" title="Delete" onclick="deleteLandsEntry('${type}','${escHtml(doc.id)}',this)">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function saveLandsEntry(type) {
+  const btn = event.target;
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    let data = { createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (type === 'shops') {
+      data.name     = document.getElementById('ls-name').value.trim();
+      data.location = document.getElementById('ls-location').value.trim();
+      data.type     = document.getElementById('ls-type').value.trim();
+      data.notes    = document.getElementById('ls-notes').value.trim();
+    } else if (type === 'npcs') {
+      data.name     = document.getElementById('ln-name').value.trim();
+      data.race     = document.getElementById('ln-race').value.trim();
+      data.align    = document.getElementById('ln-align').value.trim();
+      data.location = document.getElementById('ln-location').value.trim();
+      data.notes    = document.getElementById('ln-notes').value.trim();
+    } else if (type === 'maps') {
+      data.name   = document.getElementById('lm-name').value.trim();
+      data.region = document.getElementById('lm-region').value.trim();
+      data.notes  = document.getElementById('lm-notes').value.trim();
+      if (_mapImageData) data.image = _mapImageData;
+    }
+    if (!data.name) { alert('Name is required.'); btn.textContent = 'Save ' + type.slice(0,-1)[0].toUpperCase() + type.slice(1,-1); btn.disabled = false; return; }
+    await db.collection('campaigns').doc(campaignId).collection('lands_' + type).add(data);
+    // Reset form
+    document.getElementById('lf-' + type).querySelectorAll('input,textarea').forEach(el => el.value = '');
+    if (type === 'maps') { _mapImageData = null; document.getElementById('lm-preview').style.display = 'none'; document.getElementById('lm-upload-label').textContent = 'Click or drop image'; }
+    document.getElementById('lf-' + type).style.display = 'none';
+    _landsLoaded[type] = false;
+    await loadLands(type);
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => { btn.textContent = type === 'shops' ? 'Save Shop' : type === 'npcs' ? 'Save NPC' : 'Save Location'; btn.disabled = false; }, 1500);
+  } catch(e) {
+    alert('Failed: ' + e.message);
+    btn.textContent = 'Save'; btn.disabled = false;
+  }
+}
+
+async function deleteLandsEntry(type, id, btn) {
+  if (!confirm('Delete this entry?')) return;
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('lands_' + type).doc(id).delete();
+    _landsLoaded[type] = false;
+    await loadLands(type);
+  } catch(e) { alert('Delete failed: ' + e.message); btn.textContent = '✕'; btn.disabled = false; }
+}
+
+function handleMapDrop(event) {
+  event.preventDefault();
+  document.getElementById('lm-upload').classList.remove('drag-active');
+  const file = event.dataTransfer.files[0];
+  if (file) handleMapFile(file);
+}
+
+function handleMapFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _mapImageData = e.target.result;
+    const preview = document.getElementById('lm-preview');
+    preview.src = _mapImageData;
+    preview.style.display = 'block';
+    document.getElementById('lm-upload-label').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
 }
 
 async function loadPlayersTab() {
