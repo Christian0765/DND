@@ -400,7 +400,6 @@
     margin-bottom: 10px;
   }
   .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
-  .form-grid.six { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; }
   .form-field { display: flex; flex-direction: column; gap: 3px; }
   .form-field label {
     font-family: 'Cinzel', serif;
@@ -486,7 +485,6 @@
     .site-title { font-size: 2rem; }
     .form-grid { grid-template-columns: 1fr; }
     .form-grid.three { grid-template-columns: 1fr 1fr; }
-    .form-grid.six { grid-template-columns: 1fr 1fr 1fr; }
     .pending-card { flex-direction: column; align-items: flex-start; }
     .pending-actions { width: 100%; justify-content: flex-end; }
   }
@@ -744,19 +742,31 @@
 
     <!-- ABILITY SCORES -->
     <div class="form-section-title">Ability Scores</div>
-    <div class="form-grid six">
-      <div class="form-field"><label>STR</label><input type="text" id="cf-str" placeholder="10"></div>
-      <div class="form-field"><label>DEX</label><input type="text" id="cf-dex" placeholder="10"></div>
-      <div class="form-field"><label>CON</label><input type="text" id="cf-con" placeholder="10"></div>
-      <div class="form-field"><label>INT</label><input type="text" id="cf-int" placeholder="10"></div>
-      <div class="form-field"><label>WIS</label><input type="text" id="cf-wis" placeholder="10"></div>
-      <div class="form-field"><label>CHA</label><input type="text" id="cf-cha" placeholder="10"></div>
-      <div class="form-field"><label>STR Mod</label><input type="text" id="cf-strmod" placeholder="+0"></div>
-      <div class="form-field"><label>DEX Mod</label><input type="text" id="cf-dexmod" placeholder="+0"></div>
-      <div class="form-field"><label>CON Mod</label><input type="text" id="cf-conmod" placeholder="+0"></div>
-      <div class="form-field"><label>INT Mod</label><input type="text" id="cf-intmod" placeholder="+0"></div>
-      <div class="form-field"><label>WIS Mod</label><input type="text" id="cf-wismod" placeholder="+0"></div>
-      <div class="form-field"><label>CHA Mod</label><input type="text" id="cf-chamod" placeholder="+0"></div>
+    <div class="form-grid three">
+      <div>
+        <div class="form-field"><label>Strength</label><input type="text" id="cf-str" placeholder="10"></div>
+        <div class="form-field" style="margin-top:5px;"><label>STR Mod</label><input type="text" id="cf-strmod" placeholder="+0"></div>
+      </div>
+      <div>
+        <div class="form-field"><label>Dexterity</label><input type="text" id="cf-dex" placeholder="10"></div>
+        <div class="form-field" style="margin-top:5px;"><label>DEX Mod</label><input type="text" id="cf-dexmod" placeholder="+0"></div>
+      </div>
+      <div>
+        <div class="form-field"><label>Constitution</label><input type="text" id="cf-con" placeholder="10"></div>
+        <div class="form-field" style="margin-top:5px;"><label>CON Mod</label><input type="text" id="cf-conmod" placeholder="+0"></div>
+      </div>
+      <div>
+        <div class="form-field"><label>Intelligence</label><input type="text" id="cf-int" placeholder="10"></div>
+        <div class="form-field" style="margin-top:5px;"><label>INT Mod</label><input type="text" id="cf-intmod" placeholder="+0"></div>
+      </div>
+      <div>
+        <div class="form-field"><label>Wisdom</label><input type="text" id="cf-wis" placeholder="10"></div>
+        <div class="form-field" style="margin-top:5px;"><label>WIS Mod</label><input type="text" id="cf-wismod" placeholder="+0"></div>
+      </div>
+      <div>
+        <div class="form-field"><label>Charisma</label><input type="text" id="cf-cha" placeholder="10"></div>
+        <div class="form-field" style="margin-top:5px;"><label>CHA Mod</label><input type="text" id="cf-chamod" placeholder="+0"></div>
+      </div>
     </div>
 
     <!-- PERSONALITY -->
