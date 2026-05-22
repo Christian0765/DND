@@ -1099,6 +1099,7 @@ firebase.auth().onAuthStateChanged(async user => {
         return;
       }
       _currentAnnouncement = ann;
+      if (_isDM) return;
       const sentAt = ann.sentAt ? ann.sentAt.toMillis() : 0;
       if (sentAt !== _shownAnnouncementAt) {
         _shownAnnouncementAt = sentAt;
@@ -2337,10 +2338,11 @@ function loadSessionNotes(notes) {
 function updateSessionNoteDot() {
   const btn = document.getElementById('ann-tab-btn');
   if (!btn) return;
-  const seen = JSON.parse(localStorage.getItem('dnd-seen-notes-' + campaignId) || '[]');
-  const hasUnread = (_currentSessionNotes || []).some(n => !seen.includes(n.id));
   const existing = btn.querySelector('.ann-notif-dot');
   if (existing) existing.remove();
+  if (_isDM) return;
+  const seen = JSON.parse(localStorage.getItem('dnd-seen-notes-' + campaignId) || '[]');
+  const hasUnread = (_currentSessionNotes || []).some(n => !seen.includes(n.id));
   if (hasUnread) {
     const dot = document.createElement('span');
     dot.className = 'ann-notif-dot';
