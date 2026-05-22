@@ -1420,7 +1420,7 @@ async function loadGeneralNPCs() {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').orderBy('createdAt').get();
-    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published === true);
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published !== false);
     if (docs.length === 0) {
       list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;padding:4px 0;">No public NPCs yet.</div>';
     } else {
@@ -1434,7 +1434,7 @@ async function loadGeneralNPCs() {
 
 function renderGNPCCard(id, d) {
   const type = d.npcType || 'simple';
-  const isPublished = d.published === true;
+  const isPublished = d.published !== false;
   const delBtn = _isDM ? `<button class="gnpc-del" onclick="deleteGeneralNPC('${escHtml(id)}',event)" title="Delete">✕</button>` : '';
   const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleGNPCPublished('${escHtml(id)}',${isPublished})" style="position:absolute;bottom:6px;right:6px;z-index:2;">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
   const unpubClass = _isDM && !isPublished ? ' unpublished' : '';
@@ -1552,7 +1552,7 @@ function handleGNPCPortraitFile(file) {
 
 async function saveGeneralNPC(type) {
   const btn = event.target;
-  let data = { npcType: type, published: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  let data = { npcType: type, published: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
   let nameId, resetIds;
 
   if (type === 'simple') {
@@ -1641,7 +1641,7 @@ async function loadLandsList() {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('lands').orderBy('createdAt').get();
-    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published === true);
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published !== false);
     if (docs.length === 0) {
       list.innerHTML = _isDM
         ? '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No lands yet — create one above.</div>'
@@ -1656,7 +1656,7 @@ async function loadLandsList() {
 }
 
 function renderLandCard(id, d) {
-  const isPublished = d.published === true;
+  const isPublished = d.published !== false;
   const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLand('${escHtml(id)}',event)" title="Remove land" style="font-size:0.7rem;padding:4px 6px;">✕</button>` : '';
   const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleLandPublished('${escHtml(id)}',${isPublished})" title="${isPublished ? 'Click to unpublish' : 'Click to publish'}">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
   return `<div class="land-card${_isDM && !isPublished ? ' unpublished' : ''}" id="lcard-${escHtml(id)}">
@@ -1754,14 +1754,14 @@ async function loadLandEntries(landId, type) {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).orderBy('createdAt').get();
-    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published === true);
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published !== false);
     if (docs.length === 0) { list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">None yet.</div>'; return; }
 
     if (type === 'shops') {
       list.innerHTML = docs.map(doc => {
         const d = doc.data();
         const sid = escHtml(doc.id);
-        const isPublished = d.published === true;
+        const isPublished = d.published !== false;
         const sub = [d.loc, d.type].filter(Boolean).map(escHtml).join(' · ');
         const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','shops','${sid}',this)" style="margin-left:auto;">✕</button>` : '';
         const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleLandEntryPublished('${escHtml(landId)}','shops','${sid}',${isPublished})">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
@@ -1805,7 +1805,7 @@ async function loadLandEntries(landId, type) {
     } else {
       list.innerHTML = docs.map(doc => {
         const d = doc.data();
-        const isPublished = d.published === true;
+        const isPublished = d.published !== false;
         let sub = '';
         if (type === 'npcs') sub = (_isDM ? [d.race, d.align, d.loc, d.notes] : [d.race, d.align, d.loc]).filter(Boolean).map(escHtml).join(' · ');
         if (type === 'maps') sub = (_isDM ? [d.loc, d.notes] : [d.loc]).filter(Boolean).map(escHtml).join(' · ');
@@ -1937,7 +1937,7 @@ async function saveLandEntry(landId, type) {
   if (!name) { alert('Name is required.'); return; }
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
-    const data = { name, published: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const data = { name, published: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
     if (type === 'shops') {
       data.loc   = document.getElementById('li-' + landId + '-shops-loc').value.trim();
       data.type  = document.getElementById('li-' + landId + '-shops-type').value.trim();
@@ -1991,7 +1991,7 @@ async function saveLand() {
     await db.collection('campaigns').doc(campaignId).collection('lands').add({
       name,
       desc: document.getElementById('nl-desc').value.trim(),
-      published: false,
+      published: true,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById('nl-name').value = '';
