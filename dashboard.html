@@ -1255,11 +1255,6 @@
                 <div class="campaign-meta-item">👥 ${playerCount}/${c.playerSlots || '?'}</div>
                 <div class="campaign-meta-item">📋 ${isActive ? 'Active' : 'Draft'}</div>
               </div>
-              ${isDM ? `
-              <div style="display:flex;align-items:center;gap:8px;margin:12px 0;padding:8px;background:rgba(0,0,0,0.1);border-radius:2px;">
-                <span class="invite-code-display" id="code-${c.id}" style="font-family:monospace;font-size:0.85rem;color:var(--gold);font-weight:600;flex:1;opacity:0;transition:opacity 0.2s;">Invite: ${safeCode}</span>
-                <button class="invite-toggle" onclick="toggleCode('${c.id}', event)" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--border-light);transition:color 0.2s;">👁</button>
-              </div>` : ''}
               <div class="status-badge status-${c.status}">${isActive ? 'ACTIVE' : 'DRAFT'}</div>
               ${isDM && isActive ? `
               <button onclick="event.stopPropagation();openInviteModal('${c.id}','${safeCode}','${safeName.replace(/'/g,"\\'")}')" style="width:100%;margin-top:8px;background:rgba(154,112,0,0.12);border:1px solid var(--gold);color:var(--gold-light);border-radius:2px;padding:6px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;">📨 Invite Friends</button>
@@ -1528,16 +1523,6 @@
         });
     }
 
-    function toggleCode(campaignId, event) {
-      event.stopPropagation();
-      const codeEl = document.getElementById('code-' + campaignId);
-      const btnEl = event.target;
-      const isShown = codeEl.style.opacity === '1';
-      
-      codeEl.style.opacity = isShown ? '0' : '1';
-      btnEl.textContent = isShown ? '👁' : '👁‍🗨';
-      btnEl.style.color = isShown ? 'var(--border-light)' : 'var(--gold)';
-    }
 
     function signOut() {
       firebase.auth().signOut().then(() => {
@@ -1704,6 +1689,7 @@
       _inviteCode = inviteCode;
       _inviteCampaignName = campaignName;
       document.getElementById('invite-modal-title').textContent = 'Invite Friends — ' + campaignName;
+      document.getElementById('invite-modal-code').textContent = inviteCode || '——';
       document.getElementById('invite-modal-link').value = _inviteLink;
       document.getElementById('invite-modal').classList.add('open');
 
@@ -1879,6 +1865,10 @@
     <div class="invite-modal-box">
       <button class="invite-modal-close" onclick="closeInviteModal()">✕</button>
       <div class="invite-modal-title" id="invite-modal-title">Invite Friends</div>
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-family:'Cinzel',serif;font-size:.5rem;text-transform:uppercase;letter-spacing:.2em;color:var(--border-light);margin-bottom:6px;">Invite Code</div>
+        <div id="invite-modal-code" style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--gold-light);letter-spacing:.3em;background:rgba(154,112,0,.1);border:1px solid var(--gold);border-radius:3px;padding:10px 24px;display:inline-block;">——</div>
+      </div>
       <div style="font-family:'Cinzel',serif;font-size:.52rem;text-transform:uppercase;letter-spacing:.15em;color:var(--border-light);margin-bottom:6px;">Invite Link</div>
       <div class="invite-link-row">
         <input class="invite-link-input" id="invite-modal-link" type="text" readonly>
