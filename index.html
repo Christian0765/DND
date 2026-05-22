@@ -498,30 +498,56 @@
   .dm-tab-content { display:none; }
   .dm-tab-content.active { display:block; }
 
-  /* LANDS */
-  .lands-toggle { width:100%;display:flex;align-items:center;justify-content:space-between;font-family:'Cinzel',serif;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--gold-light);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:2px;padding:9px 14px;cursor:pointer;margin-bottom:6px;transition:background 0.15s; }
-  .lands-toggle:hover { background:rgba(255,255,255,0.08); }
-  .lands-toggle .lt-arrow { font-size:0.55rem;color:var(--border-light);transition:transform 0.2s; }
-  .lands-toggle.open .lt-arrow { transform:rotate(90deg); }
-  .lands-body { display:none;margin-bottom:14px;padding:0 4px; }
-  .lands-body.open { display:block; }
+  /* LANDS SECTION */
+  .land-card { background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);border-radius:3px;margin-bottom:14px;overflow:hidden; }
+  .land-card-header { display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;transition:background 0.15s; }
+  .land-card-header:hover { background:rgba(255,255,255,0.04); }
+  .land-card-name { font-family:'Cinzel',serif;font-size:0.95rem;font-weight:600;color:var(--gold-light);letter-spacing:0.04em; }
+  .land-card-desc { font-size:0.78rem;color:var(--border-light);font-style:italic;margin-top:2px; }
+  .land-chevron { font-size:0.55rem;color:var(--border-light);transition:transform 0.2s;flex-shrink:0; }
+  .land-chevron.open { transform:rotate(90deg); }
+  .land-body { display:none;border-top:1px solid var(--border);padding:16px 20px; }
+  .land-body.open { display:block; }
+  .land-tab-bar { display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border); }
+  .land-tab-btn { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);background:none;border:none;border-bottom:2px solid transparent;padding:7px 14px;cursor:pointer;margin-bottom:-1px;transition:color 0.15s,border-color 0.15s; }
+  .land-tab-btn.active { color:var(--gold-light);border-bottom-color:var(--gold); }
+  .land-tab-content { display:none; }
+  .land-tab-content.active { display:block; }
   .lands-entry { display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.4);border-radius:2px;padding:10px 12px;margin-bottom:7px; }
   .lands-entry-body { flex:1;min-width:0; }
-  .lands-entry-name { font-family:'Cinzel',serif;font-size:0.8rem;color:var(--parchment-dark);font-weight:600;margin-bottom:2px; }
-  .lands-entry-sub { font-size:0.78rem;color:var(--border-light);font-style:italic;white-space:pre-wrap;word-break:break-word; }
-  .lands-add-form { background:rgba(0,0,0,0.25);border:1px dashed var(--border);border-radius:2px;padding:12px 14px;margin-top:6px; }
+  .lands-entry-name { font-family:'Cinzel',serif;font-size:0.78rem;color:var(--parchment-dark);font-weight:600;margin-bottom:2px; }
+  .lands-entry-sub { font-size:0.75rem;color:var(--border-light);font-style:italic;white-space:pre-wrap;word-break:break-word; }
+  .lands-add-form { background:rgba(0,0,0,0.25);border:1px dashed var(--border);border-radius:2px;padding:12px 14px;margin-top:8px; }
   .lands-field { margin-bottom:8px; }
   .lands-field label { display:block;font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-bottom:3px; }
-  .lands-field input, .lands-field textarea, .lands-field select { width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:2px;padding:6px 8px;font-family:'Crimson Text',serif;font-size:0.85rem;color:var(--parchment-dark);resize:vertical; }
-  .lands-field textarea { min-height:60px; }
+  .lands-field input,.lands-field textarea,.lands-field select { width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:2px;padding:6px 8px;font-family:'Crimson Text',serif;font-size:0.85rem;color:var(--parchment-dark);resize:vertical; }
+  .lands-field textarea { min-height:56px; }
   .lands-row { display:flex;gap:6px; }
   .lands-row .lands-field { flex:1; }
   .lands-save-btn { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--parchment);background:var(--green);border:none;border-radius:2px;padding:7px 16px;cursor:pointer;margin-top:4px; }
   .lands-save-btn:hover { opacity:0.85; }
   .lands-add-trigger { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold);background:none;border:1px solid var(--border);border-radius:2px;padding:5px 12px;cursor:pointer;display:block;width:100%;margin-top:6px;transition:border-color 0.15s; }
   .lands-add-trigger:hover { border-color:var(--gold); }
-  .lands-del-btn { font-size:0.65rem;color:var(--border-light);background:none;border:none;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1;margin-top:1px; }
+  .lands-del-btn { font-size:0.65rem;color:var(--border-light);background:none;border:none;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1; }
   .lands-del-btn:hover { color:var(--red); }
+  .lands-new-btn { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--parchment);background:var(--red);border:1px solid var(--red);border-radius:2px;padding:8px 16px;cursor:pointer; }
+  .lands-new-btn:hover { opacity:0.85; }
+  /* General NPC cards */
+  .gnpc-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:8px; }
+  .gnpc-card { background:linear-gradient(160deg,#f7edd8,#ecdcb5);border:1px solid var(--border);box-shadow:0 0 0 2px #1a0e04;border-radius:3px;padding:14px;position:relative;overflow:hidden; }
+  .gnpc-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gold); }
+  .gnpc-portrait { width:48px;height:48px;border-radius:50%;border:2px solid var(--border);object-fit:cover;display:block;margin:0 auto 8px; }
+  .gnpc-name { font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--red);text-align:center;margin-bottom:2px; }
+  .gnpc-sub { font-size:0.75rem;color:var(--ink-light);font-style:italic;text-align:center;margin-bottom:8px; }
+  .gnpc-stats { display:flex;gap:6px;justify-content:center;margin-bottom:8px; }
+  .gnpc-stat { text-align:center;background:rgba(255,255,255,0.3);border:1px solid var(--border-light);border-radius:2px;padding:3px 8px;min-width:40px; }
+  .gnpc-stat-val { font-family:'Cinzel',serif;font-size:0.85rem;font-weight:700;color:var(--red);display:block; }
+  .gnpc-stat-val.hp { color:var(--green); }
+  .gnpc-stat-label { font-family:'Cinzel',serif;font-size:0.4rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-light);display:block; }
+  .gnpc-desc { font-size:0.75rem;color:var(--ink-light);font-style:italic;line-height:1.4;text-align:center; }
+  .gnpc-del { position:absolute;top:6px;right:6px;background:none;border:none;font-size:0.65rem;color:var(--border-light);cursor:pointer;display:none; }
+  .gnpc-card:hover .gnpc-del { display:block; }
+  .gnpc-del:hover { color:var(--red); }
   .dm-section { margin-bottom:20px; }
   .dm-section-title { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:12px; }
   .dm-field { margin-bottom:10px; }
@@ -560,6 +586,7 @@
 <div class="nav-bar">
   <a class="nav-btn" href="dashboard.html">← Dashboard</a>
   <button class="nav-btn" id="dm-panel-btn" onclick="toggleDMPanel()" style="display:none;">🔐 DM Panel</button>
+  <button class="nav-btn" id="lands-btn" onclick="toggleLandsSection()">🗺 Lands</button>
   <a class="nav-btn" id="combat-link" href="#" style="display:none;">⚔ Combat Tracker</a>
 </div>
 
@@ -585,69 +612,66 @@
     <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
   </div>
 
-  <div class="dm-section">
-    <div class="dm-section-title">Lands</div>
+</div>
 
-    <!-- SHOPS -->
-    <button class="lands-toggle" id="lt-shops" onclick="toggleLands('shops')">
-      <span>🏪 Shops</span><span class="lt-arrow">▶</span>
-    </button>
-    <div class="lands-body" id="lb-shops">
-      <div id="lands-shops-list"></div>
-      <button class="lands-add-trigger" onclick="toggleLandsForm('shops')">+ Add Shop</button>
-      <div class="lands-add-form" id="lf-shops" style="display:none;">
-        <div class="lands-field"><label>Shop Name</label><input id="ls-name" type="text" placeholder="e.g. The Rusty Flagon"></div>
-        <div class="lands-row">
-          <div class="lands-field"><label>Location</label><input id="ls-location" type="text" placeholder="e.g. Market District"></div>
-          <div class="lands-field"><label>Type</label><input id="ls-type" type="text" placeholder="e.g. Weapons, Potions…"></div>
-        </div>
-        <div class="lands-field"><label>DM Notes</label><textarea id="ls-notes" placeholder="Owner, inventory, secret stock…"></textarea></div>
-        <button class="lands-save-btn" onclick="saveLandsEntry('shops')">Save Shop</button>
+<!-- LANDS SECTION -->
+<div id="lands-section" style="display:none;max-width:820px;margin:0 auto 32px;">
+  <!-- header row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div class="section-title" style="margin:0;border:none;padding:0;">Lands &amp; Locations</div>
+    <button class="lands-new-btn" id="new-land-btn" onclick="openNewLandForm()" style="display:none;">+ New Land</button>
+  </div>
+
+  <!-- GENERAL LAND: public NPC sheets -->
+  <div class="land-card" id="general-land-card">
+    <div class="land-card-header" onclick="toggleGeneralLand()">
+      <span style="font-size:1.4rem;">🌍</span>
+      <div style="flex:1;min-width:0;">
+        <div class="land-card-name">General</div>
+        <div class="land-card-desc">Publicly known NPCs — visible to all players</div>
       </div>
+      <span class="land-chevron" id="gen-chevron">▶</span>
     </div>
-
-    <!-- NPCS -->
-    <button class="lands-toggle" id="lt-npcs" onclick="toggleLands('npcs')">
-      <span>🧙 NPCs</span><span class="lt-arrow">▶</span>
-    </button>
-    <div class="lands-body" id="lb-npcs">
-      <div id="lands-npcs-list"></div>
-      <button class="lands-add-trigger" onclick="toggleLandsForm('npcs')">+ Add NPC</button>
-      <div class="lands-add-form" id="lf-npcs" style="display:none;">
-        <div class="lands-field"><label>NPC Name</label><input id="ln-name" type="text" placeholder="e.g. Mira Thornwood"></div>
-        <div class="lands-row">
-          <div class="lands-field"><label>Race / Class</label><input id="ln-race" type="text" placeholder="e.g. Half-Elf Rogue"></div>
-          <div class="lands-field"><label>Alignment</label><input id="ln-align" type="text" placeholder="e.g. Neutral Evil"></div>
-        </div>
-        <div class="lands-field"><label>Location</label><input id="ln-location" type="text" placeholder="e.g. The Rusty Flagon"></div>
-        <div class="lands-field"><label>Secret Notes</label><textarea id="ln-notes" placeholder="True motives, secrets, plot hooks…"></textarea></div>
-        <button class="lands-save-btn" onclick="saveLandsEntry('npcs')">Save NPC</button>
+    <div class="land-body" id="general-land-body">
+      <div id="general-npcs-list" style="margin-bottom:12px;">
+        <div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>
       </div>
-    </div>
-
-    <!-- MAPS -->
-    <button class="lands-toggle" id="lt-maps" onclick="toggleLands('maps')">
-      <span>🗺 Maps</span><span class="lt-arrow">▶</span>
-    </button>
-    <div class="lands-body" id="lb-maps">
-      <div id="lands-maps-list"></div>
-      <button class="lands-add-trigger" onclick="toggleLandsForm('maps')">+ Add Map / Location</button>
-      <div class="lands-add-form" id="lf-maps" style="display:none;">
-        <div class="lands-field"><label>Location Name</label><input id="lm-name" type="text" placeholder="e.g. The Sunken Crypt"></div>
-        <div class="lands-field"><label>Region / Area</label><input id="lm-region" type="text" placeholder="e.g. Northern Wilds"></div>
-        <div class="lands-field"><label>Description / DM Notes</label><textarea id="lm-notes" placeholder="Hazards, secrets, notable features…"></textarea></div>
+      <button class="lands-add-trigger" id="add-gnpc-btn" onclick="toggleGeneralNPCForm()" style="display:none;">+ Add Public NPC</button>
+      <div class="lands-add-form" id="gnpc-form" style="display:none;">
+        <div class="lands-field"><label>NPC Name *</label><input id="gn-name" type="text" placeholder="e.g. Lord Aldric"></div>
+        <div class="lands-row">
+          <div class="lands-field"><label>Race / Class</label><input id="gn-race" type="text" placeholder="e.g. Human Paladin"></div>
+          <div class="lands-field"><label>Alignment</label><input id="gn-align" type="text" placeholder="e.g. Lawful Good"></div>
+        </div>
+        <div class="lands-row">
+          <div class="lands-field"><label>HP</label><input id="gn-hp" type="text" placeholder="e.g. 42"></div>
+          <div class="lands-field"><label>AC</label><input id="gn-ac" type="text" placeholder="e.g. 18"></div>
+        </div>
+        <div class="lands-field"><label>Public Description</label><textarea id="gn-desc" placeholder="What the players know about this NPC…" style="min-height:60px;"></textarea></div>
         <div class="lands-field">
-          <label>Map Image (optional)</label>
-          <div class="upload-area" id="lm-upload" style="padding:12px;" ondragover="event.preventDefault();this.classList.add('drag-active')" ondragleave="this.classList.remove('drag-active')" ondrop="handleMapDrop(event)">
-            <input type="file" accept="image/*" onchange="handleMapFile(event.target.files[0])">
-            <div class="upload-icon" style="font-size:1.2rem;">🗺</div>
-            <div class="upload-label" id="lm-upload-label">Click or drop image</div>
-            <img id="lm-preview" style="display:none;max-width:100%;max-height:120px;margin-top:8px;border-radius:2px;object-fit:contain;">
+          <label>Portrait (optional)</label>
+          <div class="upload-area" id="gn-upload" style="padding:10px;" ondragover="event.preventDefault()" ondrop="handleGNPCPortraitDrop(event)">
+            <input type="file" accept="image/*" onchange="handleGNPCPortraitFile(event.target.files[0])">
+            <div class="upload-icon" style="font-size:1rem;">👤</div>
+            <div class="upload-label" id="gn-upload-label">Click or drop image</div>
+            <img id="gn-preview" style="display:none;max-width:80px;max-height:80px;border-radius:50%;margin-top:6px;object-fit:cover;border:2px solid var(--border);">
           </div>
         </div>
-        <button class="lands-save-btn" onclick="saveLandsEntry('maps')">Save Location</button>
+        <button class="lands-save-btn" onclick="saveGeneralNPC()">Save NPC</button>
       </div>
     </div>
+  </div>
+
+  <!-- CREATED LANDS LIST -->
+  <div id="lands-list" style="margin-top:16px;">
+    <div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">Loading lands…</div>
+  </div>
+
+  <!-- NEW LAND FORM -->
+  <div class="lands-add-form" id="new-land-form" style="display:none;margin-top:16px;">
+    <div class="lands-field"><label>Land / City Name *</label><input id="nl-name" type="text" placeholder="e.g. Waterdeep, The Underdark…"></div>
+    <div class="lands-field"><label>Brief Description</label><textarea id="nl-desc" placeholder="What's notable about this place…" style="min-height:50px;"></textarea></div>
+    <button class="lands-save-btn" onclick="saveLand()">Create Land</button>
   </div>
 </div>
 
@@ -1230,122 +1254,381 @@ function saveDMNotes() {
     .catch(e => { btn.textContent = 'Save Notes'; alert('Failed to save: ' + e.message); });
 }
 
-// ─── LANDS ───────────────────────────────────────────────────
-const _landsLoaded = {};
-let _mapImageData = null;
+// ─── LANDS SECTION ───────────────────────────────────────────
+let _landsOpen = false;
+let _landsDataLoaded = false;
+let _gnpcPortrait = null;
+let _mapImgData = {};   // keyed by landId
 
-function toggleLands(type) {
-  const btn = document.getElementById('lt-' + type);
-  const body = document.getElementById('lb-' + type);
-  const isOpen = body.classList.contains('open');
-  btn.classList.toggle('open', !isOpen);
-  body.classList.toggle('open', !isOpen);
-  if (!isOpen && !_landsLoaded[type]) loadLands(type);
-}
-
-function toggleLandsForm(type) {
-  const form = document.getElementById('lf-' + type);
-  form.style.display = form.style.display === 'none' ? '' : 'none';
-}
-
-async function loadLands(type) {
-  _landsLoaded[type] = true;
-  const list = document.getElementById('lands-' + type + '-list');
-  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">Loading…</div>';
-  try {
-    const snap = await db.collection('campaigns').doc(campaignId).collection('lands_' + type).orderBy('createdAt', 'desc').get();
-    renderLandsList(type, snap.docs);
-  } catch(e) {
-    list.innerHTML = `<div style="color:var(--red);font-size:0.75rem;">${escHtml(e.message)}</div>`;
+function toggleLandsSection() {
+  const section = document.getElementById('lands-section');
+  _landsOpen = !_landsOpen;
+  section.style.display = _landsOpen ? '' : 'none';
+  if (_landsOpen && !_landsDataLoaded) {
+    _landsDataLoaded = true;
+    loadGeneralNPCs();
+    loadLandsList();
   }
 }
 
-function renderLandsList(type, docs) {
-  const list = document.getElementById('lands-' + type + '-list');
-  if (!docs.length) { list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">None yet.</div>'; return; }
-  list.innerHTML = docs.map(doc => {
-    const d = doc.data();
-    const name = escHtml(d.name || '—');
-    let sub = '';
-    if (type === 'shops') sub = [d.location, d.type].filter(Boolean).map(escHtml).join(' · ') + (d.notes ? '\n' + escHtml(d.notes) : '');
-    if (type === 'npcs')  sub = [d.race, d.align, d.location].filter(Boolean).map(escHtml).join(' · ') + (d.notes ? '\n' + escHtml(d.notes) : '');
-    if (type === 'maps')  sub = [d.region].filter(Boolean).map(escHtml).join(' · ') + (d.notes ? '\n' + escHtml(d.notes) : '');
-    const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:140px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
-    return `<div class="lands-entry">
-      <div class="lands-entry-body">
-        <div class="lands-entry-name">${name}</div>
-        ${sub ? `<div class="lands-entry-sub">${sub}</div>` : ''}
-        ${mapImg}
-      </div>
-      <button class="lands-del-btn" title="Delete" onclick="deleteLandsEntry('${type}','${escHtml(doc.id)}',this)">✕</button>
-    </div>`;
-  }).join('');
+// ── General Land ─────────────────────────────────────────────
+function toggleGeneralLand() {
+  const body = document.getElementById('general-land-body');
+  const chevron = document.getElementById('gen-chevron');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
 }
 
-async function saveLandsEntry(type) {
+async function loadGeneralNPCs() {
+  const list = document.getElementById('general-npcs-list');
+  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>';
+  try {
+    const snap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').orderBy('createdAt').get();
+    if (snap.empty) {
+      list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;padding:4px 0;">No public NPCs yet.</div>';
+    } else {
+      list.innerHTML = '<div class="gnpc-grid">' + snap.docs.map(doc => renderGNPCCard(doc.id, doc.data())).join('') + '</div>';
+    }
+    if (_isDM) document.getElementById('add-gnpc-btn').style.display = '';
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);font-size:0.8rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderGNPCCard(id, d) {
+  const portrait = d.portrait
+    ? `<img class="gnpc-portrait" src="${escHtml(d.portrait)}" onerror="this.outerHTML='<div class=\\'gnpc-portrait\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;\\'>👤</div>'">`
+    : `<div class="gnpc-portrait" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;">👤</div>`;
+  const statsHtml = (d.hp || d.ac) ? `<div class="gnpc-stats">${d.hp?`<div class="gnpc-stat"><span class="gnpc-stat-val hp">${escHtml(String(d.hp))}</span><span class="gnpc-stat-label">HP</span></div>`:''}${d.ac?`<div class="gnpc-stat"><span class="gnpc-stat-val">${escHtml(String(d.ac))}</span><span class="gnpc-stat-label">AC</span></div>`:''}</div>` : '';
+  const delBtn = _isDM ? `<button class="gnpc-del" onclick="deleteGeneralNPC('${escHtml(id)}',event)" title="Delete">✕</button>` : '';
+  return `<div class="gnpc-card">
+    ${delBtn}
+    ${portrait}
+    <div class="gnpc-name">${escHtml(d.name||'Unknown')}</div>
+    <div class="gnpc-sub">${escHtml([d.race, d.align].filter(Boolean).join(' · ') || '')}</div>
+    ${statsHtml}
+    ${d.desc ? `<div class="gnpc-desc">${escHtml(d.desc)}</div>` : ''}
+  </div>`;
+}
+
+function toggleGeneralNPCForm() {
+  const form = document.getElementById('gnpc-form');
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+function handleGNPCPortraitDrop(event) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (file) handleGNPCPortraitFile(file);
+}
+
+function handleGNPCPortraitFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _gnpcPortrait = e.target.result;
+    const preview = document.getElementById('gn-preview');
+    preview.src = _gnpcPortrait;
+    preview.style.display = 'block';
+    document.getElementById('gn-upload-label').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveGeneralNPC() {
   const btn = event.target;
+  const name = document.getElementById('gn-name').value.trim();
+  if (!name) { alert('Name is required.'); return; }
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
-    let data = { createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-    if (type === 'shops') {
-      data.name     = document.getElementById('ls-name').value.trim();
-      data.location = document.getElementById('ls-location').value.trim();
-      data.type     = document.getElementById('ls-type').value.trim();
-      data.notes    = document.getElementById('ls-notes').value.trim();
-    } else if (type === 'npcs') {
-      data.name     = document.getElementById('ln-name').value.trim();
-      data.race     = document.getElementById('ln-race').value.trim();
-      data.align    = document.getElementById('ln-align').value.trim();
-      data.location = document.getElementById('ln-location').value.trim();
-      data.notes    = document.getElementById('ln-notes').value.trim();
-    } else if (type === 'maps') {
-      data.name   = document.getElementById('lm-name').value.trim();
-      data.region = document.getElementById('lm-region').value.trim();
-      data.notes  = document.getElementById('lm-notes').value.trim();
-      if (_mapImageData) data.image = _mapImageData;
+    const data = {
+      name,
+      race:  document.getElementById('gn-race').value.trim(),
+      align: document.getElementById('gn-align').value.trim(),
+      hp:    document.getElementById('gn-hp').value.trim(),
+      ac:    document.getElementById('gn-ac').value.trim(),
+      desc:  document.getElementById('gn-desc').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (_gnpcPortrait) data.portrait = _gnpcPortrait;
+    await db.collection('campaigns').doc(campaignId).collection('general_npcs').add(data);
+    // reset
+    ['gn-name','gn-race','gn-align','gn-hp','gn-ac','gn-desc'].forEach(id => document.getElementById(id).value = '');
+    _gnpcPortrait = null;
+    document.getElementById('gn-preview').style.display = 'none';
+    document.getElementById('gn-upload-label').textContent = 'Click or drop image';
+    document.getElementById('gnpc-form').style.display = 'none';
+    await loadGeneralNPCs();
+    btn.textContent = 'Save NPC'; btn.disabled = false;
+  } catch(e) {
+    alert('Failed: ' + e.message);
+    btn.textContent = 'Save NPC'; btn.disabled = false;
+  }
+}
+
+async function deleteGeneralNPC(id, event) {
+  event.stopPropagation();
+  if (!confirm('Delete this public NPC?')) return;
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('general_npcs').doc(id).delete();
+    await loadGeneralNPCs();
+  } catch(e) { alert('Delete failed: ' + e.message); }
+}
+
+// ── Created Lands ─────────────────────────────────────────────
+function openNewLandForm() {
+  const form = document.getElementById('new-land-form');
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+async function loadLandsList() {
+  const list = document.getElementById('lands-list');
+  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">Loading…</div>';
+  try {
+    const snap = await db.collection('campaigns').doc(campaignId).collection('lands').orderBy('createdAt').get();
+    if (snap.empty) {
+      list.innerHTML = _isDM
+        ? '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No lands yet — create one above.</div>'
+        : '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No lands have been added yet.</div>';
+    } else {
+      list.innerHTML = snap.docs.map(doc => renderLandCard(doc.id, doc.data())).join('');
     }
-    if (!data.name) { alert('Name is required.'); btn.textContent = 'Save ' + type.slice(0,-1)[0].toUpperCase() + type.slice(1,-1); btn.disabled = false; return; }
-    await db.collection('campaigns').doc(campaignId).collection('lands_' + type).add(data);
-    // Reset form
-    document.getElementById('lf-' + type).querySelectorAll('input,textarea').forEach(el => el.value = '');
-    if (type === 'maps') { _mapImageData = null; document.getElementById('lm-preview').style.display = 'none'; document.getElementById('lm-upload-label').textContent = 'Click or drop image'; }
-    document.getElementById('lf-' + type).style.display = 'none';
-    _landsLoaded[type] = false;
-    await loadLands(type);
-    btn.textContent = 'Saved ✓';
-    setTimeout(() => { btn.textContent = type === 'shops' ? 'Save Shop' : type === 'npcs' ? 'Save NPC' : 'Save Location'; btn.disabled = false; }, 1500);
+    if (_isDM) document.getElementById('new-land-btn').style.display = '';
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);font-size:0.8rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderLandCard(id, d) {
+  const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLand('${escHtml(id)}',event)" title="Remove land" style="font-size:0.7rem;padding:4px 6px;">✕</button>` : '';
+  return `<div class="land-card" id="lcard-${escHtml(id)}">
+    <div class="land-card-header" onclick="toggleLandExpand('${escHtml(id)}')">
+      <span style="font-size:1.3rem;flex-shrink:0;">🏰</span>
+      <div style="flex:1;min-width:0;">
+        <div class="land-card-name">${escHtml(d.name||'Unnamed Land')}</div>
+        ${d.desc ? `<div class="land-card-desc">${escHtml(d.desc)}</div>` : ''}
+      </div>
+      ${delBtn}
+      <span class="land-chevron" id="lchev-${escHtml(id)}">▶</span>
+    </div>
+    <div class="land-body" id="lbody-${escHtml(id)}">
+      <div class="land-tab-bar">
+        <button class="land-tab-btn active" onclick="showLandTab('${escHtml(id)}','shops',this)">🏪 Shops</button>
+        <button class="land-tab-btn" onclick="showLandTab('${escHtml(id)}','npcs',this)">🧙 NPCs</button>
+        <button class="land-tab-btn" onclick="showLandTab('${escHtml(id)}','maps',this)">🗺 Maps</button>
+      </div>
+      <div class="land-tab-content active" id="ltab-${escHtml(id)}-shops">
+        <div id="llist-${escHtml(id)}-shops"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div></div>
+        ${_isDM ? `<button class="lands-add-trigger" onclick="toggleLandEntryForm('${escHtml(id)}','shops')">+ Add Shop</button>
+        <div class="lands-add-form" id="lform-${escHtml(id)}-shops" style="display:none;">
+          <div class="lands-field"><label>Shop Name *</label><input id="li-${escHtml(id)}-shops-name" type="text" placeholder="e.g. The Rusty Flagon"></div>
+          <div class="lands-row">
+            <div class="lands-field"><label>District</label><input id="li-${escHtml(id)}-shops-loc" type="text" placeholder="e.g. Market Quarter"></div>
+            <div class="lands-field"><label>Type</label><input id="li-${escHtml(id)}-shops-type" type="text" placeholder="Weapons, Potions…"></div>
+          </div>
+          <div class="lands-field"><label>DM Notes</label><textarea id="li-${escHtml(id)}-shops-notes" placeholder="Owner, secret stock, rumors…"></textarea></div>
+          <button class="lands-save-btn" onclick="saveLandEntry('${escHtml(id)}','shops')">Save Shop</button>
+        </div>` : ''}
+      </div>
+      <div class="land-tab-content" id="ltab-${escHtml(id)}-npcs">
+        <div id="llist-${escHtml(id)}-npcs"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div></div>
+        ${_isDM ? `<button class="lands-add-trigger" onclick="toggleLandEntryForm('${escHtml(id)}','npcs')">+ Add NPC</button>
+        <div class="lands-add-form" id="lform-${escHtml(id)}-npcs" style="display:none;">
+          <div class="lands-field"><label>NPC Name *</label><input id="li-${escHtml(id)}-npcs-name" type="text" placeholder="e.g. Mira Thornwood"></div>
+          <div class="lands-row">
+            <div class="lands-field"><label>Race / Class</label><input id="li-${escHtml(id)}-npcs-race" type="text" placeholder="Half-Elf Rogue"></div>
+            <div class="lands-field"><label>Alignment</label><input id="li-${escHtml(id)}-npcs-align" type="text" placeholder="Neutral Evil"></div>
+          </div>
+          <div class="lands-field"><label>Location in city</label><input id="li-${escHtml(id)}-npcs-loc" type="text" placeholder="e.g. The Rusty Flagon"></div>
+          <div class="lands-field"><label>Secret Notes</label><textarea id="li-${escHtml(id)}-npcs-notes" placeholder="True motives, secrets, plot hooks…"></textarea></div>
+          <button class="lands-save-btn" onclick="saveLandEntry('${escHtml(id)}','npcs')">Save NPC</button>
+        </div>` : ''}
+      </div>
+      <div class="land-tab-content" id="ltab-${escHtml(id)}-maps">
+        <div id="llist-${escHtml(id)}-maps"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div></div>
+        ${_isDM ? `<button class="lands-add-trigger" onclick="toggleLandEntryForm('${escHtml(id)}','maps')">+ Add Map / Location</button>
+        <div class="lands-add-form" id="lform-${escHtml(id)}-maps" style="display:none;">
+          <div class="lands-field"><label>Location Name *</label><input id="li-${escHtml(id)}-maps-name" type="text" placeholder="e.g. The Sunken Crypt"></div>
+          <div class="lands-field"><label>Area / District</label><input id="li-${escHtml(id)}-maps-loc" type="text" placeholder="e.g. Eastern slums"></div>
+          <div class="lands-field"><label>DM Notes</label><textarea id="li-${escHtml(id)}-maps-notes" placeholder="Hazards, secrets, loot…"></textarea></div>
+          <div class="lands-field">
+            <label>Map Image (optional)</label>
+            <div class="upload-area" id="li-${escHtml(id)}-maps-upload" style="padding:10px;" ondragover="event.preventDefault()" ondrop="handleLandMapDrop(event,'${escHtml(id)}')">
+              <input type="file" accept="image/*" onchange="handleLandMapFile(event.target.files[0],'${escHtml(id)}')">
+              <div class="upload-icon" style="font-size:1rem;">🗺</div>
+              <div class="upload-label" id="li-${escHtml(id)}-maps-uplabel">Click or drop image</div>
+              <img id="li-${escHtml(id)}-maps-preview" style="display:none;max-width:100%;max-height:110px;margin-top:6px;border-radius:2px;object-fit:contain;">
+            </div>
+          </div>
+          <button class="lands-save-btn" onclick="saveLandEntry('${escHtml(id)}','maps')">Save Location</button>
+        </div>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleLandExpand(id) {
+  const body = document.getElementById('lbody-' + id);
+  const chev = document.getElementById('lchev-' + id);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+  if (!isOpen) {
+    // Load all three tabs' content
+    loadLandEntries(id, 'shops');
+    loadLandEntries(id, 'npcs');
+    loadLandEntries(id, 'maps');
+  }
+}
+
+function showLandTab(id, tab, btn) {
+  ['shops','npcs','maps'].forEach(t => {
+    document.getElementById('ltab-' + id + '-' + t).classList.toggle('active', t === tab);
+  });
+  btn.closest('.land-tab-bar').querySelectorAll('.land-tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function loadLandEntries(landId, type) {
+  const list = document.getElementById('llist-' + landId + '-' + type);
+  if (!list) return;
+  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div>';
+  try {
+    const snap = await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).orderBy('createdAt').get();
+    if (snap.empty) {
+      list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">None yet.</div>';
+      return;
+    }
+    list.innerHTML = snap.docs.map(doc => {
+      const d = doc.data();
+      let sub = '';
+      if (type === 'shops') sub = [d.loc, d.type, d.notes].filter(Boolean).join(' · ');
+      if (type === 'npcs')  sub = [d.race, d.align, d.loc, d.notes].filter(Boolean).join(' · ');
+      if (type === 'maps')  sub = [d.loc, d.notes].filter(Boolean).join(' · ');
+      const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:130px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
+      const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','${type}','${escHtml(doc.id)}',this)">✕</button>` : '';
+      return `<div class="lands-entry">
+        <div class="lands-entry-body">
+          <div class="lands-entry-name">${escHtml(d.name||'—')}</div>
+          ${sub ? `<div class="lands-entry-sub">${escHtml(sub)}</div>` : ''}
+          ${mapImg}
+        </div>
+        ${delBtn}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+function toggleLandEntryForm(landId, type) {
+  const form = document.getElementById('lform-' + landId + '-' + type);
+  if (form) form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+async function saveLandEntry(landId, type) {
+  const btn = event.target;
+  const nameEl = document.getElementById('li-' + landId + '-' + type + '-name');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { alert('Name is required.'); return; }
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    const data = { name, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (type === 'shops') {
+      data.loc   = document.getElementById('li-' + landId + '-shops-loc').value.trim();
+      data.type  = document.getElementById('li-' + landId + '-shops-type').value.trim();
+      data.notes = document.getElementById('li-' + landId + '-shops-notes').value.trim();
+    } else if (type === 'npcs') {
+      data.race  = document.getElementById('li-' + landId + '-npcs-race').value.trim();
+      data.align = document.getElementById('li-' + landId + '-npcs-align').value.trim();
+      data.loc   = document.getElementById('li-' + landId + '-npcs-loc').value.trim();
+      data.notes = document.getElementById('li-' + landId + '-npcs-notes').value.trim();
+    } else if (type === 'maps') {
+      data.loc   = document.getElementById('li-' + landId + '-maps-loc').value.trim();
+      data.notes = document.getElementById('li-' + landId + '-maps-notes').value.trim();
+      if (_mapImgData[landId]) data.image = _mapImgData[landId];
+    }
+    await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).add(data);
+    // reset form
+    const form = document.getElementById('lform-' + landId + '-' + type);
+    if (form) form.querySelectorAll('input,textarea').forEach(el => el.value = '');
+    if (type === 'maps') {
+      delete _mapImgData[landId];
+      const prev = document.getElementById('li-' + landId + '-maps-preview');
+      if (prev) { prev.style.display = 'none'; prev.src = ''; }
+      const lbl = document.getElementById('li-' + landId + '-maps-uplabel');
+      if (lbl) lbl.textContent = 'Click or drop image';
+    }
+    if (form) form.style.display = 'none';
+    await loadLandEntries(landId, type);
+    btn.textContent = type === 'shops' ? 'Save Shop' : type === 'npcs' ? 'Save NPC' : 'Save Location';
+    btn.disabled = false;
   } catch(e) {
     alert('Failed: ' + e.message);
     btn.textContent = 'Save'; btn.disabled = false;
   }
 }
 
-async function deleteLandsEntry(type, id, btn) {
+async function deleteLandEntry(landId, type, entryId, btn) {
   if (!confirm('Delete this entry?')) return;
   btn.textContent = '…'; btn.disabled = true;
   try {
-    await db.collection('campaigns').doc(campaignId).collection('lands_' + type).doc(id).delete();
-    _landsLoaded[type] = false;
-    await loadLands(type);
+    await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).doc(entryId).delete();
+    await loadLandEntries(landId, type);
   } catch(e) { alert('Delete failed: ' + e.message); btn.textContent = '✕'; btn.disabled = false; }
 }
 
-function handleMapDrop(event) {
-  event.preventDefault();
-  document.getElementById('lm-upload').classList.remove('drag-active');
-  const file = event.dataTransfer.files[0];
-  if (file) handleMapFile(file);
+async function saveLand() {
+  const btn = event.target;
+  const name = document.getElementById('nl-name').value.trim();
+  if (!name) { alert('Land name is required.'); return; }
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('lands').add({
+      name,
+      desc: document.getElementById('nl-desc').value.trim(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('nl-name').value = '';
+    document.getElementById('nl-desc').value = '';
+    document.getElementById('new-land-form').style.display = 'none';
+    _landsDataLoaded = false;
+    await loadLandsList();
+    btn.textContent = 'Create Land'; btn.disabled = false;
+  } catch(e) {
+    alert('Failed: ' + e.message);
+    btn.textContent = 'Create Land'; btn.disabled = false;
+  }
 }
 
-function handleMapFile(file) {
+async function deleteLand(id, event) {
+  event.stopPropagation();
+  if (!confirm('Remove this land? Shops, NPCs and maps inside will also be deleted.')) return;
+  try {
+    // Note: Firestore doesn't auto-delete subcollections from client SDK — just delete the doc
+    // For a clean UX we just remove from UI; subcollection data orphans (acceptable for this app)
+    await db.collection('campaigns').doc(campaignId).collection('lands').doc(id).delete();
+    const card = document.getElementById('lcard-' + id);
+    if (card) card.remove();
+  } catch(e) { alert('Delete failed: ' + e.message); }
+}
+
+function handleLandMapDrop(event, landId) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (file) handleLandMapFile(file, landId);
+}
+
+function handleLandMapFile(file, landId) {
   if (!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
   reader.onload = e => {
-    _mapImageData = e.target.result;
-    const preview = document.getElementById('lm-preview');
-    preview.src = _mapImageData;
-    preview.style.display = 'block';
-    document.getElementById('lm-upload-label').textContent = file.name;
+    _mapImgData[landId] = e.target.result;
+    const prev = document.getElementById('li-' + landId + '-maps-preview');
+    if (prev) { prev.src = e.target.result; prev.style.display = 'block'; }
+    const lbl = document.getElementById('li-' + landId + '-maps-uplabel');
+    if (lbl) lbl.textContent = file.name;
   };
   reader.readAsDataURL(file);
 }
