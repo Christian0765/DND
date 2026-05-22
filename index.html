@@ -542,39 +542,28 @@
 <div class="dm-panel" id="dm-panel" style="display:none;max-width:820px;margin:0 auto 32px;background:linear-gradient(160deg,#1a0e04 0%,#0d0802 100%);border:1px solid var(--border);box-shadow:0 0 0 3px #080604,0 8px 30px rgba(0,0,0,0.8);border-radius:3px;padding:24px 28px;">
   <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;letter-spacing:0.05em;">🔐 Dungeon Master Panel</div>
 
-  <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);">
-    <button class="dm-tab-btn active" onclick="switchDMTab('campaign')">Campaign</button>
-    <button class="dm-tab-btn" onclick="switchDMTab('players')">Players</button>
-  </div>
-
-  <div id="dm-tab-campaign" class="dm-tab-content active">
-    <div class="dm-section">
-      <div class="dm-section-title">Campaign Identity</div>
-      <div class="dm-field"><label>Campaign Name</label><input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()"></div>
-      <div class="dm-field"><label>Campaign Banner / Logo</label>
-        <div class="upload-area" id="upload-area">
-          <input type="file" accept="image/*" onchange="handleImageUpload(event)">
-          <div class="upload-icon">🖼</div>
-          <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
-          <img class="upload-preview" id="banner-preview">
-        </div>
+  <div class="dm-section">
+    <div class="dm-section-title">Campaign Identity</div>
+    <div class="dm-field"><label>Campaign Name</label><input type="text" id="dm-campaign-name" placeholder="e.g. Dragon Veil Chronicles" oninput="updateCampaignName()"></div>
+    <div class="dm-field"><label>Campaign Banner / Logo</label>
+      <div class="upload-area" id="upload-area">
+        <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+        <div class="upload-icon">🖼</div>
+        <div class="upload-label">Click or drag to upload image<br><span style="font-size:0.5rem;opacity:0.6;">JPG, PNG, WebP — recommended 1200×400px</span></div>
+        <img class="upload-preview" id="banner-preview">
       </div>
     </div>
-    <div class="dm-section">
-      <div class="dm-section-title">Secret DM Notes</div>
-      <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans...&#10;&#10;Players cannot see this section."></textarea>
-      <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
-    </div>
   </div>
-
-  <div id="dm-tab-players" class="dm-tab-content">
-    <div id="dm-players-list"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Loading players…</div></div>
+  <div class="dm-section">
+    <div class="dm-section-title">Secret DM Notes</div>
+    <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans...&#10;&#10;Players cannot see this section."></textarea>
+    <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
   </div>
 </div>
 
-<!-- MY CHARACTER SECTION -->
+<!-- MAIN CONTENT: My Character (players) OR Party Overview (DM) -->
 <div class="section" id="my-char-section">
-  <div class="section-title">My Character</div>
+  <div class="section-title" id="my-char-title">My Character</div>
   <div id="my-char-content">
     <div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">Loading…</div>
   </div>
@@ -585,10 +574,13 @@
   </div>
 </div>
 
-<!-- PENDING APPROVALS (DM only) -->
+<!-- PENDING APPROVALS BUTTON (DM only) -->
 <div class="section" id="pending-section" style="display:none;">
-  <div class="section-title">Pending Approvals</div>
-  <div id="pending-list">
+  <button id="pending-toggle-btn" onclick="togglePendingApprovals()" style="width:100%;display:flex;align-items:center;justify-content:space-between;font-family:'Cinzel',serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--parchment-dark);background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);border-radius:3px;padding:14px 20px;cursor:pointer;transition:border-color 0.15s;">
+    <span>📋 Pending Approvals</span>
+    <span id="pending-badge" style="display:none;background:var(--red);color:#fff;font-size:0.65rem;font-family:'Cinzel',serif;border-radius:10px;padding:2px 8px;min-width:22px;text-align:center;"></span>
+  </button>
+  <div id="pending-list" style="display:none;margin-top:12px;">
     <div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">Loading…</div>
   </div>
 </div>
@@ -727,7 +719,7 @@ firebase.auth().onAuthStateChanged(async user => {
     await loadMyCharacter();
     if (_isDM) {
       document.getElementById('pending-section').style.display = '';
-      loadPendingApprovals();
+      loadPendingApprovals(); // loads count for badge
     }
 
   } catch(e) {
@@ -735,13 +727,20 @@ firebase.auth().onAuthStateChanged(async user => {
   }
 });
 
-// ─── MY CHARACTER ─────────────────────────────────────────────
+// ─── MY CHARACTER (players) / PARTY OVERVIEW (DM) ─────────────
 async function loadMyCharacter() {
   const container = document.getElementById('my-char-content');
   const createBtn = document.getElementById('create-char-btn');
 
+  if (_isDM) {
+    // DM sees party overview here instead
+    document.getElementById('my-char-title').textContent = 'Party';
+    createBtn.style.display = 'none';
+    await loadPlayersTab(); // reuse existing function, renders into my-char-content too
+    return;
+  }
+
   if (!_myCharSlot) {
-    // Not a player in this campaign
     container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">You are not a player in this campaign.</div>';
     createBtn.style.display = 'none';
     return;
@@ -803,15 +802,31 @@ async function loadMyCharacter() {
   }
 }
 
+function togglePendingApprovals() {
+  const list = document.getElementById('pending-list');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : '';
+  if (!isOpen) loadPendingApprovals();
+}
+
 // ─── PENDING APPROVALS (DM) ───────────────────────────────────
 async function loadPendingApprovals() {
   const container = document.getElementById('pending-list');
+  const badge = document.getElementById('pending-badge');
   container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">Loading…</div>';
 
   try {
     const allSnap = await db.collection('campaigns').doc(campaignId).collection('pendingCharacters').get();
     const snap = { docs: allSnap.docs.filter(d => d.data().status === 'pending'), empty: false };
     snap.empty = snap.docs.length === 0;
+
+    // Update badge
+    if (snap.docs.length > 0) {
+      badge.textContent = snap.docs.length;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
 
     if (snap.empty) {
       container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">No pending submissions.</div>';
@@ -884,15 +899,19 @@ async function approveCharacter(uid, btn) {
     // Delete pending entry
     await pendingRef.delete();
 
-    // Remove card from DOM
+    // Remove card and refresh badge
     const card = document.getElementById('pcard-' + uid);
     if (card) card.remove();
-
-    // Check if list is now empty
     const list = document.getElementById('pending-list');
     if (!list.querySelector('.pending-card')) {
       list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">No pending submissions.</div>';
+      document.getElementById('pending-badge').style.display = 'none';
+    } else {
+      const remaining = list.querySelectorAll('.pending-card').length;
+      document.getElementById('pending-badge').textContent = remaining;
     }
+    // Reload party list
+    await loadPlayersTab();
 
     alert('Character approved! They will see it on their next load.');
   } catch(e) {
@@ -1068,27 +1087,24 @@ function toggleDMPanel() {
 }
 
 function switchDMTab(tab) {
-  document.querySelectorAll('.dm-tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', (i === 0 && tab === 'campaign') || (i === 1 && tab === 'players'));
-  });
-  document.getElementById('dm-tab-campaign').classList.toggle('active', tab === 'campaign');
-  document.getElementById('dm-tab-players').classList.toggle('active', tab === 'players');
-  if (tab === 'players') loadPlayersTab();
+  // DM Panel now has only Campaign section; Players moved to main page
 }
 
 function loadDMData() {
-  const name = localStorage.getItem('campaign-name');
-  const banner = localStorage.getItem('campaign-banner');
-  const notes = localStorage.getItem('dm-notes');
-  if (name) { document.getElementById('dm-campaign-name').value = name; document.getElementById('site-title').textContent = name; }
-  if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
-  if (notes) document.getElementById('dm-notes').value = notes;
+  if (_campaignData) {
+    const name = _campaignData.name;
+    const banner = _campaignData.banner;
+    const notes = _campaignData.dmNotes;
+    if (name) { document.getElementById('dm-campaign-name').value = name; }
+    if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
+    if (notes) document.getElementById('dm-notes').value = notes;
+  }
 }
 
 function updateCampaignName() {
   const name = document.getElementById('dm-campaign-name').value;
   document.getElementById('site-title').textContent = name || 'Campaign Tracker';
-  localStorage.setItem('campaign-name', name);
+  db.collection('campaigns').doc(campaignId).update({ name: name }).catch(e => console.error('Name save failed:', e));
 }
 
 function handleImageUpload(event) {
@@ -1098,7 +1114,7 @@ function handleImageUpload(event) {
   reader.onload = e => {
     document.getElementById('banner-preview').src = e.target.result;
     document.getElementById('banner-preview').style.display = 'block';
-    localStorage.setItem('campaign-banner', e.target.result);
+    db.collection('campaigns').doc(campaignId).update({ banner: e.target.result }).catch(err => console.error('Banner save failed:', err));
     applyBanner(e.target.result);
   };
   reader.readAsDataURL(file);
@@ -1116,15 +1132,20 @@ function applyBanner(src) {
 }
 
 function saveDMNotes() {
-  localStorage.setItem('dm-notes', document.getElementById('dm-notes').value);
+  const notes = document.getElementById('dm-notes').value;
   const btn = event.target;
-  btn.textContent = 'Saved ✓';
-  setTimeout(() => btn.textContent = 'Save Notes', 2000);
+  btn.textContent = 'Saving…';
+  db.collection('campaigns').doc(campaignId).update({ dmNotes: notes })
+    .then(() => { btn.textContent = 'Saved ✓'; setTimeout(() => btn.textContent = 'Save Notes', 2000); })
+    .catch(e => { btn.textContent = 'Save Notes'; alert('Failed to save: ' + e.message); });
 }
 
 async function loadPlayersTab() {
-  const container = document.getElementById('dm-players-list');
-  container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">Loading players…</div>';
+  // Render into main content area for DM, or the side panel container
+  const container = _isDM
+    ? document.getElementById('my-char-content')
+    : document.getElementById('dm-players-list');
+  container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">Loading players…</div>';
   try {
     const entries = Object.entries(_campaignData.players || {});
     if (!entries.length) { container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">No players have joined yet.</div>'; return; }
