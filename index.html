@@ -699,8 +699,14 @@
     </div>
     <div id="ann-npc-mode" style="display:none;">
       <div class="dm-field">
+        <label style="font-family:'Cinzel',serif;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block;margin-bottom:4px;">Filter by Land</label>
+        <select id="ann-npc-land-filter" onchange="loadAnnouncementNPCs()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 10px;width:100%;outline:none;">
+          <option value="">🌍 General NPCs</option>
+        </select>
+      </div>
+      <div class="dm-field">
         <label style="font-family:'Cinzel',serif;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block;margin-bottom:4px;">Select NPC</label>
-        <select id="ann-npc-select" onchange="previewAnnouncementNPC()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;width:100%;outline:none;">
+        <select id="ann-npc-select" onchange="previewAnnouncementNPC()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 10px;width:100%;outline:none;">
           <option value="">— Select NPC —</option>
         </select>
       </div>
@@ -709,13 +715,13 @@
     <div id="ann-shop-mode" style="display:none;">
       <div class="dm-field">
         <label style="font-family:'Cinzel',serif;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block;margin-bottom:4px;">Select Land</label>
-        <select id="ann-land-select" onchange="loadAnnouncementShops()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;width:100%;outline:none;">
+        <select id="ann-land-select" onchange="loadAnnouncementShops()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 10px;width:100%;outline:none;">
           <option value="">— Select Land —</option>
         </select>
       </div>
       <div class="dm-field">
         <label style="font-family:'Cinzel',serif;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block;margin-bottom:4px;">Select Shop</label>
-        <select id="ann-shop-select" onchange="previewAnnouncementShop()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:7px 10px;width:100%;outline:none;">
+        <select id="ann-shop-select" onchange="previewAnnouncementShop()" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 10px;width:100%;outline:none;">
           <option value="">— Pick a land first</option>
         </select>
       </div>
@@ -2406,7 +2412,7 @@ function switchAnnounceMode(mode) {
     const tab = document.getElementById('ann-tab-' + m);
     if (tab) tab.classList.toggle('active', m === mode);
   });
-  if (mode === 'npc') loadAnnouncementNPCs();
+  if (mode === 'npc') { loadAnnouncementLands(); loadAnnouncementNPCs(); }
   if (mode === 'shop') loadAnnouncementLands();
 }
 
@@ -2450,17 +2456,27 @@ async function clearAnnouncement() {
 }
 
 let _announceNPCList = null;
+let _announceNPCCache = {};
 async function loadAnnouncementNPCs() {
+  const filterSel = document.getElementById('ann-npc-land-filter');
+  const landId = filterSel ? filterSel.value : '';
   const sel = document.getElementById('ann-npc-select');
   if (!sel) return;
-  if (_announceNPCList) {
+  _announceNPCData = null;
+  const preview = document.getElementById('ann-npc-preview');
+  if (preview) preview.innerHTML = '';
+  if (_announceNPCCache[landId] !== undefined) {
+    _announceNPCList = _announceNPCCache[landId];
     sel.innerHTML = '<option value="">— Select NPC —</option>' + _announceNPCList.map(n => `<option value="${escHtml(n.id)}">${escHtml(n.data.name || 'Unknown')}</option>`).join('');
     return;
   }
   sel.innerHTML = '<option value="">— Loading…</option>';
   try {
-    const snap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').orderBy('createdAt').get();
-    _announceNPCList = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+    const snap = landId
+      ? await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('npcs').orderBy('createdAt').get()
+      : await db.collection('campaigns').doc(campaignId).collection('general_npcs').orderBy('createdAt').get();
+    _announceNPCCache[landId] = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+    _announceNPCList = _announceNPCCache[landId];
     sel.innerHTML = '<option value="">— Select NPC —</option>' + _announceNPCList.map(n => `<option value="${escHtml(n.id)}">${escHtml(n.data.name || 'Unknown')}</option>`).join('');
   } catch(e) { sel.innerHTML = `<option value="">Error loading</option>`; }
 }
@@ -2479,18 +2495,27 @@ function previewAnnouncementNPC() {
 let _announceLandList = null;
 let _announceShopList = {};
 async function loadAnnouncementLands() {
-  const sel = document.getElementById('ann-land-select');
-  if (!sel) return;
+  const options = () => _announceLandList.map(l => `<option value="${escHtml(l.id)}">${escHtml(l.data.name || 'Unknown')}</option>`).join('');
   if (_announceLandList) {
-    sel.innerHTML = '<option value="">— Select Land —</option>' + _announceLandList.map(l => `<option value="${escHtml(l.id)}">${escHtml(l.data.name || 'Unknown')}</option>`).join('');
+    const eventSel = document.getElementById('ann-land-select');
+    if (eventSel) eventSel.innerHTML = '<option value="">— Select Land —</option>' + options();
+    const npcFilter = document.getElementById('ann-npc-land-filter');
+    if (npcFilter) npcFilter.innerHTML = '<option value="">🌍 General NPCs</option>' + options();
     return;
   }
-  sel.innerHTML = '<option value="">— Loading…</option>';
+  const eventSel = document.getElementById('ann-land-select');
+  if (eventSel) eventSel.innerHTML = '<option value="">— Loading…</option>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('lands').get();
     _announceLandList = snap.docs.map(d => ({ id: d.id, data: d.data() }));
-    sel.innerHTML = '<option value="">— Select Land —</option>' + _announceLandList.map(l => `<option value="${escHtml(l.id)}">${escHtml(l.data.name || 'Unknown')}</option>`).join('');
-  } catch(e) { sel.innerHTML = `<option value="">Error loading</option>`; }
+    const eventSel2 = document.getElementById('ann-land-select');
+    if (eventSel2) eventSel2.innerHTML = '<option value="">— Select Land —</option>' + options();
+    const npcFilter = document.getElementById('ann-npc-land-filter');
+    if (npcFilter) npcFilter.innerHTML = '<option value="">🌍 General NPCs</option>' + options();
+  } catch(e) {
+    const eventSel2 = document.getElementById('ann-land-select');
+    if (eventSel2) eventSel2.innerHTML = `<option value="">Error loading</option>`;
+  }
 }
 
 async function loadAnnouncementShops() {
