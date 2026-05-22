@@ -1294,6 +1294,13 @@
       unsubscribeCampaigns = () => { unsub1(); unsub2(); };
     }
 
+    function _procKey() { return `proc_${currentUser.uid}`; }
+    function _markProcessed(fromUid) {
+      const arr = JSON.parse(localStorage.getItem(_procKey()) || '[]');
+      if (!arr.includes(fromUid)) { arr.push(fromUid); localStorage.setItem(_procKey(), JSON.stringify(arr)); }
+    }
+    function _localProcessed() { return JSON.parse(localStorage.getItem(_procKey()) || '[]'); }
+
     async function loadFriends() {
       const list = document.getElementById('friends-list');
       const reqSection = document.getElementById('friend-requests-section');
@@ -1305,7 +1312,7 @@
         const ownDoc = await db.collection('users').doc(uid).get();
         const ownData = ownDoc.exists ? ownDoc.data() : {};
         const myFriendUids = ownData.friends || [];
-        const processed = ownData.processedRequests || [];
+        const processed = [...new Set([...(ownData.processedRequests || []), ..._localProcessed()])];
 
         // Incoming requests
         const reqSnap = await db.collection('users').where('sentRequests', 'array-contains', uid).get();
@@ -1403,16 +1410,20 @@
     }
 
     function acceptFriendRequest(fromUid) {
+      _markProcessed(fromUid);
       db.collection('users').doc(currentUser.uid).set({
         friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
-      }, { merge: true }).then(() => loadFriends()).catch(e => console.error('Accept failed:', e));
+      }, { merge: true }).catch(e => console.error('Accept failed:', e));
+      loadFriends();
     }
 
     function declineFriendRequest(fromUid) {
+      _markProcessed(fromUid);
       db.collection('users').doc(currentUser.uid).set({
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
-      }, { merge: true }).then(() => loadFriends()).catch(e => console.error('Decline failed:', e));
+      }, { merge: true }).catch(e => console.error('Decline failed:', e));
+      loadFriends();
     }
 
     function removeFriend(friendUid) {

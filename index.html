@@ -741,7 +741,9 @@ async function loadPendingApprovals() {
   container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">Loading…</div>';
 
   try {
-    const snap = await db.collection('campaigns').doc(campaignId).collection('pendingCharacters').where('status','==','pending').get();
+    const allSnap = await db.collection('campaigns').doc(campaignId).collection('pendingCharacters').get();
+    const snap = { docs: allSnap.docs.filter(d => d.data().status === 'pending'), empty: false };
+    snap.empty = snap.docs.length === 0;
 
     if (snap.empty) {
       container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">No pending submissions.</div>';
