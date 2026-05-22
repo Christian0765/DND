@@ -95,11 +95,12 @@
 </head>
 <body>
 
+<div id="view-only-banner" style="display:none;background:var(--red);color:#f5ead2;font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.18em;text-align:center;padding:8px 16px;">View only — not your character</div>
 <div class="top-bar">
   <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div class="sync-bar">
     <span class="sync-status offline" id="sync-status">Connecting...</span>
-    <button class="save-btn" onclick="saveToFirestore()">Save</button>
+    <button class="save-btn" id="save-btn-main" onclick="saveToFirestore()">Save</button>
   </div>
 </div>
 
@@ -253,20 +254,42 @@ const PLAYER_ID = 'player3';
 
 // Get campaign ID from URL
 const campaignId = new URLSearchParams(window.location.search).get('c');
-if (!campaignId) { 
-  window.location.href = 'dashboard.html'; 
+if (!campaignId) {
+  window.location.href = 'dashboard.html';
 }
 
 firebase.initializeApp(firebaseConfig);
 
 // Auth guard + init
 let db = null;
-firebase.auth().onAuthStateChanged(user => {
+let _viewOnly = false;
+firebase.auth().onAuthStateChanged(async user => {
   if (!user) {
     window.location.href = 'home.html';
     return;
   }
   db = firebase.firestore();
+
+  try {
+    const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
+    const charDoc = await db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).get();
+
+    const isDM = campaignDoc.exists && campaignDoc.data().dmUid === user.uid;
+    const ownerUid = charDoc.exists ? charDoc.data().ownerUid : null;
+    const isOwner = ownerUid === user.uid;
+
+    if (!isDM && !isOwner && ownerUid) {
+      _viewOnly = true;
+      document.getElementById('view-only-banner').style.display = '';
+      document.querySelectorAll('.editable').forEach(el => {
+        el.readOnly = true;
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.8';
+      });
+      document.getElementById('save-btn-main').style.display = 'none';
+    }
+  } catch(e) { /* proceed normally if check fails */ }
+
   loadFromFirestore();
 });
 

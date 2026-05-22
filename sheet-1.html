@@ -293,11 +293,13 @@
 </head>
 <body>
 
+<div id="view-only-banner" style="display:none;background:var(--red);color:#f5ead2;font-family:'Cinzel',serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.18em;text-align:center;padding:8px 16px;">View only — not your character</div>
 <div class="top-bar">
   <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
   <div class="sync-bar">
     <span class="sync-status offline" id="sync-status">Connecting...</span>
-    <button class="save-btn" onclick="saveToFirestore()">Save</button>
+    <button class="save-btn" id="export-btn" onclick="exportAsHtml()" style="margin-right:4px;">Export HTML</button>
+    <button class="save-btn" id="save-btn-main" onclick="saveToFirestore()">Save</button>
   </div>
 </div>
 
@@ -521,25 +523,90 @@ const PLAYER_ID = 'player1';
 
 // Get campaign ID from URL
 const campaignId = new URLSearchParams(window.location.search).get('c');
-if (!campaignId) { 
-  window.location.href = 'dashboard.html'; 
+if (!campaignId) {
+  window.location.href = 'dashboard.html';
 }
 
 firebase.initializeApp(firebaseConfig);
 
 // Auth guard + init
 let db = null;
-firebase.auth().onAuthStateChanged(user => {
+let _viewOnly = false;
+firebase.auth().onAuthStateChanged(async user => {
   if (!user) {
     window.location.href = 'home.html';
     return;
   }
   db = firebase.firestore();
+
+  try {
+    const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
+    const charDoc = await db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID).get();
+
+    const isDM = campaignDoc.exists && campaignDoc.data().dmUid === user.uid;
+    const ownerUid = charDoc.exists ? charDoc.data().ownerUid : null;
+    const isOwner = ownerUid === user.uid;
+
+    if (!isDM && !isOwner && ownerUid) {
+      // View-only mode
+      _viewOnly = true;
+      document.getElementById('view-only-banner').style.display = '';
+      document.querySelectorAll('.editable').forEach(el => {
+        el.readOnly = true;
+        el.style.pointerEvents = 'none';
+        el.style.opacity = '0.8';
+      });
+      document.getElementById('save-btn-main').style.display = 'none';
+    }
+  } catch(e) { /* proceed normally if check fails */ }
+
   loadFromFirestore();
 });
 
 function goBack() {
   window.location.href = 'index.html?c=' + campaignId;
+}
+
+function exportAsHtml() {
+  const charName = document.getElementById('f-name').value || 'character';
+  const clone = document.documentElement.cloneNode(true);
+
+  // Inject current field values into clone
+  FIELDS.forEach(id => {
+    const liveEl = document.getElementById(id);
+    if (!liveEl) return;
+    const cloneEl = clone.querySelector('#' + id);
+    if (!cloneEl) return;
+    if (cloneEl.tagName === 'TEXTAREA') {
+      cloneEl.textContent = liveEl.value;
+    } else {
+      cloneEl.setAttribute('value', liveEl.value);
+    }
+  });
+
+  // Remove Firebase scripts and auto-save JS (keep only static content)
+  clone.querySelectorAll('script').forEach(s => {
+    const src = s.getAttribute('src') || '';
+    if (src.includes('firebase') || src.includes('firebase-config')) {
+      s.remove();
+    } else if (!src && s.textContent.includes('firebase')) {
+      s.remove();
+    }
+  });
+
+  // Remove view-only banner if present
+  const banner = clone.querySelector('#view-only-banner');
+  if (banner) banner.remove();
+
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], {type: 'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = charName.replace(/[^a-z0-9_\-]/gi, '_') + '-sheet.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 const FIELDS = [
