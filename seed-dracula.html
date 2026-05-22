@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Seed Dracula Inventory</title>
+<style>
+  body { font-family: monospace; background: #0d0802; color: #c4920a; padding: 40px; }
+  button { font-family: monospace; font-size: 1rem; background: #1a0e04; color: #c4920a; border: 1px solid #9a7000; padding: 10px 24px; cursor: pointer; border-radius: 3px; }
+  button:hover { background: #2a1a06; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #status { margin-top: 20px; white-space: pre-line; line-height: 1.8; }
+  .ok  { color: #5a9a3a; }
+  .err { color: #7a1515; }
+  ul { margin: 12px 0 0 20px; color: #b08840; font-size: 0.85rem; line-height: 1.9; }
+</style>
+</head>
+<body>
+
+<h2 style="color:#e8d5a8;margin-bottom:8px;">🎒 Seed Dracula's Inventory</h2>
+<p style="color:#b08840;margin-bottom:20px;font-size:0.85rem;">
+  Writes directly to Firestore · slot: <strong>player1</strong> · campaign from URL <code>?c=CAMPAIGN_ID</code>
+</p>
+
+<ul>
+  <li>⚔️ Weapons: Ash (Bonded), Handaxe, Longsword, Skullcrusher, Longbow, Club, Scimitar</li>
+  <li>🛡️ Armor: Leather Armor</li>
+  <li>🌿 Resources: Arrow ×20, Rope, Tinderbox, Torch ×10, Incense ×5</li>
+  <li>✨ Magical: Magic Pipe, Rod of Falsehood, Obsidian Stone</li>
+  <li>🍖 Food: Rations ×10</li>
+  <li>📦 Misc: Backpack, Bedroll, Cart, Clothes, Mess Kit, Pouch, Sticky Wickets ×3, Gnome Costume, Waterskin, Vestments</li>
+</ul>
+
+<br>
+<button id="btn" onclick="seedInventory()">➕ Write to Firestore</button>
+<div id="status"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const INVENTORY = [
+  // ⚔️ Weapons
+  { name: 'Ash (Bonded)',   category: 'weapons',   qty: 1,  cost: 0 },
+  { name: 'Handaxe',        category: 'weapons',   qty: 1,  cost: 0 },
+  { name: 'Longsword',      category: 'weapons',   qty: 1,  cost: 0 },
+  { name: 'Skullcrusher',   category: 'weapons',   qty: 1,  cost: 0 },
+  { name: 'Longbow',        category: 'weapons',   qty: 1,  cost: 0 },
+  { name: 'Club',           category: 'weapons',   qty: 1,  cost: 0 },
+  { name: 'Scimitar',       category: 'weapons',   qty: 1,  cost: 0 },
+  // 🛡️ Armor
+  { name: 'Leather Armor',  category: 'armor',     qty: 1,  cost: 0 },
+  // 🌿 Resources
+  { name: 'Arrow',          category: 'resources', qty: 20, cost: 0 },
+  { name: 'Rope, Hempen',   category: 'resources', qty: 1,  cost: 0 },
+  { name: 'Tinderbox',      category: 'resources', qty: 1,  cost: 0 },
+  { name: 'Torch',          category: 'resources', qty: 10, cost: 0 },
+  { name: 'Incense',        category: 'resources', qty: 5,  cost: 0 },
+  // ✨ Magical
+  { name: 'Magic Pipe',     category: 'magical',   qty: 1,  cost: 0 },
+  { name: 'Rod of Falsehood', category: 'magical', qty: 1,  cost: 0 },
+  { name: 'Obsidian Stone', category: 'magical',   qty: 1,  cost: 0 },
+  // 🍖 Food
+  { name: 'Rations',        category: 'food',      qty: 10, cost: 0 },
+  // 📦 Misc
+  { name: 'Backpack',       category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Bedroll',        category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Cart',           category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Clothes, Common', category: 'misc',     qty: 1,  cost: 0 },
+  { name: 'Mess Kit',       category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Pouch',          category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Sticky Wickets', category: 'misc',      qty: 3,  cost: 0 },
+  { name: 'Gnome Costume',  category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Waterskin',      category: 'misc',      qty: 1,  cost: 0 },
+  { name: 'Vestments',      category: 'misc',      qty: 1,  cost: 0 },
+];
+
+async function seedInventory() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  const params = new URLSearchParams(location.search);
+  const campaignId = params.get('c');
+  if (!campaignId) {
+    status.innerHTML = '<span class="err">❌ Missing campaign ID. Open as: seed-dracula.html?c=YOUR_CAMPAIGN_ID</span>';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Writing to Firestore…\n';
+
+  const inventory = INVENTORY.map((item, i) => ({
+    ...item,
+    id: String(Date.now() + i) + Math.random().toString(36).slice(2, 6),
+    acquiredAt: Date.now(),
+  }));
+
+  try {
+    await db.collection('campaigns').doc(campaignId)
+      .collection('characters').doc('player1')
+      .update({ inventory });
+
+    status.innerHTML = `<span class="ok">✅ Done! ${inventory.length} items written to player1's inventory.\n\nGo back to the campaign page and click 🎒 Inventory to see them.</span>`;
+  } catch (e) {
+    status.innerHTML = `<span class="err">❌ Error: ${e.message}\n\nMake sure the campaign ID is correct and player1 exists.</span>`;
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
