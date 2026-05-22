@@ -584,6 +584,12 @@
   .shop-buy-btn { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--parchment);background:var(--green);border:none;border-radius:2px;padding:3px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0; }
   .shop-buy-btn:hover { opacity:0.85; }
   .shop-buy-btn:disabled { opacity:0.4;cursor:not-allowed; }
+  .pub-toggle { font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:10px;cursor:pointer;border:1px solid;transition:background 0.15s,color 0.15s;flex-shrink:0;white-space:nowrap; }
+  .pub-toggle.draft { background:rgba(180,60,60,0.12);color:var(--red);border-color:var(--red); }
+  .pub-toggle.live { background:rgba(80,160,60,0.12);color:#5a9a3a;border-color:#5a9a3a; }
+  .pub-toggle:hover { opacity:0.75; }
+  .land-card.unpublished { opacity:0.65; }
+  .gnpc-card.unpublished,.gnpc-full-card.unpublished,.goon-card.unpublished { opacity:0.55; }
   .dm-section { margin-bottom:20px; }
   .dm-section-title { font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:12px; }
   .dm-field { margin-bottom:10px; }
@@ -1414,10 +1420,11 @@ async function loadGeneralNPCs() {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').orderBy('createdAt').get();
-    if (snap.empty) {
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published === true);
+    if (docs.length === 0) {
       list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;padding:4px 0;">No public NPCs yet.</div>';
     } else {
-      list.innerHTML = '<div class="gnpc-grid">' + snap.docs.map(doc => renderGNPCCard(doc.id, doc.data())).join('') + '</div>';
+      list.innerHTML = '<div class="gnpc-grid">' + docs.map(doc => renderGNPCCard(doc.id, doc.data())).join('') + '</div>';
     }
     if (_isDM) document.getElementById('add-gnpc-btn').style.display = '';
   } catch(e) {
@@ -1427,7 +1434,10 @@ async function loadGeneralNPCs() {
 
 function renderGNPCCard(id, d) {
   const type = d.npcType || 'simple';
+  const isPublished = d.published === true;
   const delBtn = _isDM ? `<button class="gnpc-del" onclick="deleteGeneralNPC('${escHtml(id)}',event)" title="Delete">✕</button>` : '';
+  const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleGNPCPublished('${escHtml(id)}',${isPublished})" style="position:absolute;bottom:6px;right:6px;z-index:2;">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
+  const unpubClass = _isDM && !isPublished ? ' unpublished' : '';
 
   if (type === 'goon') {
     const stats = [
@@ -1438,8 +1448,9 @@ function renderGNPCCard(id, d) {
       d.dmg ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.dmg))}</span><span class="goon-stat-label">Dmg</span></div>` : '',
       d.cr  ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.cr))}</span><span class="goon-stat-label">CR</span></div>` : '',
     ].filter(Boolean).join('');
-    return `<div class="goon-card">
+    return `<div class="goon-card${unpubClass}" style="position:relative;">
       ${delBtn}
+      ${pubBtn}
       <div class="goon-name">⚔️ ${escHtml(d.name||'Unknown')}</div>
       <div class="goon-stats">${stats}</div>
       ${d.dtype ? `<div class="goon-notes">${escHtml(d.dtype)} damage</div>` : ''}
@@ -1454,8 +1465,9 @@ function renderGNPCCard(id, d) {
     const abilityRow = ['str','dex','con','int','wis','cha'].map(a =>
       `<div class="gnpc-full-stat"><span class="gnpc-full-stat-val">${escHtml(String(d[a]||'—'))}</span><span class="gnpc-full-stat-lbl">${a.toUpperCase()}</span></div>`
     ).join('');
-    return `<div class="gnpc-full-card" onclick="toggleGNPCFull('${escHtml(id)}')">
+    return `<div class="gnpc-full-card${unpubClass}" onclick="toggleGNPCFull('${escHtml(id)}')" style="position:relative;">
       ${delBtn}
+      ${pubBtn}
       <div class="gnpc-full-header">
         ${portrait}
         <div style="flex:1;min-width:0;">
@@ -1482,8 +1494,9 @@ function renderGNPCCard(id, d) {
     ? `<img class="gnpc-portrait" src="${escHtml(d.portrait)}" onerror="this.outerHTML='<div class=\\'gnpc-portrait\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;\\'>👤</div>'">`
     : `<div class="gnpc-portrait" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;">👤</div>`;
   const statsHtml = (d.hp || d.ac) ? `<div class="gnpc-stats">${d.hp?`<div class="gnpc-stat"><span class="gnpc-stat-val hp">${escHtml(String(d.hp))}</span><span class="gnpc-stat-label">HP</span></div>`:''}${d.ac?`<div class="gnpc-stat"><span class="gnpc-stat-val">${escHtml(String(d.ac))}</span><span class="gnpc-stat-label">AC</span></div>`:''}</div>` : '';
-  return `<div class="gnpc-card">
+  return `<div class="gnpc-card${unpubClass}" style="position:relative;">
     ${delBtn}
+    ${pubBtn}
     ${portrait}
     <div class="gnpc-name">${escHtml(d.name||'Unknown')}</div>
     <div class="gnpc-sub">${escHtml([d.race, d.align].filter(Boolean).join(' · ') || '')}</div>
@@ -1539,7 +1552,7 @@ function handleGNPCPortraitFile(file) {
 
 async function saveGeneralNPC(type) {
   const btn = event.target;
-  let data = { npcType: type, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  let data = { npcType: type, published: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
   let nameId, resetIds;
 
   if (type === 'simple') {
@@ -1610,6 +1623,13 @@ async function deleteGeneralNPC(id, event) {
   } catch(e) { alert('Delete failed: ' + e.message); }
 }
 
+async function toggleGNPCPublished(id, currentlyPublished) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('general_npcs').doc(id).update({ published: !currentlyPublished });
+    await loadGeneralNPCs();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
 // ── Created Lands ─────────────────────────────────────────────
 function openNewLandForm() {
   const form = document.getElementById('new-land-form');
@@ -1621,12 +1641,13 @@ async function loadLandsList() {
   list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">Loading…</div>';
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('lands').orderBy('createdAt').get();
-    if (snap.empty) {
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published === true);
+    if (docs.length === 0) {
       list.innerHTML = _isDM
         ? '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No lands yet — create one above.</div>'
         : '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No lands have been added yet.</div>';
     } else {
-      list.innerHTML = snap.docs.map(doc => renderLandCard(doc.id, doc.data())).join('');
+      list.innerHTML = docs.map(doc => renderLandCard(doc.id, doc.data())).join('');
     }
     if (_isDM) document.getElementById('new-land-btn').style.display = '';
   } catch(e) {
@@ -1635,14 +1656,17 @@ async function loadLandsList() {
 }
 
 function renderLandCard(id, d) {
+  const isPublished = d.published === true;
   const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLand('${escHtml(id)}',event)" title="Remove land" style="font-size:0.7rem;padding:4px 6px;">✕</button>` : '';
-  return `<div class="land-card" id="lcard-${escHtml(id)}">
+  const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleLandPublished('${escHtml(id)}',${isPublished})" title="${isPublished ? 'Click to unpublish' : 'Click to publish'}">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
+  return `<div class="land-card${_isDM && !isPublished ? ' unpublished' : ''}" id="lcard-${escHtml(id)}">
     <div class="land-card-header" onclick="toggleLandExpand('${escHtml(id)}')">
       <span style="font-size:1.3rem;flex-shrink:0;">🏰</span>
       <div style="flex:1;min-width:0;">
         <div class="land-card-name">${escHtml(d.name||'Unnamed Land')}</div>
         ${d.desc ? `<div class="land-card-desc">${escHtml(d.desc)}</div>` : ''}
       </div>
+      ${pubBtn}
       ${delBtn}
       <span class="land-chevron" id="lchev-${escHtml(id)}">▶</span>
     </div>
@@ -1960,6 +1984,7 @@ async function saveLand() {
     await db.collection('campaigns').doc(campaignId).collection('lands').add({
       name,
       desc: document.getElementById('nl-desc').value.trim(),
+      published: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById('nl-name').value = '';
@@ -1984,6 +2009,13 @@ async function deleteLand(id, event) {
     const card = document.getElementById('lcard-' + id);
     if (card) card.remove();
   } catch(e) { alert('Delete failed: ' + e.message); }
+}
+
+async function toggleLandPublished(id, currentlyPublished) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('lands').doc(id).update({ published: !currentlyPublished });
+    await loadLandsList();
+  } catch(e) { alert('Failed: ' + e.message); }
 }
 
 function handleLandMapDrop(event, landId) {
