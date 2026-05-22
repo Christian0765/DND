@@ -1340,6 +1340,10 @@ async function loadMyCharacter() {
                      style="font-family:'Cinzel',serif;font-size:0.85rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:5px 8px;width:54px;outline:none;">
               <button class="lands-save-btn" style="padding:5px 12px;" onclick="addInventoryItem()">+ Add</button>
             </div>
+            <div style="margin-top:8px;">
+              <button class="dm-btn" onclick="importInventoryFromSheet()" style="font-size:0.55rem;padding:4px 10px;color:var(--border-light);border-color:var(--border);">📋 Import from Character Sheet</button>
+              <span id="inv-import-status" style="font-size:0.65rem;color:var(--border-light);font-style:italic;margin-left:8px;"></span>
+            </div>
           </div>
         </div>`;
       createBtn.style.display = '';
@@ -3131,6 +3135,58 @@ async function removeInventoryItem(id) {
     _myInventory = updated;
     renderInventory();
   } catch(e) { alert('Failed to remove item: ' + e.message); }
+}
+
+async function importInventoryFromSheet() {
+  const status = document.getElementById('inv-import-status');
+  if (status) status.textContent = 'Reading sheet…';
+  try {
+    const doc = await db.collection('campaigns').doc(campaignId).collection('characters').doc(_myCharSlot).get();
+    if (!doc.exists) throw new Error('Character not found.');
+    const d = doc.data();
+
+    const weaponLines = (d['f-weapons'] || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const equipLines  = (d['f-equipment'] || '').split('\n').map(l => l.trim()).filter(Boolean);
+
+    if (weaponLines.length === 0 && equipLines.length === 0) {
+      if (status) status.textContent = 'No items found on sheet.';
+      setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+      return;
+    }
+
+    let updated = [..._myInventory];
+    let added = 0;
+    const merge = (name, category) => {
+      if (!name) return;
+      const catalogMatch = _itemsCache.find(c => c.data.name.toLowerCase() === name.toLowerCase());
+      const cat = catalogMatch ? catalogMatch.data.category : category;
+      const existIdx = updated.findIndex(i => i.name === name && i.category === cat);
+      if (existIdx > -1) {
+        updated[existIdx] = { ...updated[existIdx], qty: updated[existIdx].qty + 1 };
+      } else {
+        updated.push({ id: String(Date.now()) + Math.random().toString(36).slice(2,6) + added, name, category: cat, qty: 1, cost: 0, acquiredAt: Date.now() });
+        added++;
+      }
+    };
+
+    // Strip common notation like "(atk +5, 1d8+3)" from weapon lines
+    weaponLines.forEach(line => {
+      const name = line.replace(/\(.*?\)/g, '').replace(/[,;].*/, '').trim();
+      if (name) merge(name, 'weapons');
+    });
+    equipLines.forEach(line => {
+      const name = line.replace(/\(.*?\)/g, '').replace(/[,;].*/, '').trim();
+      if (name) merge(name, 'misc');
+    });
+
+    await db.collection('campaigns').doc(campaignId).collection('characters').doc(_myCharSlot).update({ inventory: updated });
+    _myInventory = updated;
+    renderInventory();
+    if (status) status.textContent = `Imported ${added} item${added !== 1 ? 's' : ''}!`;
+    setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+  } catch(e) {
+    if (status) status.textContent = 'Error: ' + e.message;
+  }
 }
 
 // ─── DM VIEW PLAYER INVENTORY ────────────────────────────────────
