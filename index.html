@@ -1739,6 +1739,7 @@ async function loadLandEntries(landId, type) {
         const itemRows = items.map((it, i) => `
           <div class="shop-item-row">
             <span class="shop-item-name">${escHtml(it.name||'?')}</span>
+            ${it.cost ? `<span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);opacity:0.85;">${escHtml(String(it.cost))} gp</span>` : ''}
             ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},-1)">−</button>` : ''}
             <span class="shop-item-qty">×${escHtml(String(it.qty||1))}</span>
             ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},1)">+</button>
@@ -1747,6 +1748,7 @@ async function loadLandEntries(landId, type) {
         const addItemForm = _isDM ? `
           <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;">
             <div class="lands-field" style="flex:2;margin:0;"><label>Item Name</label><input id="sitem-name-${sid}" type="text" placeholder="e.g. Longsword"></div>
+            <div class="lands-field" style="flex:1;margin:0;"><label>Cost (gp)</label><input id="sitem-cost-${sid}" type="text" placeholder="e.g. 15"></div>
             <div class="lands-field" style="flex:1;margin:0;"><label>Qty</label><input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1"></div>
             <button class="lands-save-btn" style="margin:0;padding:6px 12px;" onclick="addShopItem('${escHtml(landId)}','${sid}')">Add</button>
           </div>` : '';
@@ -1802,14 +1804,19 @@ function toggleShop(sid) {
 
 async function addShopItem(landId, shopId) {
   const nameEl = document.getElementById('sitem-name-' + shopId);
+  const costEl = document.getElementById('sitem-cost-' + shopId);
   const qtyEl  = document.getElementById('sitem-qty-' + shopId);
   const name = nameEl ? nameEl.value.trim() : '';
   if (!name) { alert('Item name required.'); return; }
+  const cost = costEl ? costEl.value.trim() : '';
   const qty = parseInt(qtyEl ? qtyEl.value : '1') || 1;
   try {
     const ref = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
-    await ref.update({ items: firebase.firestore.FieldValue.arrayUnion({ name, qty }) });
+    const item = { name, qty };
+    if (cost) item.cost = cost;
+    await ref.update({ items: firebase.firestore.FieldValue.arrayUnion(item) });
     if (nameEl) nameEl.value = '';
+    if (costEl) costEl.value = '';
     if (qtyEl) qtyEl.value = '1';
     await loadLandEntries(landId, 'shops');
     // reopen the shop that was just edited
