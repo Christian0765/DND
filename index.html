@@ -641,7 +641,7 @@
   <button class="nav-btn" id="lands-btn" onclick="toggleLandsSection()">📖 Encyclopedia</button>
   <a class="nav-btn" id="combat-link" href="#" style="display:none;">⚔ Combat Tracker</a>
   <button class="nav-btn" id="ann-tab-btn" onclick="toggleAnnouncementsTab()">📋 Announcements</button>
-  <button class="nav-btn" id="announce-btn" onclick="toggleAnnouncePanel()" style="display:none;">📢 Announce</button>
+  <button class="nav-btn" id="announce-btn" onclick="toggleAnnouncePanel()" style="display:none;">📢 Events</button>
   <button class="nav-btn" id="ann-view-btn" onclick="reopenAnnouncement()" style="display:none;">👁 View</button>
 </div>
 
@@ -668,7 +668,17 @@
 <!-- DM IN-GAME ANNOUNCE PANEL -->
 <div id="announce-panel" style="display:none;max-width:820px;margin:0 auto 32px;">
   <div style="background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);box-shadow:0 0 0 3px #080604,0 8px 30px rgba(0,0,0,0.8);border-radius:3px;padding:24px 28px;">
-    <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;letter-spacing:0.05em;">📢 In-Game Announcement</div>
+    <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;letter-spacing:0.05em;">📢 Events</div>
+    <!-- Active event indicator (shown when an event is live) -->
+    <div id="ann-active-event" style="display:none;background:rgba(154,112,0,0.12);border:1px solid var(--gold);border-radius:3px;padding:10px 14px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);margin-bottom:4px;">● Active Event</div>
+          <div id="ann-active-preview" style="font-family:'Crimson Text',serif;font-size:0.85rem;color:var(--parchment-dark);"></div>
+        </div>
+        <button class="dm-btn danger" onclick="clearAnnouncement()" style="flex-shrink:0;padding:5px 14px;font-size:0.55rem;white-space:nowrap;">End Event</button>
+      </div>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;">
       <button id="ann-tab-text" class="dm-btn ann-tab-btn active" onclick="switchAnnounceMode('text')">✍ Text</button>
       <button id="ann-tab-image" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('image')">🖼 Image</button>
@@ -1078,6 +1088,8 @@ firebase.auth().onAuthStateChanged(async user => {
 
     // Load initial session notes (visible to all)
     loadSessionNotes(_campaignData.sessionNotes || []);
+    // Seed active event display for DM on page load
+    if (_isDM) renderDMActiveEvent(_campaignData.announcement && _campaignData.announcement.active ? _campaignData.announcement : null);
 
     // Determine my slot
     const players = _campaignData.players || {};
@@ -1099,13 +1111,14 @@ firebase.auth().onAuthStateChanged(async user => {
       loadSessionNotes(data.sessionNotes || []);
       const ann = data.announcement;
       if (!ann || !ann.active) {
+        _currentAnnouncement = null;
+        if (_isDM) { renderDMActiveEvent(null); return; }
         document.getElementById('ann-modal-overlay').classList.remove('open');
         document.getElementById('ann-view-btn').style.display = 'none';
-        _currentAnnouncement = null;
         return;
       }
       _currentAnnouncement = ann;
-      if (_isDM) return;
+      if (_isDM) { renderDMActiveEvent(ann); return; }
       const sentAt = ann.sentAt ? ann.sentAt.toMillis() : 0;
       if (sentAt !== _shownAnnouncementAt) {
         _shownAnnouncementAt = sentAt;
@@ -2572,6 +2585,28 @@ function readAnnounceImage(f) {
     if (prev) { prev.src = e.target.result; prev.style.display = 'block'; }
   };
   reader.readAsDataURL(f);
+}
+
+// ─── DM ACTIVE EVENT DISPLAY ────────────────────────────────────
+function renderDMActiveEvent(ann) {
+  const container = document.getElementById('ann-active-event');
+  const preview = document.getElementById('ann-active-preview');
+  if (!container) return;
+  if (!ann) { container.style.display = 'none'; return; }
+  container.style.display = '';
+  const typeLabel = { text: '✍ Text', image: '🖼 Image', npc: '👤 NPC', shop: '🎪 Event' }[ann.type] || ann.type;
+  let detail = '';
+  if (ann.type === 'text') {
+    const t = ann.text || '';
+    detail = escHtml(t.length > 70 ? t.slice(0, 70) + '…' : t);
+  } else if (ann.type === 'image') {
+    detail = ann.text ? escHtml(ann.text) : 'No caption';
+  } else if (ann.type === 'npc') {
+    detail = escHtml((ann.npcData && ann.npcData.name) || 'Unknown NPC');
+  } else if (ann.type === 'shop') {
+    detail = escHtml((ann.shopData && ann.shopData.name) || 'Unknown');
+  }
+  preview.innerHTML = `<span style="color:var(--gold-light);font-size:0.78rem;">${typeLabel}</span><span style="color:var(--border-light);margin:0 5px;">—</span>${detail}`;
 }
 
 // ─── PLAYER-SIDE ANNOUNCEMENT DISPLAY ───────────────────────────
