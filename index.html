@@ -2362,6 +2362,11 @@ async function addSessionNote() {
     input.value = '';
     status.textContent = 'Posted!';
     setTimeout(() => { status.textContent = ''; }, 2500);
+    // Mark the new note as seen immediately so DM doesn't get their own notification dot
+    const seenKey = 'dnd-seen-notes-' + campaignId;
+    const seen = JSON.parse(localStorage.getItem(seenKey) || '[]');
+    if (!seen.includes(id)) { seen.push(id); localStorage.setItem(seenKey, JSON.stringify(seen)); }
+    updateSessionNoteDot();
   } catch(e) {
     status.textContent = 'Error: ' + e.message;
   }
