@@ -449,6 +449,119 @@
   }
   .upload-drop-hint { font-size: 0.48rem; opacity: 0.6; margin-top: 3px; display: block; }
 
+  /* CHARACTER CREATION MODE SELECTOR */
+  .char-mode-cards { display: flex; gap: 16px; margin: 20px 0 4px; }
+  .char-mode-card {
+    flex: 1;
+    border: 2px solid var(--border-light);
+    border-radius: 4px;
+    padding: 28px 16px 22px;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(255,255,255,0.3);
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .char-mode-card:hover { background: rgba(154,112,0,0.1); border-color: var(--gold); box-shadow: 0 2px 12px rgba(154,112,0,0.18); }
+  .char-mode-icon { font-size: 2.4rem; margin-bottom: 10px; }
+  .char-mode-label { font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 700; color: var(--ink); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .char-mode-desc { font-size: 0.8rem; color: var(--ink-light); line-height: 1.45; }
+  .char-mode-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .char-mode-nav-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    background: none;
+    border: 1px solid var(--border-light);
+    color: var(--ink-light);
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .char-mode-nav-btn:hover { color: var(--ink); border-color: var(--border); }
+  .ai-steps { list-style: none; margin: 0 0 16px; padding: 0; }
+  .ai-steps li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .ai-step-num {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    background: rgba(154,112,0,0.12);
+    border: 1px solid var(--border-light);
+    border-radius: 50%;
+    width: 26px; height: 26px; min-width: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .ai-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    background: rgba(154,112,0,0.12);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    padding: 10px 22px;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+    margin-top: 8px;
+  }
+  .ai-download-btn:hover { background: rgba(154,112,0,0.24); border-color: var(--gold-light); }
+  .ai-prompt-box {
+    background: rgba(0,0,0,0.06);
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    margin-top: 8px;
+    line-height: 1.6;
+    word-break: break-word;
+    font-style: italic;
+  }
+  .char-import-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--border-light);
+    margin-bottom: 16px;
+    cursor: pointer;
+    position: relative;
+    border: 1px dashed var(--border-light);
+    padding: 6px 14px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.2);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .char-import-mini:hover { color: var(--ink); border-color: var(--border); }
+  .char-import-mini input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
   /* SUBMIT */
   .modal-submit-row {
     margin-top: 20px;
@@ -1058,87 +1171,148 @@
   <div class="modal-box">
     <button class="modal-close" onclick="closeCreateModal()">✕ Close</button>
     <div class="modal-title">Create Your Character</div>
-    <div class="modal-sub">Fill in your details, then submit for DM approval</div>
 
-    <!-- UPLOAD EXISTING SHEET -->
-    <div class="form-section-title">Import Existing Sheet (Optional)</div>
-    <div class="upload-drop" id="sheet-upload-drop"
-         ondragover="event.preventDefault();this.classList.add('drag-active')"
-         ondragleave="this.classList.remove('drag-active')"
-         ondrop="handleSheetDrop(event)">
-      <input type="file" accept=".html" onchange="handleSheetFile(event.target.files[0])">
-      <div class="upload-drop-icon">📄</div>
-      <div class="upload-drop-label">Drop your .html character sheet here to auto-fill<span class="upload-drop-hint">or click to browse — fills all matching fields automatically</span></div>
-    </div>
-
-    <!-- IDENTITY -->
-    <div class="form-section-title">Identity</div>
-    <div class="form-grid">
-      <div class="form-field"><label>Character Name *</label><input type="text" id="cf-name" placeholder="e.g. Dracula"></div>
-      <div class="form-field"><label>Player Name</label><input type="text" id="cf-player" placeholder="Your name"></div>
-      <div class="form-field"><label>Class &amp; Level</label><input type="text" id="cf-class" placeholder="e.g. Fighter 3"></div>
-      <div class="form-field"><label>Race</label><input type="text" id="cf-race" placeholder="e.g. Dragonborn"></div>
-      <div class="form-field"><label>Background</label><input type="text" id="cf-bg" placeholder="e.g. Soldier"></div>
-      <div class="form-field"><label>Alignment</label><input type="text" id="cf-align" placeholder="e.g. Chaotic Good"></div>
-    </div>
-
-    <!-- COMBAT STATS -->
-    <div class="form-section-title">Combat Stats</div>
-    <div class="form-grid three">
-      <div class="form-field"><label>Armor Class</label><input type="text" id="cf-ac" placeholder="e.g. 14"></div>
-      <div class="form-field"><label>Initiative</label><input type="text" id="cf-init" placeholder="e.g. +1"></div>
-      <div class="form-field"><label>Speed (ft)</label><input type="text" id="cf-speed" placeholder="e.g. 30"></div>
-      <div class="form-field"><label>Max HP</label><input type="text" id="cf-maxhp" placeholder="e.g. 22"></div>
-      <div class="form-field"><label>Current HP</label><input type="text" id="cf-curhp" placeholder="e.g. 22"></div>
-      <div class="form-field"><label>Hit Dice</label><input type="text" id="cf-hd" placeholder="e.g. 3d10"></div>
-      <div class="form-field"><label>Prof. Bonus</label><input type="text" id="cf-prof" placeholder="e.g. +2"></div>
-      <div class="form-field"><label>Passive Perception</label><input type="text" id="cf-pp" placeholder="e.g. 10"></div>
-      <div class="form-field"><label>Gold (GP)</label><input type="text" id="cf-gold" placeholder="e.g. 50"></div>
-    </div>
-
-    <!-- ABILITY SCORES -->
-    <div class="form-section-title">Ability Scores</div>
-    <div class="form-grid three">
-      <div>
-        <div class="form-field"><label>Strength</label><input type="text" id="cf-str" placeholder="10"></div>
-        <div class="form-field" style="margin-top:5px;"><label>STR Mod</label><input type="text" id="cf-strmod" placeholder="+0"></div>
-      </div>
-      <div>
-        <div class="form-field"><label>Dexterity</label><input type="text" id="cf-dex" placeholder="10"></div>
-        <div class="form-field" style="margin-top:5px;"><label>DEX Mod</label><input type="text" id="cf-dexmod" placeholder="+0"></div>
-      </div>
-      <div>
-        <div class="form-field"><label>Constitution</label><input type="text" id="cf-con" placeholder="10"></div>
-        <div class="form-field" style="margin-top:5px;"><label>CON Mod</label><input type="text" id="cf-conmod" placeholder="+0"></div>
-      </div>
-      <div>
-        <div class="form-field"><label>Intelligence</label><input type="text" id="cf-int" placeholder="10"></div>
-        <div class="form-field" style="margin-top:5px;"><label>INT Mod</label><input type="text" id="cf-intmod" placeholder="+0"></div>
-      </div>
-      <div>
-        <div class="form-field"><label>Wisdom</label><input type="text" id="cf-wis" placeholder="10"></div>
-        <div class="form-field" style="margin-top:5px;"><label>WIS Mod</label><input type="text" id="cf-wismod" placeholder="+0"></div>
-      </div>
-      <div>
-        <div class="form-field"><label>Charisma</label><input type="text" id="cf-cha" placeholder="10"></div>
-        <div class="form-field" style="margin-top:5px;"><label>CHA Mod</label><input type="text" id="cf-chamod" placeholder="+0"></div>
+    <!-- ── SCREEN 1: MODE CHOICE ── -->
+    <div id="char-mode-choice">
+      <div class="modal-sub">How would you like to create your character?</div>
+      <div class="char-mode-cards">
+        <div class="char-mode-card" onclick="switchCharMode('manual')">
+          <div class="char-mode-icon">✍️</div>
+          <div class="char-mode-label">Fill Manually</div>
+          <div class="char-mode-desc">Type in your character details using the form fields</div>
+        </div>
+        <div class="char-mode-card" onclick="switchCharMode('ai')">
+          <div class="char-mode-icon">🤖</div>
+          <div class="char-mode-label">Use AI</div>
+          <div class="char-mode-desc">Download a template, have an AI fill it, then upload it here</div>
+        </div>
       </div>
     </div>
 
-    <!-- PERSONALITY -->
-    <div class="form-section-title">Personality</div>
-    <div class="form-grid">
-      <div class="form-field"><label>Personality Traits</label><textarea id="cf-traits" placeholder="How your character acts..."></textarea></div>
-      <div class="form-field"><label>Ideals</label><textarea id="cf-ideals" placeholder="What drives your character..."></textarea></div>
-      <div class="form-field"><label>Bonds</label><textarea id="cf-bonds" placeholder="Connections to the world..."></textarea></div>
-      <div class="form-field"><label>Flaws</label><textarea id="cf-flaws" placeholder="Weaknesses or vices..."></textarea></div>
-      <div class="form-field full"><label>Notes</label><textarea id="cf-notes" placeholder="Any extra notes..."></textarea></div>
+    <!-- ── SCREEN 2: AI MODE ── -->
+    <div id="char-mode-ai" style="display:none;">
+      <div class="char-mode-nav">
+        <button class="char-mode-nav-btn" onclick="switchCharMode('choice')">← Back</button>
+        <button class="char-mode-nav-btn" onclick="switchCharMode('manual')">Fill Manually →</button>
+      </div>
+      <ol class="ai-steps">
+        <li>
+          <span class="ai-step-num">1</span>
+          <div>
+            <strong>Download the character sheet template</strong><br>
+            <a class="ai-download-btn" href="example-sheet.html" download="example-sheet.html">⬇ Download example-sheet.html</a>
+          </div>
+        </li>
+        <li>
+          <span class="ai-step-num">2</span>
+          <div>
+            <strong>Send it to an AI assistant</strong><br>
+            Open the downloaded file in a text editor, copy all the contents, and paste it into any AI (Claude, ChatGPT, etc.) with a prompt like:
+            <div class="ai-prompt-box">"Here is a D&D character sheet template. Please fill it in for [describe your character — name, class, race, backstory]. Fill all the f-* fields and update the inventory JSON at the bottom with appropriate starting equipment."</div>
+          </div>
+        </li>
+        <li>
+          <span class="ai-step-num">3</span>
+          <div>
+            <strong>Save the AI's response and upload it here</strong><br>
+            Copy the AI's completed HTML, save it as a .html file, then drop it below — fields and inventory will be imported automatically.
+            <div class="upload-drop" id="sheet-upload-drop"
+                 ondragover="event.preventDefault();this.classList.add('drag-active')"
+                 ondragleave="this.classList.remove('drag-active')"
+                 ondrop="handleSheetDrop(event)">
+              <input type="file" accept=".html" onchange="handleSheetFile(event.target.files[0])">
+              <div class="upload-drop-icon">📄</div>
+              <div class="upload-drop-label">Drop your filled .html sheet here<span class="upload-drop-hint">or click to browse — auto-fills all fields and queues your inventory</span></div>
+            </div>
+          </div>
+        </li>
+      </ol>
     </div>
 
-    <div class="modal-submit-row">
-      <button class="modal-btn" id="submit-char-btn" onclick="submitCharacter()">Submit for Approval</button>
-      <span class="modal-msg" id="submit-msg"></span>
+    <!-- ── SCREEN 3: MANUAL MODE ── -->
+    <div id="char-mode-manual" style="display:none;">
+      <div class="char-mode-nav">
+        <button class="char-mode-nav-btn" onclick="switchCharMode('choice')">← Back</button>
+        <button class="char-mode-nav-btn" onclick="switchCharMode('ai')">🤖 Use AI instead</button>
+      </div>
+
+      <!-- Quick import for players who already have a filled sheet -->
+      <label class="char-import-mini">
+        <input type="file" accept=".html" onchange="handleSheetFile(event.target.files[0]);this.value=''">
+        📄 Already have a filled sheet? Import it
+      </label>
+      <span id="char-import-status" style="font-family:'Cinzel',serif;font-size:0.6rem;color:var(--green);margin-left:8px;letter-spacing:0.06em;"></span>
+
+      <!-- IDENTITY -->
+      <div class="form-section-title">Identity</div>
+      <div class="form-grid">
+        <div class="form-field"><label>Character Name *</label><input type="text" id="cf-name" placeholder="e.g. Dracula"></div>
+        <div class="form-field"><label>Player Name</label><input type="text" id="cf-player" placeholder="Your name"></div>
+        <div class="form-field"><label>Class &amp; Level</label><input type="text" id="cf-class" placeholder="e.g. Fighter 3"></div>
+        <div class="form-field"><label>Race</label><input type="text" id="cf-race" placeholder="e.g. Dragonborn"></div>
+        <div class="form-field"><label>Background</label><input type="text" id="cf-bg" placeholder="e.g. Soldier"></div>
+        <div class="form-field"><label>Alignment</label><input type="text" id="cf-align" placeholder="e.g. Chaotic Good"></div>
+      </div>
+
+      <!-- COMBAT STATS -->
+      <div class="form-section-title">Combat Stats</div>
+      <div class="form-grid three">
+        <div class="form-field"><label>Armor Class</label><input type="text" id="cf-ac" placeholder="e.g. 14"></div>
+        <div class="form-field"><label>Initiative</label><input type="text" id="cf-init" placeholder="e.g. +1"></div>
+        <div class="form-field"><label>Speed (ft)</label><input type="text" id="cf-speed" placeholder="e.g. 30"></div>
+        <div class="form-field"><label>Max HP</label><input type="text" id="cf-maxhp" placeholder="e.g. 22"></div>
+        <div class="form-field"><label>Current HP</label><input type="text" id="cf-curhp" placeholder="e.g. 22"></div>
+        <div class="form-field"><label>Hit Dice</label><input type="text" id="cf-hd" placeholder="e.g. 3d10"></div>
+        <div class="form-field"><label>Prof. Bonus</label><input type="text" id="cf-prof" placeholder="e.g. +2"></div>
+        <div class="form-field"><label>Passive Perception</label><input type="text" id="cf-pp" placeholder="e.g. 10"></div>
+        <div class="form-field"><label>Gold (GP)</label><input type="text" id="cf-gold" placeholder="e.g. 50"></div>
+      </div>
+
+      <!-- ABILITY SCORES -->
+      <div class="form-section-title">Ability Scores</div>
+      <div class="form-grid three">
+        <div>
+          <div class="form-field"><label>Strength</label><input type="text" id="cf-str" placeholder="10"></div>
+          <div class="form-field" style="margin-top:5px;"><label>STR Mod</label><input type="text" id="cf-strmod" placeholder="+0"></div>
+        </div>
+        <div>
+          <div class="form-field"><label>Dexterity</label><input type="text" id="cf-dex" placeholder="10"></div>
+          <div class="form-field" style="margin-top:5px;"><label>DEX Mod</label><input type="text" id="cf-dexmod" placeholder="+0"></div>
+        </div>
+        <div>
+          <div class="form-field"><label>Constitution</label><input type="text" id="cf-con" placeholder="10"></div>
+          <div class="form-field" style="margin-top:5px;"><label>CON Mod</label><input type="text" id="cf-conmod" placeholder="+0"></div>
+        </div>
+        <div>
+          <div class="form-field"><label>Intelligence</label><input type="text" id="cf-int" placeholder="10"></div>
+          <div class="form-field" style="margin-top:5px;"><label>INT Mod</label><input type="text" id="cf-intmod" placeholder="+0"></div>
+        </div>
+        <div>
+          <div class="form-field"><label>Wisdom</label><input type="text" id="cf-wis" placeholder="10"></div>
+          <div class="form-field" style="margin-top:5px;"><label>WIS Mod</label><input type="text" id="cf-wismod" placeholder="+0"></div>
+        </div>
+        <div>
+          <div class="form-field"><label>Charisma</label><input type="text" id="cf-cha" placeholder="10"></div>
+          <div class="form-field" style="margin-top:5px;"><label>CHA Mod</label><input type="text" id="cf-chamod" placeholder="+0"></div>
+        </div>
+      </div>
+
+      <!-- PERSONALITY -->
+      <div class="form-section-title">Personality</div>
+      <div class="form-grid">
+        <div class="form-field"><label>Personality Traits</label><textarea id="cf-traits" placeholder="How your character acts..."></textarea></div>
+        <div class="form-field"><label>Ideals</label><textarea id="cf-ideals" placeholder="What drives your character..."></textarea></div>
+        <div class="form-field"><label>Bonds</label><textarea id="cf-bonds" placeholder="Connections to the world..."></textarea></div>
+        <div class="form-field"><label>Flaws</label><textarea id="cf-flaws" placeholder="Weaknesses or vices..."></textarea></div>
+        <div class="form-field full"><label>Notes</label><textarea id="cf-notes" placeholder="Any extra notes..."></textarea></div>
+      </div>
+
+      <div class="modal-submit-row">
+        <button class="modal-btn" id="submit-char-btn" onclick="submitCharacter()">Submit for Approval</button>
+        <span class="modal-msg" id="submit-msg"></span>
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -1548,10 +1722,16 @@ async function rejectCharacter(uid, btn) {
 }
 
 // ─── CREATE CHARACTER MODAL ───────────────────────────────────
+function switchCharMode(mode) {
+  document.getElementById('char-mode-choice').style.display  = mode === 'choice'  ? '' : 'none';
+  document.getElementById('char-mode-ai').style.display      = mode === 'ai'      ? '' : 'none';
+  document.getElementById('char-mode-manual').style.display  = mode === 'manual'  ? '' : 'none';
+}
 function openCreateModal() {
   document.getElementById('create-modal').classList.add('open');
   document.getElementById('submit-msg').textContent = '';
   document.getElementById('submit-msg').className = 'modal-msg';
+  switchCharMode('choice');
 }
 function closeCreateModal() {
   document.getElementById('create-modal').classList.remove('open');
@@ -1631,6 +1811,17 @@ function handleSheetFile(file) {
             drop.querySelector('.upload-drop-label').textContent += ` · ${parsed.length} inventory item${parsed.length !== 1 ? 's' : ''} queued`;
           }
         } catch(e) { /* malformed JSON — silently ignore */ }
+      }
+
+      // If coming from AI mode, switch to manual so the player can review and submit
+      if (document.getElementById('char-mode-ai')?.style.display !== 'none') {
+        switchCharMode('manual');
+      }
+      const statusEl = document.getElementById('char-import-status');
+      if (statusEl) {
+        const invNote = _pendingInventory ? ` + ${_pendingInventory.length} inventory items` : '';
+        statusEl.textContent = `✓ ${filled} fields imported${invNote}`;
+        setTimeout(() => { statusEl.textContent = ''; }, 5000);
       }
     } catch(err) {
       console.error('Parse error:', err);
