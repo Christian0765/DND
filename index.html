@@ -2474,28 +2474,54 @@ async function loadLandEntries(landId, type) {
             : (it.cost && _myCharSlot && _myCharApproved ? `<button class="shop-buy-btn" onclick="buyShopItem('${escHtml(landId)}','${sid}',${i},'${escHtml(String(it.cost))}',this)">Buy</button>` : '')}
           </div>`).join('');
         const addItemForm = _isDM ? `
-          <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end;flex-wrap:wrap;">
-            <div class="lands-field" style="flex:2;min-width:120px;margin:0;"><label>Item Name</label><input id="sitem-name-${sid}" type="text" placeholder="e.g. Longsword"></div>
-            <div class="lands-field" style="flex:1;min-width:70px;margin:0;"><label>Cost (gp)</label><input id="sitem-cost-${sid}" type="text" placeholder="e.g. 15"></div>
-            <div class="lands-field" style="flex:1;min-width:55px;margin:0;"><label>Qty</label><input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1"></div>
-            <button class="lands-save-btn" style="margin:0;padding:6px 10px;background:rgba(154,112,0,0.1);border-color:var(--gold);color:var(--gold);flex-shrink:0;" onclick="toggleCatalogPicker('${sid}')" title="Pick from catalog">📖</button>
-            <button class="lands-save-btn" style="margin:0;padding:6px 12px;flex-shrink:0;" onclick="addShopItem('${escHtml(landId)}','${sid}')">Add</button>
-          </div>
-          <div id="catalog-picker-${sid}" class="catalog-picker" style="display:none;"></div>
-          <div style="margin-top:5px;font-size:0.72rem;color:var(--border-light);">
-            <label style="cursor:pointer;display:flex;align-items:center;gap:6px;">
-              <input type="checkbox" id="sitem-save-cat-${sid}" onchange="document.getElementById('sitem-catsel-${sid}').style.display=this.checked?'inline-block':'none'" style="cursor:pointer;accent-color:var(--gold);">
-              <span>💾 Save to catalog as</span>
-              <select id="sitem-catsel-${sid}" style="display:none;font-family:'Crimson Text',serif;font-size:0.72rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:2px 6px;outline:none;">
-                <option value="weapons">⚔️ Weapons</option>
-                <option value="armor">🛡️ Armor</option>
-                <option value="resources">🌿 Resources</option>
-                <option value="magical">✨ Magical</option>
-                <option value="healing">💊 Healing</option>
-                <option value="food">🍖 Food</option>
-                <option value="misc" selected>📦 Misc</option>
-              </select>
-            </label>
+          <div style="margin-top:10px;border-top:1px solid rgba(122,90,40,0.25);padding-top:10px;">
+            <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px;">
+              <div class="lands-field" style="flex:3;min-width:130px;margin:0;"><label>Item Name *</label>
+                <input id="sitem-name-${sid}" type="text" placeholder="e.g. Longsword"
+                  oninput="filterCatalogPicker('${sid}')">
+              </div>
+              <div class="lands-field" style="flex:1;min-width:50px;margin:0;"><label>Qty</label>
+                <input id="sitem-qty-${sid}" type="number" min="1" value="1" placeholder="1">
+              </div>
+              <button class="lands-save-btn" style="margin:0;padding:6px 10px;background:rgba(154,112,0,0.1);border-color:var(--gold);color:var(--gold);flex-shrink:0;" onclick="toggleCatalogPicker('${sid}')" title="Browse catalog">📖 Catalog</button>
+            </div>
+            <div id="catalog-picker-${sid}" class="catalog-picker" style="display:none;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+              <div class="lands-field" style="margin:0;"><label>Category</label>
+                <select id="sitem-cat-${sid}" style="font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;width:100%;outline:none;">
+                  <option value="weapons">⚔️ Weapons</option>
+                  <option value="armor">🛡️ Armor</option>
+                  <option value="resources">🌿 Resources</option>
+                  <option value="magical">✨ Magical</option>
+                  <option value="healing">💊 Healing</option>
+                  <option value="food">🍖 Food</option>
+                  <option value="misc" selected>📦 Misc</option>
+                </select>
+              </div>
+              <div class="lands-field" style="margin:0;"><label>Rarity</label>
+                <select id="sitem-rarity-${sid}" style="font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;width:100%;outline:none;">
+                  <option value="common" selected>Common</option>
+                  <option value="uncommon">Uncommon</option>
+                  <option value="rare">Rare</option>
+                  <option value="very_rare">Very Rare</option>
+                  <option value="legendary">Legendary</option>
+                </select>
+              </div>
+              <div class="lands-field" style="margin:0;"><label>Cost (gp)</label>
+                <input id="sitem-cost-${sid}" type="number" min="0" value="0" placeholder="0">
+              </div>
+              <div class="lands-field" style="margin:0;"><label>Weight (lbs)</label>
+                <input id="sitem-weight-${sid}" type="number" min="0" step="0.5" placeholder="opt.">
+              </div>
+            </div>
+            <div class="lands-field" style="margin:0 0 8px;"><label>Description</label>
+              <textarea id="sitem-desc-${sid}" rows="2" placeholder="Flavor text, mechanics, lore…"
+                style="font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;width:100%;outline:none;resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button class="lands-save-btn" style="margin:0;padding:6px 14px;" onclick="addShopItem('${escHtml(landId)}','${sid}')">➕ Add to Shop</button>
+              <span style="font-size:0.62rem;color:var(--border-light);font-style:italic;">Also saves to Items catalog</span>
+            </div>
           </div>` : '';
         return `<div class="shop-entry${_isDM && !isPublished ? ' unpublished' : ''}" id="shop-${sid}">
           <div class="shop-entry-header" onclick="toggleShop('${sid}')">
@@ -2552,41 +2578,56 @@ function toggleShop(sid) {
 }
 
 async function addShopItem(landId, shopId) {
-  const nameEl = document.getElementById('sitem-name-' + shopId);
-  const costEl = document.getElementById('sitem-cost-' + shopId);
-  const qtyEl  = document.getElementById('sitem-qty-' + shopId);
+  const nameEl   = document.getElementById('sitem-name-'   + shopId);
+  const costEl   = document.getElementById('sitem-cost-'   + shopId);
+  const qtyEl    = document.getElementById('sitem-qty-'    + shopId);
+  const catEl    = document.getElementById('sitem-cat-'    + shopId);
+  const rarityEl = document.getElementById('sitem-rarity-' + shopId);
+  const weightEl = document.getElementById('sitem-weight-' + shopId);
+  const descEl   = document.getElementById('sitem-desc-'   + shopId);
+
   const name = nameEl ? nameEl.value.trim() : '';
   if (!name) { alert('Item name required.'); return; }
-  const cost = costEl ? costEl.value.trim() : '';
-  const qty = parseInt(qtyEl ? qtyEl.value : '1') || 1;
-  try {
-    const ref = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
-    const item = { name, qty };
-    if (cost) item.cost = cost;
-    await ref.update({ items: firebase.firestore.FieldValue.arrayUnion(item) });
+  const cost     = costEl   ? (parseFloat(costEl.value)   || 0) : 0;
+  const qty      = qtyEl    ? (parseInt(qtyEl.value)      || 1) : 1;
+  const category = catEl    ? catEl.value                       : 'misc';
+  const rarity   = rarityEl ? rarityEl.value                    : 'common';
+  const weight   = weightEl ? (parseFloat(weightEl.value) || 0) : 0;
+  const description = descEl ? descEl.value.trim()              : '';
 
-    // Optionally also save to the item catalog
-    const saveCatEl = document.getElementById('sitem-save-cat-' + shopId);
-    if (saveCatEl && saveCatEl.checked) {
-      const catSelEl = document.getElementById('sitem-catsel-' + shopId);
-      const category = catSelEl ? catSelEl.value : 'misc';
+  try {
+    // Add to shop stock
+    const shopRef = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
+    const shopItem = { name, qty };
+    if (cost) shopItem.cost = cost;
+    await shopRef.update({ items: firebase.firestore.FieldValue.arrayUnion(shopItem) });
+
+    // Always save to items catalog — skip if name already exists
+    const existing = await db.collection('campaigns').doc(campaignId).collection('items')
+      .where('name', '==', name).limit(1).get();
+    if (existing.empty) {
       await db.collection('campaigns').doc(campaignId).collection('items').add({
-        name, category, rarity: 'common', cost: parseFloat(cost) || 0,
-        description: '', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        name, category, rarity,
+        cost:        cost || 0,
+        weight:      weight || 0,
+        description,
+        createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
       });
       _itemsLoaded = false;
-      saveCatEl.checked = false;
-      if (catSelEl) catSelEl.style.display = 'none';
     }
 
-    if (nameEl) nameEl.value = '';
-    if (costEl) costEl.value = '';
-    if (qtyEl) qtyEl.value = '1';
+    // Clear form
+    if (nameEl)   nameEl.value = '';
+    if (costEl)   costEl.value = '0';
+    if (qtyEl)    qtyEl.value  = '1';
+    if (weightEl) weightEl.value = '';
+    if (descEl)   descEl.value  = '';
+
     await loadLandEntries(landId, 'shops');
     const body = document.getElementById('shopbody-' + shopId);
     const chev = document.getElementById('shopchev-' + shopId);
-    if (body) { body.classList.add('open'); }
-    if (chev) { chev.classList.add('open'); }
+    if (body) body.classList.add('open');
+    if (chev) chev.classList.add('open');
   } catch(e) { alert('Failed: ' + e.message); }
 }
 
@@ -3264,29 +3305,68 @@ async function toggleCatalogPicker(shopId) {
   picker.innerHTML = '<div style="padding:8px 10px;font-style:italic;color:var(--border-light);font-size:0.75rem;">Loading…</div>';
   picker.style.display = '';
   await ensureItemsLoaded();
+  // Pre-populate search from whatever is already typed in the name field
+  const nameEl = document.getElementById('sitem-name-' + shopId);
+  renderCatalogPicker(shopId, nameEl ? nameEl.value : '');
+}
+
+function renderCatalogPicker(shopId, query) {
+  const picker = document.getElementById('catalog-picker-' + shopId);
+  if (!picker || picker.style.display === 'none') return;
   if (_itemsCache.length === 0) {
     picker.innerHTML = '<div style="padding:8px 10px;font-style:italic;color:var(--border-light);font-size:0.75rem;">No catalog items yet. Add some in the 🗡️ Items tab first.</div>';
     return;
   }
-  picker.innerHTML = _itemsCache.map(item => {
-    const d = item.data;
-    const cat = _itemCatMeta[d.category] || _itemCatMeta.misc;
-    const costStr = d.cost > 0 ? d.cost + ' gp' : '';
-    const safeName = (d.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    const safeCost = String(d.cost || '').replace(/'/g,"\\'");
-    return `<div class="catalog-picker-item" onclick="pickCatalogItem('${escHtml(shopId)}','${safeName}','${safeCost}')">
-      <span class="catalog-picker-name">${escHtml(d.name || '—')}</span>
-      <span class="catalog-picker-cat">${cat.icon} ${escHtml(cat.label)}</span>
-      ${costStr ? `<span class="catalog-picker-cost">${escHtml(costStr)}</span>` : ''}
-    </div>`;
-  }).join('');
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? _itemsCache.filter(i => (i.data.name || '').toLowerCase().includes(q)) : _itemsCache;
+  const searchRow = `<div style="padding:5px 7px;border-bottom:1px solid rgba(122,90,40,0.3);">
+    <input type="text" placeholder="Search catalog…" value="${escHtml(query || '')}"
+      oninput="renderCatalogPicker('${escHtml(shopId)}',this.value)"
+      style="width:100%;font-family:'Crimson Text',serif;font-size:0.8rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:4px 8px;outline:none;"
+      onclick="event.stopPropagation()">
+  </div>`;
+  const rows = filtered.length === 0
+    ? '<div style="padding:8px 10px;font-style:italic;color:var(--border-light);font-size:0.75rem;">No items match.</div>'
+    : filtered.map(item => {
+        const d = item.data;
+        const cat = _itemCatMeta[d.category] || _itemCatMeta.misc;
+        const costStr = d.cost > 0 ? d.cost + ' gp' : '';
+        const sn = (d.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const sc = String(d.cost || '').replace(/'/g,"\\'");
+        const scat = (d.category || 'misc').replace(/'/g,"\\'");
+        const srar = (d.rarity || 'common').replace(/'/g,"\\'");
+        return `<div class="catalog-picker-item" onclick="pickCatalogItem('${escHtml(shopId)}','${sn}','${sc}','${scat}','${srar}')">
+          <span class="catalog-picker-name">${escHtml(d.name || '—')}</span>
+          <span class="catalog-picker-cat">${cat.icon} ${escHtml(cat.label)}</span>
+          ${costStr ? `<span class="catalog-picker-cost">${escHtml(costStr)}</span>` : ''}
+        </div>`;
+      }).join('');
+  picker.innerHTML = searchRow + rows;
+  // Keep focus in search box if user was typing
+  if (query) {
+    const inp = picker.querySelector('input');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
 }
 
-function pickCatalogItem(shopId, name, cost) {
-  const nameEl = document.getElementById('sitem-name-' + shopId);
-  const costEl = document.getElementById('sitem-cost-' + shopId);
-  if (nameEl) nameEl.value = name;
-  if (costEl) costEl.value = cost;
+function filterCatalogPicker(shopId) {
+  // When the item name input changes, sync the catalog picker if it's open
+  const picker = document.getElementById('catalog-picker-' + shopId);
+  if (picker && picker.style.display !== 'none') {
+    const nameEl = document.getElementById('sitem-name-' + shopId);
+    renderCatalogPicker(shopId, nameEl ? nameEl.value : '');
+  }
+}
+
+function pickCatalogItem(shopId, name, cost, category, rarity) {
+  const nameEl   = document.getElementById('sitem-name-'   + shopId);
+  const costEl   = document.getElementById('sitem-cost-'   + shopId);
+  const catEl    = document.getElementById('sitem-cat-'    + shopId);
+  const rarityEl = document.getElementById('sitem-rarity-' + shopId);
+  if (nameEl)   nameEl.value   = name;
+  if (costEl)   costEl.value   = cost || '0';
+  if (catEl    && category) catEl.value    = category;
+  if (rarityEl && rarity)   rarityEl.value = rarity;
   const picker = document.getElementById('catalog-picker-' + shopId);
   if (picker) picker.style.display = 'none';
 }
