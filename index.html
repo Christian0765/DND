@@ -1208,7 +1208,9 @@
           <div>
             <strong>Send it to an AI assistant</strong><br>
             Open the downloaded file in a text editor, copy all the contents, and paste it into any AI (Claude, ChatGPT, etc.) with a prompt like:
-            <div class="ai-prompt-box">"Here is a D&D character sheet template. Please fill it in for [describe your character — name, class, race, backstory]. Fill all the f-* fields and update the inventory JSON at the bottom with appropriate starting equipment."</div>
+            <div class="ai-prompt-box">"I want to create a D&D character. Before filling out the sheet, please ask me lots of questions to build out their lore — their name, race, class, backstory, personality, motivations, secrets, relationships, fears, and history. Ask follow-up questions based on my answers to really flesh them out. Once we've explored the character fully, fill in the attached HTML template using everything we discussed. Fill all the f-* fields and update the inventory JSON at the bottom with starting equipment that fits their story."
+
+[Paste the full contents of example-sheet.html after this message]</div>
           </div>
         </li>
         <li>
@@ -1242,6 +1244,11 @@
         📄 Already have a filled sheet? Import it
       </label>
       <span id="char-import-status" style="font-family:'Cinzel',serif;font-size:0.6rem;color:var(--green);margin-left:8px;letter-spacing:0.06em;"></span>
+
+      <!-- IMPORT REPORT PANEL -->
+      <div id="import-report" style="display:none;margin-bottom:16px;border:1px solid var(--border-light);border-radius:3px;background:rgba(255,255,255,0.25);padding:12px 16px;font-size:0.82rem;line-height:1.6;">
+        <div id="import-report-content"></div>
+      </div>
 
       <!-- IDENTITY -->
       <div class="form-section-title">Identity</div>
@@ -1773,6 +1780,66 @@ const CF_MAP = {
   'f-notes':   'cf-notes',
 };
 
+// ─── SHEET IMPORT: CONSTANTS ─────────────────────────────────
+const SHEET_REQUIRED_FIELDS  = ['f-name','f-class','f-race','f-bg','f-align'];
+const SHEET_IMPORTANT_FIELDS = ['f-ac','f-maxhp','f-curhp','f-str','f-dex','f-con','f-int','f-wis','f-cha'];
+const SHEET_LONG_FIELDS      = ['f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-profs','f-features','f-backstory','f-weapons','f-equipment'];
+const SHEET_MAX_FILE_BYTES   = 512 * 1024;
+const SHEET_VALID_CATEGORIES = new Set(['weapons','armor','resources','magical','healing','food','misc']);
+const SHEET_MAX_ITEMS        = 100;
+
+function sanitizeSheetField(raw, fieldId) {
+  let val = String(raw).replace(/<[^>]*>/g, '').trim();
+  const limit = SHEET_LONG_FIELDS.includes(fieldId) ? 3000 : 120;
+  return val.length > limit ? val.slice(0, limit) : val;
+}
+
+function sanitizeSheetInventory(raw) {
+  if (!Array.isArray(raw)) return { items: [], skipped: raw ? 1 : 0 };
+  let skipped = Math.max(0, raw.length - SHEET_MAX_ITEMS);
+  const items = raw.slice(0, SHEET_MAX_ITEMS).map(item => {
+    if (!item || typeof item !== 'object') { skipped++; return null; }
+    const name = String(item.name || '').replace(/<[^>]*>/g, '').trim().slice(0, 100);
+    if (!name) { skipped++; return null; }
+    const category = SHEET_VALID_CATEGORIES.has(item.category) ? item.category : 'misc';
+    const qty  = Math.min(9999,   Math.max(1, parseInt(item.qty)    || 1));
+    const cost = Math.min(999999, Math.max(0, parseFloat(item.cost) || 0));
+    return { name, category, qty, cost };
+  }).filter(Boolean);
+  return { items, skipped };
+}
+
+function showImportReport({ blocked, reason, filled, total, missing, inventory }) {
+  const panel   = document.getElementById('import-report');
+  const content = document.getElementById('import-report-content');
+  if (!panel || !content) return;
+  if (blocked) {
+    content.innerHTML = `<span style="color:var(--red);">⛔ ${escHtml(reason)}</span>`;
+    panel.style.display = '';
+    return;
+  }
+  const missingRequired  = (missing || []).filter(f => SHEET_REQUIRED_FIELDS.includes(f));
+  const missingImportant = (missing || []).filter(f => SHEET_IMPORTANT_FIELDS.includes(f));
+  let html = `<strong style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.08em;">📋 Import Report</strong>`;
+  if (filled === 0) {
+    html += `<div style="color:var(--red);margin-top:6px;">⚠ No character fields found — make sure you're uploading a sheet downloaded from this system.</div>`;
+  } else {
+    html += `<div style="color:var(--green);margin-top:6px;">✓ ${filled} of ${total} fields filled</div>`;
+    if (missingRequired.length)  html += `<div style="color:var(--red);margin-top:4px;">⚠ Missing required: ${missingRequired.map(f=>f.replace('f-','')).join(', ')}</div>`;
+    if (missingImportant.length) html += `<div style="color:#8a6010;margin-top:4px;">○ Not filled: ${missingImportant.map(f=>f.replace('f-','')).join(', ')}</div>`;
+  }
+  if (inventory) {
+    html += `<div style="color:var(--ink-light);margin-top:4px;">🎒 ${inventory.items.length} inventory item${inventory.items.length !== 1 ? 's' : ''} queued`;
+    if (inventory.skipped) html += ` <span style="color:var(--red);">(${inventory.skipped} invalid item${inventory.skipped !== 1 ? 's' : ''} removed)</span>`;
+    html += `</div>`;
+  }
+  if (filled > 0 && !missingRequired.length) {
+    html += `<div style="color:var(--green);margin-top:6px;font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.06em;">✓ Sheet looks good — review the fields below and submit</div>`;
+  }
+  content.innerHTML = html;
+  panel.style.display = '';
+}
+
 function handleSheetDrop(event) {
   event.preventDefault();
   document.getElementById('sheet-upload-drop').classList.remove('drag-active');
@@ -1782,49 +1849,73 @@ function handleSheetDrop(event) {
 
 function handleSheetFile(file) {
   if (!file || !file.name.endsWith('.html')) return;
+
+  // File size guard
+  if (file.size > SHEET_MAX_FILE_BYTES) {
+    switchCharMode('manual');
+    showImportReport({ blocked: true, reason: `File too large (${(file.size/1024).toFixed(0)} KB). Max 512 KB.` });
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(e.target.result, 'text/html');
+
+      const allSheetIds = Object.keys(CF_MAP);
+      const missing = [];
       let filled = 0;
-      Object.entries(CF_MAP).forEach(([sheetId, formId]) => {
+
+      allSheetIds.forEach(sheetId => {
+        const formId = CF_MAP[sheetId];
         const el = doc.getElementById(sheetId);
-        if (!el) return;
-        const val = (el.value || el.textContent || '').trim();
+        if (!el) { missing.push(sheetId); return; }
+        const raw = (el.value || el.textContent || '').trim();
+        if (!raw) { missing.push(sheetId); return; }
+        const val = sanitizeSheetField(raw, sheetId);
         if (val) {
           const formEl = document.getElementById(formId);
           if (formEl) { formEl.value = val; filled++; }
+        } else {
+          missing.push(sheetId);
         }
       });
-      const drop = document.getElementById('sheet-upload-drop');
-      drop.querySelector('.upload-drop-label').textContent = `Filled ${filled} fields from ${file.name}`;
 
-      // Extract structured inventory JSON block if present
+      // Inventory — sanitize and validate
       _pendingInventory = null;
+      let invReport = null;
       const invScript = doc.getElementById('char-inventory');
       if (invScript) {
         try {
           const parsed = JSON.parse(invScript.textContent);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            _pendingInventory = parsed;
-            drop.querySelector('.upload-drop-label').textContent += ` · ${parsed.length} inventory item${parsed.length !== 1 ? 's' : ''} queued`;
+          const result = sanitizeSheetInventory(parsed);
+          if (result.items.length > 0) {
+            _pendingInventory = result.items;
+            invReport = result;
+          } else if (result.skipped > 0) {
+            invReport = result; // show "N invalid items removed" even if nothing kept
           }
         } catch(e) { /* malformed JSON — silently ignore */ }
       }
 
-      // If coming from AI mode, switch to manual so the player can review and submit
+      // Update upload drop label
+      const drop = document.getElementById('sheet-upload-drop');
+      if (drop) {
+        const invNote = _pendingInventory ? ` · ${_pendingInventory.length} inventory items` : '';
+        drop.querySelector('.upload-drop-label').textContent = `Filled ${filled} fields from ${file.name}${invNote}`;
+      }
+
+      // Switch to manual view and show report
       if (document.getElementById('char-mode-ai')?.style.display !== 'none') {
         switchCharMode('manual');
       }
-      const statusEl = document.getElementById('char-import-status');
-      if (statusEl) {
-        const invNote = _pendingInventory ? ` + ${_pendingInventory.length} inventory items` : '';
-        statusEl.textContent = `✓ ${filled} fields imported${invNote}`;
-        setTimeout(() => { statusEl.textContent = ''; }, 5000);
-      }
+      showImportReport({ filled, total: allSheetIds.length, missing, inventory: invReport });
+
     } catch(err) {
-      console.error('Parse error:', err);
+      console.error('Sheet parse error:', err);
+      switchCharMode('manual');
+      showImportReport({ blocked: true, reason: 'Could not read file — is it a valid HTML character sheet?' });
     }
   };
   reader.readAsText(file);
