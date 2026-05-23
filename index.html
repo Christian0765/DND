@@ -1647,6 +1647,12 @@ firebase.auth().onAuthStateChanged(async user => {
     _campaignData = campaignDoc.data();
     _isDM = _campaignData.dmUid === user.uid;
 
+    // Seed dice dedup so page refresh doesn't replay the last stored roll
+    const _initRoll = _campaignData.diceRoll;
+    if (_initRoll && _initRoll.rolledAt) {
+      _shownDiceRollAt = _initRoll.rolledAt.toMillis ? _initRoll.rolledAt.toMillis() : Date.now();
+    }
+
     // Update page title
     if (_campaignData.name) {
       document.getElementById('site-title').textContent = _campaignData.name;
