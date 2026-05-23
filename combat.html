@@ -2,683 +2,889 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Combat Tracker</title>
+<title>Combat — Campaign Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <style>
-  :root {
-    --parchment: #f5ead2;
-    --parchment-dark: #e8d5a8;
-    --ink: #1a1208;
-    --ink-light: #4a3520;
-    --red: #7a1515;
-    --gold: #9a7000;
-    --gold-light: #c4920a;
-    --border: #7a5a28;
-    --border-light: #b08840;
-    --green: #285a18;
-    --bg: #111008;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
-    font-family: 'Crimson Text', serif;
-    color: var(--ink);
-    min-height: 100vh;
-    padding: 16px 12px 60px;
-  }
+:root {
+  --gold: #9a7000;
+  --gold-light: #c8a84b;
+  --parchment: #f5e6c8;
+  --parchment-dark: #d4b896;
+  --red: #7a1515;
+  --green: #2a5a18;
+  --bg: #080604;
+  --ink: #1a0e04;
+  --ink-light: #3a2a1a;
+  --border: #4a3420;
+  --border-light: #6a5040;
+}
 
-  .top-bar {
-    max-width: 900px;
-    margin: 0 auto 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .back-link {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--border-light);
-    text-decoration: none;
-    border: 1px solid var(--border);
-    padding: 4px 10px;
-    border-radius: 2px;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .back-link:hover { color: var(--gold-light); border-color: var(--gold); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .page-title {
-    font-family: 'Cinzel', serif;
-    font-size: 1.6rem;
-    font-weight: 900;
-    color: var(--gold-light);
-    text-align: center;
-    letter-spacing: 0.08em;
-    text-shadow: 0 2px 16px rgba(184,134,11,0.3);
-    margin-bottom: 4px;
-  }
-  .page-sub {
-    font-family: 'Cinzel', serif;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
-    color: var(--border-light);
-    text-align: center;
-    margin-bottom: 20px;
-  }
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--parchment);
+  font-family: 'Crimson Text', serif;
+}
 
-  /* ROUND COUNTER */
-  .round-bar {
-    max-width: 900px;
-    margin: 0 auto 20px;
-    background: linear-gradient(160deg, #1a0e04 0%, #0d0802 100%);
-    border: 1px solid var(--border);
-    box-shadow: 0 0 0 2px #080604;
-    border-radius: 3px;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .round-label {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: var(--border-light);
-  }
-  .round-num {
-    font-family: 'Cinzel', serif;
-    font-size: 2rem;
-    font-weight: 900;
-    color: var(--gold-light);
-    min-width: 60px;
-    text-align: center;
-  }
-  .round-btn {
-    font-family: 'Cinzel', serif;
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: var(--gold-light);
-    background: none;
-    border: 1px solid var(--gold);
-    border-radius: 2px;
-    width: 34px;
-    height: 34px;
-    cursor: pointer;
-    transition: background 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .round-btn:hover { background: rgba(154,112,0,0.2); }
-  .round-reset {
-    font-family: 'Cinzel', serif;
-    font-size: 0.52rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--border-light);
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .round-reset:hover { color: var(--gold-light); border-color: var(--gold); }
+/* ── TOP BAR ── */
+#top-bar {
+  height: 48px;
+  flex-shrink: 0;
+  background: #050302;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 0;
+}
+#top-bar-spacer-left,
+#top-bar-spacer-right {
+  flex: 0 0 160px;
+}
+#top-bar-center {
+  flex: 1;
+  text-align: center;
+}
+#back-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--border-light);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+#back-btn:hover { color: var(--gold-light); border-color: var(--gold); }
 
-  /* ADD COMBATANT */
-  .add-panel {
-    max-width: 900px;
-    margin: 0 auto 20px;
-    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 100%);
-    border: 1px solid var(--border);
-    box-shadow: 0 0 0 2px #1a0e04;
-    border-radius: 3px;
-    padding: 16px 20px;
-  }
-  .add-panel-title {
-    font-family: 'Cinzel', serif;
-    font-size: 0.62rem;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--gold-light);
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-  }
-  .add-form {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
-    gap: 8px;
-    align-items: end;
-  }
-  .add-form label {
-    font-family: 'Cinzel', serif;
-    font-size: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--ink-light);
-    display: block;
-    margin-bottom: 3px;
-  }
-  .add-form input {
-    font-family: 'Crimson Text', serif;
-    font-size: 0.88rem;
-    background: rgba(255,255,255,0.5);
-    border: 1px solid var(--border-light);
-    border-radius: 2px;
-    color: var(--ink);
-    padding: 5px 8px;
-    width: 100%;
-    outline: none;
-  }
-  .add-form input:focus { border-color: var(--gold); background: rgba(255,255,255,0.8); }
-  .add-form select {
-    font-family: 'Crimson Text', serif;
-    font-size: 0.88rem;
-    background: rgba(255,255,255,0.5);
-    border: 1px solid var(--border-light);
-    border-radius: 2px;
-    color: var(--ink);
-    padding: 5px 8px;
-    width: 100%;
-    outline: none;
-  }
-  .add-btn {
-    font-family: 'Cinzel', serif;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--gold-light);
-    background: none;
-    border: 1px solid var(--gold);
-    border-radius: 2px;
-    padding: 6px 14px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s;
-    height: 32px;
-  }
-  .add-btn:hover { background: rgba(154,112,0,0.15); }
-  .add-btn.enemy { color: var(--red); border-color: var(--red); }
-  .add-btn.enemy:hover { background: rgba(122,21,21,0.1); }
+#round-display {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+#round-label { color: var(--border-light); }
+#round-num   { color: var(--gold-light); font-size: 1.1rem; font-weight: 600; }
+#round-sep   { color: var(--border-light); margin: 0 6px; }
+#round-cond  { color: var(--border-light); }
 
-  /* COMBATANT LIST */
-  .combatant-list {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+/* ── MAIN AREA ── */
+#main-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
 
-  .combatant {
-    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
-    border: 1px solid var(--border);
-    box-shadow: 0 0 0 2px #1a0e04;
-    border-radius: 3px;
-    padding: 10px 14px;
-    position: relative;
-    transition: opacity 0.2s;
-    cursor: grab;
-  }
-  .combatant:active { cursor: grabbing; }
-  .combatant.dragging { opacity: 0.4; }
-  .combatant.drag-over { border-color: var(--gold); box-shadow: 0 0 0 2px #1a0e04, 0 0 0 3px var(--gold); }
-  .combatant.enemy-card {
-    background: linear-gradient(160deg, #2a1008 0%, #1a0804 100%);
-    border-color: var(--red);
-    box-shadow: 0 0 0 2px #080604;
-  }
-  .combatant.unconscious { opacity: 0.5; }
+/* ── LEFT QUEUE ── */
+#turn-queue {
+  width: 260px;
+  flex-shrink: 0;
+  background: #0a0704;
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+#queue-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+#queue-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+#end-turn-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(154,112,0,0.2);
+  border: 1px solid var(--gold);
+  color: var(--gold-light);
+  width: 100%;
+  padding: 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s;
+  display: none;
+}
+#end-turn-btn:hover { background: rgba(154,112,0,0.35); }
 
-  .combatant-top {
-    display: grid;
-    grid-template-columns: 32px 1fr auto auto auto;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .init-badge {
-    font-family: 'Cinzel', serif;
-    font-size: 1rem;
-    font-weight: 900;
-    color: var(--gold-light);
-    text-align: center;
-    line-height: 1;
-  }
-  .enemy-card .init-badge { color: var(--red); }
-  .combatant-name {
-    font-family: 'Cinzel', serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1;
-  }
-  .enemy-card .combatant-name { color: var(--parchment); }
-  .combatant-meta {
-    font-size: 0.72rem;
-    color: var(--ink-light);
-    font-style: italic;
-  }
-  .enemy-card .combatant-meta { color: var(--parchment-dark); }
+/* ── COMBATANT CARD ── */
+.cc {
+  background: #141008;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+  transition: all 0.3s ease;
+}
+.cc.active-turn {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(154,112,0,0.35);
+  background: #1c1400;
+}
+.cc.active-turn.is-me {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 18px rgba(200,168,75,0.5);
+  background: #1c1800;
+}
+.cc.is-enemy {
+  border-color: #3a1818;
+  background: #120808;
+}
+.cc.is-enemy.active-turn {
+  border-color: var(--red);
+  box-shadow: 0 0 12px rgba(122,21,21,0.45);
+  background: #180808;
+}
+.cc.unconscious { opacity: 0.4; }
 
-  .stat-pill {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    border-radius: 2px;
-    border: 1px solid var(--border-light);
-    background: rgba(255,255,255,0.3);
-    color: var(--ink-light);
-    white-space: nowrap;
-  }
-  .enemy-card .stat-pill { background: rgba(0,0,0,0.2); border-color: rgba(122,21,21,0.4); color: var(--parchment-dark); }
+.cc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.cc-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--parchment);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.cc-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-your-turn {
+  background: rgba(200,168,75,0.2);
+  border: 1px solid var(--gold-light);
+  color: var(--gold-light);
+  animation: blink 1s step-start infinite;
+}
+.badge-active {
+  background: rgba(200,168,75,0.1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  animation: blink 1s step-start infinite;
+}
+.badge-you {
+  background: rgba(154,112,0,0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold-light);
+}
+.badge-party {
+  background: rgba(42,90,24,0.15);
+  border: 1px solid #3a6a28;
+  color: #6aaa4a;
+}
+.badge-enemy {
+  background: rgba(122,21,21,0.15);
+  border: 1px solid #5a1818;
+  color: #c04040;
+}
 
-  .remove-btn {
-    font-size: 0.7rem;
-    color: var(--border-light);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 2px 4px;
-    transition: color 0.15s;
-    font-family: 'Cinzel', serif;
-  }
-  .remove-btn:hover { color: var(--red); }
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
 
-  /* HP ROW */
-  .hp-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .hp-label {
-    font-family: 'Cinzel', serif;
-    font-size: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--ink-light);
-    min-width: 18px;
-  }
-  .enemy-card .hp-label { color: var(--parchment-dark); }
-  .hp-track {
-    flex: 1;
-    background: rgba(0,0,0,0.1);
-    border-radius: 2px;
-    height: 8px;
-    overflow: hidden;
-  }
-  .hp-fill {
-    height: 100%;
-    background: var(--green);
-    border-radius: 2px;
-    transition: width 0.3s ease, background 0.3s ease;
-  }
-  .hp-fill.mid { background: var(--gold); }
-  .hp-fill.low { background: var(--red); }
-  .hp-text {
-    font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--green);
-    min-width: 55px;
-    text-align: right;
-  }
-  .hp-text.mid { color: var(--gold); }
-  .hp-text.low { color: var(--red); }
-  .enemy-card .hp-text { color: #e88; }
-  .hp-adj {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-  }
-  .hp-btn {
-    font-family: 'Cinzel', serif;
-    font-size: 0.8rem;
-    font-weight: 900;
-    color: var(--ink-light);
-    background: rgba(255,255,255,0.4);
-    border: 1px solid var(--border-light);
-    border-radius: 2px;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.1s;
-  }
-  .hp-btn:hover { background: rgba(255,255,255,0.7); }
-  .hp-btn.heal { color: var(--green); border-color: var(--green); }
-  .hp-btn.heal:hover { background: rgba(40,90,24,0.1); }
-  .hp-btn.damage { color: var(--red); border-color: var(--red); }
-  .hp-btn.damage:hover { background: rgba(122,21,21,0.1); }
-  .hp-input {
-    font-family: 'Cinzel', serif;
-    font-size: 0.72rem;
-    width: 36px;
-    text-align: center;
-    background: rgba(255,255,255,0.5);
-    border: 1px solid var(--border-light);
-    border-radius: 2px;
-    color: var(--ink);
-    padding: 2px 4px;
-    outline: none;
-  }
-  .enemy-card .hp-input { background: rgba(0,0,0,0.2); color: var(--parchment); border-color: rgba(122,21,21,0.4); }
+.cc-bar-wrap {
+  background: rgba(0,0,0,0.4);
+  border-radius: 2px;
+  height: 4px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.cc-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.hp-green { background: #3a8020; }
+.hp-gold  { background: #9a7000; }
+.hp-red   { background: #8a1515; }
 
-  /* CONDITIONS */
-  .conditions-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .cond-tag {
-    font-family: 'Cinzel', serif;
-    font-size: 0.46rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 2px 6px;
-    border-radius: 2px;
-    cursor: pointer;
-    border: 1px solid var(--border-light);
-    color: var(--ink-light);
-    background: rgba(255,255,255,0.2);
-    transition: all 0.15s;
-    user-select: none;
-  }
-  .cond-tag.active {
-    background: rgba(122,21,21,0.15);
-    border-color: var(--red);
-    color: var(--red);
-    font-weight: 600;
-  }
-  .enemy-card .cond-tag { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.15); color: #a08060; }
-  .enemy-card .cond-tag.active { background: rgba(122,21,21,0.3); border-color: #e04040; color: #e04040; }
+.cc-stats {
+  font-family: 'Cinzel', serif;
+  font-size: 0.5rem;
+  color: var(--border-light);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.cc-hp-hidden {
+  font-style: italic;
+  color: var(--border-light);
+  font-family: 'Crimson Text', serif;
+  font-size: 0.65rem;
+}
 
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    font-style: italic;
-    color: var(--border-light);
-    font-size: 0.88rem;
-  }
+.cc-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.cond-pill {
+  font-family: 'Cinzel', serif;
+  font-size: 0.42rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgba(122,21,21,0.25);
+  border: 1px solid #5a1818;
+  color: #c04040;
+}
 
-  @media (max-width: 600px) {
-    .add-form { grid-template-columns: 1fr 1fr; }
-    .combatant-top { grid-template-columns: 28px 1fr auto; }
-  }
+/* ── RIGHT AREA ── */
+#player-area {
+  flex: 1;
+  padding: 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* My Stats Card */
+#my-stats-card {
+  background: linear-gradient(160deg, #1a0e04, #0d0802);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 20px;
+  display: none;
+}
+.my-stats-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.my-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.my-stat-block {
+  text-align: center;
+}
+.my-stat-num {
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.my-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.48rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--border-light);
+  margin-top: 4px;
+}
+.my-hp-bar-wrap {
+  background: rgba(0,0,0,0.4);
+  border-radius: 3px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.my-hp-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.my-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Enemies Section */
+#enemies-section {
+  display: none;
+}
+.enemies-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--red);
+  margin-bottom: 8px;
+}
+.enemy-row {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid #2a1010;
+  border-radius: 3px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  transition: opacity 0.2s;
+}
+.enemy-row.unconscious { opacity: 0.4; }
+.enemy-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.enemy-row-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  color: var(--parchment);
+}
+.enemy-row-hp {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  color: var(--border-light);
+  letter-spacing: 0.05em;
+}
+.enemy-bar-wrap {
+  background: rgba(0,0,0,0.4);
+  border-radius: 2px;
+  height: 4px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.enemy-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.enemy-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Result Banner */
+#result-banner {
+  display: none;
+  border-radius: 4px;
+  padding: 14px 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+#result-banner.win  { background: rgba(42,90,24,0.3); border: 1px solid #3a6a28; color: #8ada58; }
+#result-banner.loss { background: rgba(122,21,21,0.3); border: 1px solid #6a1818; color: #e06060; }
+#result-banner.time { background: rgba(154,112,0,0.25); border: 1px solid var(--gold); color: var(--gold-light); }
+
+/* Redirect message */
+#redirect-msg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 999;
+}
+#redirect-msg.visible { display: flex; }
+#redirect-msg-text {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  color: var(--border-light);
+  letter-spacing: 0.1em;
+}
+
+/* ── TURN OVERLAY ── */
+#turn-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#turn-overlay.visible { display: flex; }
+
+#overlay-content {
+  text-align: center;
+}
+#overlay-content.enter {
+  animation: overlayEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+#overlay-content.exit {
+  animation: overlayExit 0.3s ease forwards;
+}
+
+@keyframes overlayEnter {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes overlayExit {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.1); }
+}
+
+.overlay-sword {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: inline-block;
+  animation: swordSwing 1.2s ease-in-out infinite;
+}
+@keyframes swordSwing {
+  0%, 100% { transform: rotate(-25deg); }
+  50%       { transform: rotate(25deg); }
+}
+.overlay-title {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  text-shadow: 0 0 30px rgba(200,168,75,0.8);
+  margin-bottom: 12px;
+}
+.overlay-sub {
+  font-family: 'Crimson Text', serif;
+  font-size: 1.1rem;
+  color: var(--parchment-dark);
+  font-style: italic;
+}
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <a class="back-link" href="#" data-base="index.html" onclick="goBack()">← Party Overview</a>
-  <div></div>
+<!-- REDIRECT MESSAGE -->
+<div id="redirect-msg">
+  <div id="redirect-msg-text">No Active Combat — Returning...</div>
 </div>
 
-<div class="page-title">Combat Tracker</div>
-<div class="page-sub">Initiative &middot; HP &middot; Conditions</div>
-
-<!-- ROUND COUNTER -->
-<div class="round-bar">
-  <span class="round-label">Round</span>
-  <div style="display:flex;align-items:center;gap:10px;">
-    <button class="round-btn" onclick="changeRound(-1)">−</button>
-    <span class="round-num" id="round-num">1</span>
-    <button class="round-btn" onclick="changeRound(1)">+</button>
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div id="top-bar-spacer-left">
+    <button id="back-btn" onclick="goBack()">← Back to Campaign</button>
   </div>
-  <button class="round-reset" onclick="resetCombat()">End Combat</button>
+  <div id="top-bar-center">
+    <span id="round-display">
+      <span id="round-label">Round </span><span id="round-num">—</span><span id="round-sep"> · </span><span id="round-cond">—</span>
+    </span>
+  </div>
+  <div id="top-bar-spacer-right"></div>
 </div>
 
-<!-- ADD COMBATANT -->
-<div class="add-panel">
-  <div class="add-panel-title">Add Combatant</div>
-  <div class="add-form">
-    <div>
-      <label>Name</label>
-      <input type="text" id="add-name" placeholder="e.g. Goblin">
+<!-- MAIN AREA -->
+<div id="main-area">
+
+  <!-- LEFT: TURN QUEUE -->
+  <div id="turn-queue">
+    <div id="queue-label">⚡ Turn Order</div>
+    <div id="queue-cards"></div>
+    <button id="end-turn-btn" onclick="playerEndTurn()">End My Turn →</button>
+  </div>
+
+  <!-- RIGHT: PLAYER AREA -->
+  <div id="player-area">
+
+    <!-- My Stats -->
+    <div id="my-stats-card">
+      <div class="my-stats-title" id="my-stats-title">⚔ — Your Combat Stats</div>
+      <div class="my-stats-grid">
+        <div class="my-stat-block">
+          <div class="my-stat-num" id="my-ac">—</div>
+          <div class="my-stat-label">Armor Class</div>
+        </div>
+        <div class="my-stat-block">
+          <div class="my-stat-num" id="my-hp">—</div>
+          <div class="my-stat-label">HP</div>
+        </div>
+        <div class="my-stat-block">
+          <div class="my-stat-num" id="my-maxhp">—</div>
+          <div class="my-stat-label">Max HP</div>
+        </div>
+      </div>
+      <div class="my-hp-bar-wrap">
+        <div class="my-hp-bar-fill" id="my-hp-bar"></div>
+      </div>
+      <div class="my-conditions" id="my-conditions"></div>
     </div>
-    <div>
-      <label>Initiative</label>
-      <input type="number" id="add-init" placeholder="12">
+
+    <!-- Enemies Section -->
+    <div id="enemies-section">
+      <div class="enemies-label">☠ Enemies</div>
+      <div id="enemies-list"></div>
     </div>
-    <div>
-      <label>Max HP</label>
-      <input type="number" id="add-hp" placeholder="20">
-    </div>
-    <div>
-      <label>AC</label>
-      <input type="number" id="add-ac" placeholder="13">
-    </div>
-    <div>
-      <label>Type</label>
-      <select id="add-type">
-        <option value="player">Player</option>
-        <option value="enemy">Enemy</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:6px;align-items:flex-end;">
-      <button class="add-btn" onclick="addCombatant()">Add</button>
-    </div>
+
+    <!-- Result Banner -->
+    <div id="result-banner"></div>
+
   </div>
 </div>
 
-<!-- COMBATANT LIST -->
-<div class="combatant-list" id="combatant-list">
-  <div class="empty-state" id="empty-state">No combatants yet — add players and enemies above to begin.</div>
+<!-- YOUR TURN OVERLAY -->
+<div id="turn-overlay" onclick="dismissOverlay()">
+  <div id="overlay-content">
+    <div class="overlay-sword">⚔️</div>
+    <div class="overlay-title" id="overlay-title">⚔ Your Turn!</div>
+    <div class="overlay-sub">Take your action, bonus action, and movement</div>
+  </div>
 </div>
 
 <script>
-firebase.initializeApp(firebaseConfig);
-
-// Get campaign ID from URL
+// ── Globals ──
 const campaignId = new URLSearchParams(window.location.search).get('c');
-if (!campaignId) { 
-  window.location.href = 'dashboard.html'; 
-}
+if (!campaignId) window.location.href = 'dashboard.html';
 
-const CONDITIONS = ['Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated','Paralyzed','Poisoned','Prone','Restrained','Stunned','Unconscious'];
-
-let state = { round: 1, combatants: [] };
 let db;
+let currentUser = null;
+let _lastShownTurnIndex = -1;
+let _overlayTimer = null;
+let _overlayDismissing = false;
+
+// ── Utilities ──
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function goBack() {
   window.location.href = 'index.html?c=' + campaignId;
 }
 
-// Auth guard + init
+function hpBarClass(pct) {
+  if (pct > 0.6) return 'hp-green';
+  if (pct > 0.3) return 'hp-gold';
+  return 'hp-red';
+}
+
+// ── Redirect ──
+function showRedirect() {
+  document.getElementById('redirect-msg').classList.add('visible');
+  setTimeout(goBack, 1500);
+}
+
+// ── Render ──
+function renderCombat(state) {
+  const combatants = state.combatants || [];
+  const curIdx = state.currentTurnIndex ?? 0;
+  const myId = currentUser ? 'p_' + currentUser.uid : null;
+
+  // Round display
+  document.getElementById('round-num').textContent = state.round ?? '—';
+  const condLabel = state.winCond === 'timed'
+    ? 'Timed (' + (state.maxRounds ?? '?') + ' Rounds)'
+    : 'Until Victory';
+  document.getElementById('round-cond').textContent = condLabel;
+
+  renderQueue(combatants, curIdx, myId);
+  renderResult(state.result);
+
+  const me = myId ? combatants.find(c => c.id === myId) : null;
+  renderMyStats(me);
+
+  const enemies = combatants.filter(c => c.type === 'enemy');
+  renderEnemies(enemies);
+
+  // Check for your-turn overlay
+  const activeCombatant = combatants[curIdx];
+  if (
+    activeCombatant &&
+    activeCombatant.id === myId &&
+    curIdx !== _lastShownTurnIndex
+  ) {
+    _lastShownTurnIndex = curIdx;
+    if (localStorage.getItem('setting_turnOverlay') !== 'off') {
+      showTurnOverlay(activeCombatant.name);
+    }
+  }
+}
+
+function renderQueue(combatants, curIdx, myId) {
+  const container = document.getElementById('queue-cards');
+  const endBtn = document.getElementById('end-turn-btn');
+
+  // Show/hide end turn button
+  const activeCombatant = combatants[curIdx];
+  const isMyTurn = activeCombatant && activeCombatant.id === myId;
+  endBtn.style.display = isMyTurn ? 'block' : 'none';
+
+  if (!combatants.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = combatants.map((c, i) => {
+    const isActive = i === curIdx;
+    const isMe = c.id === myId;
+    const isEnemy = c.type === 'enemy';
+    const isDead = c.hp <= 0;
+
+    const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
+    const barCls = hpBarClass(pct);
+
+    // Card classes
+    let cardCls = 'cc';
+    if (isActive) cardCls += isMe ? ' active-turn is-me' : ' active-turn';
+    if (isEnemy)  cardCls += ' is-enemy';
+    if (isDead)   cardCls += ' unconscious';
+
+    // Badge
+    let badge = '';
+    if (isActive && isMe) {
+      badge = '<span class="cc-badge badge-your-turn">Your Turn</span>';
+    } else if (isActive && !isMe) {
+      badge = '<span class="cc-badge badge-active">Active</span>';
+    } else if (!isActive && isMe) {
+      badge = '<span class="cc-badge badge-you">You</span>';
+    } else if (!isEnemy) {
+      badge = '<span class="cc-badge badge-party">Party</span>';
+    } else {
+      badge = '<span class="cc-badge badge-enemy">Enemy</span>';
+    }
+
+    // HP display
+    let hpText = '';
+    if (!isEnemy) {
+      hpText = escHtml('HP ' + c.hp + '/' + c.maxHp) + ' &nbsp; AC ' + escHtml(String(c.ac));
+    } else {
+      if (c.showHp) {
+        hpText = escHtml('HP ' + c.hp + '/' + c.maxHp) + ' &nbsp; AC ' + escHtml(String(c.ac));
+      } else {
+        hpText = '<span class="cc-hp-hidden">HP Hidden</span> &nbsp; AC ' + escHtml(String(c.ac));
+      }
+    }
+
+    // Condition pills
+    const conditions = Array.isArray(c.conditions) ? c.conditions : [];
+    const condHtml = conditions.length
+      ? '<div class="cc-conditions">' +
+          conditions.map(cn => '<span class="cond-pill">' + escHtml(cn) + '</span>').join('') +
+        '</div>'
+      : '';
+
+    return `<div class="${escHtml(cardCls)}">
+  <div class="cc-header">
+    <span class="cc-name">${escHtml(c.name)}</span>
+    ${badge}
+  </div>
+  <div class="cc-bar-wrap">
+    <div class="cc-bar-fill ${escHtml(barCls)}" style="width:${Math.round(pct * 100)}%"></div>
+  </div>
+  <div class="cc-stats">${hpText}</div>
+  ${condHtml}
+</div>`;
+  }).join('');
+}
+
+function renderMyStats(me) {
+  const card = document.getElementById('my-stats-card');
+  if (!me) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  document.getElementById('my-stats-title').textContent = '⚔ ' + me.name + ' — Your Combat Stats';
+  document.getElementById('my-ac').textContent = me.ac ?? '—';
+  document.getElementById('my-hp').textContent = me.hp ?? '—';
+  document.getElementById('my-maxhp').textContent = me.maxHp ?? '—';
+
+  const pct = me.maxHp > 0 ? me.hp / me.maxHp : 0;
+  const bar = document.getElementById('my-hp-bar');
+  bar.style.width = Math.round(pct * 100) + '%';
+  bar.className = 'my-hp-bar-fill ' + hpBarClass(pct);
+
+  const conditions = Array.isArray(me.conditions) ? me.conditions : [];
+  const condContainer = document.getElementById('my-conditions');
+  condContainer.innerHTML = conditions
+    .map(cn => '<span class="cond-pill">' + escHtml(cn) + '</span>')
+    .join('');
+}
+
+function renderEnemies(enemies) {
+  const section = document.getElementById('enemies-section');
+  const list = document.getElementById('enemies-list');
+
+  if (!enemies.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  list.innerHTML = enemies.map(e => {
+    const pct = e.maxHp > 0 ? e.hp / e.maxHp : 0;
+    const barCls = hpBarClass(pct);
+    const isDead = e.hp <= 0;
+    const conditions = Array.isArray(e.conditions) ? e.conditions : [];
+
+    let hpDisplay = '';
+    if (e.showHp) {
+      hpDisplay = '<span class="enemy-row-hp">' + escHtml('HP ' + e.hp + ' / ' + e.maxHp) + '</span>';
+    } else {
+      hpDisplay = '<span class="enemy-row-hp" style="font-style:italic;color:var(--border)">HP Hidden</span>';
+    }
+
+    const condHtml = conditions.length
+      ? '<div class="enemy-conditions">' +
+          conditions.map(cn => '<span class="cond-pill">' + escHtml(cn) + '</span>').join('') +
+        '</div>'
+      : '';
+
+    return `<div class="enemy-row${isDead ? ' unconscious' : ''}">
+  <div class="enemy-row-top">
+    <span class="enemy-row-name">${escHtml(e.name)}</span>
+    ${hpDisplay}
+  </div>
+  <div class="enemy-bar-wrap">
+    <div class="enemy-bar-fill ${escHtml(barCls)}" style="width:${Math.round(pct * 100)}%"></div>
+  </div>
+  ${condHtml}
+</div>`;
+  }).join('');
+}
+
+function renderResult(result) {
+  const banner = document.getElementById('result-banner');
+  if (!result) { banner.style.display = 'none'; return; }
+
+  banner.style.display = 'block';
+  banner.className = 'win loss time'.includes(result) ? result : '';
+
+  if (result === 'win') {
+    banner.textContent = '🏆 Victory! All enemies have fallen.';
+    banner.className = 'win';
+  } else if (result === 'loss') {
+    banner.textContent = '💀 Defeat. The party has fallen.';
+    banner.className = 'loss';
+  } else if (result === 'time') {
+    banner.textContent = "⏳ Time's up! The battle has ended.";
+    banner.className = 'time';
+  }
+}
+
+// ── End Turn ──
+async function playerEndTurn() {
+  if (!db || !currentUser) return;
+  const ref = db.collection('campaigns').doc(campaignId).collection('combat').doc('state');
+  try {
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const state = snap.data();
+    const combatants = state.combatants || [];
+    const myId = 'p_' + currentUser.uid;
+
+    // Verify it's still my turn
+    if (!combatants[state.currentTurnIndex] || combatants[state.currentTurnIndex].id !== myId) return;
+
+    let nextIdx = state.currentTurnIndex + 1;
+    let nextRound = state.round ?? 1;
+    if (nextIdx >= combatants.length) {
+      nextIdx = 0;
+      nextRound += 1;
+    }
+
+    await ref.update({ currentTurnIndex: nextIdx, round: nextRound });
+  } catch (err) {
+    console.error('Error ending turn:', err);
+  }
+}
+
+// ── Turn Overlay ──
+function showTurnOverlay(name) {
+  if (_overlayTimer) { clearTimeout(_overlayTimer); _overlayTimer = null; }
+  _overlayDismissing = false;
+
+  const overlay = document.getElementById('turn-overlay');
+  const content = document.getElementById('overlay-content');
+  document.getElementById('overlay-title').textContent = '⚔ Your Turn!';
+
+  content.className = '';
+  overlay.classList.add('visible');
+  // Trigger reflow before adding animation class
+  void content.offsetWidth;
+  content.classList.add('enter');
+
+  _overlayTimer = setTimeout(dismissOverlay, 2500);
+}
+
+function dismissOverlay() {
+  if (_overlayDismissing) return;
+  _overlayDismissing = true;
+
+  if (_overlayTimer) { clearTimeout(_overlayTimer); _overlayTimer = null; }
+
+  const overlay = document.getElementById('turn-overlay');
+  const content = document.getElementById('overlay-content');
+
+  content.classList.remove('enter');
+  void content.offsetWidth;
+  content.classList.add('exit');
+
+  setTimeout(() => {
+    overlay.classList.remove('visible');
+    content.classList.remove('exit');
+    _overlayDismissing = false;
+  }, 300);
+}
+
+// ── Firebase Init ──
 firebase.auth().onAuthStateChanged(user => {
   if (!user) {
     window.location.href = 'home.html';
     return;
   }
+  currentUser = user;
 
   try {
     db = firebase.firestore();
-    db.collection('campaigns').doc(campaignId).collection('combat').doc('state').onSnapshot({includeMetadataChanges: true}, doc => {
-      if (doc.metadata.hasPendingWrites) return;
-      if (doc.exists) {
-        const data = doc.data();
-        if (data && Array.isArray(data.combatants)) { state = data; render(); }
-      } else {
-        render();
-      }
-    });
-  } catch(e) {
-    console.warn('Firebase not configured — using local state');
-    render();
+    db.collection('campaigns').doc(campaignId)
+      .collection('combat').doc('state')
+      .onSnapshot(snap => {
+        if (!snap.exists || snap.data().mode !== 'active') {
+          showRedirect();
+        } else {
+          renderCombat(snap.data());
+        }
+      }, err => {
+        console.error('Snapshot error:', err);
+        showRedirect();
+      });
+  } catch (e) {
+    console.error('Firebase error:', e);
+    showRedirect();
   }
 });
-
-function save() {
-  if (db) {
-    db.collection('campaigns').doc(campaignId).collection('combat').doc('state').set(JSON.parse(JSON.stringify(state)));
-  }
-}
-
-function changeRound(d) {
-  state.round = Math.max(1, state.round + d);
-  save();
-  document.getElementById('round-num').textContent = state.round;
-}
-
-function resetCombat() {
-  if (!confirm('End combat and reset round counter? Combatants will remain.')) return;
-  state.round = 1;
-  state.combatants.forEach(c => { c.conditions = []; });
-  save();
-  render();
-}
-
-function addCombatant() {
-  const name = document.getElementById('add-name').value.trim();
-  if (!name) { document.getElementById('add-name').focus(); return; }
-  const maxHp = parseInt(document.getElementById('add-hp').value) || 10;
-  state.combatants.push({
-    id: Date.now(),
-    name,
-    init: parseInt(document.getElementById('add-init').value) || 0,
-    hp: maxHp,
-    maxHp,
-    ac: parseInt(document.getElementById('add-ac').value) || 10,
-    type: document.getElementById('add-type').value,
-    conditions: []
-  });
-  state.combatants.sort((a, b) => b.init - a.init);
-  save();
-  render();
-  document.getElementById('add-name').value = '';
-  document.getElementById('add-init').value = '';
-  document.getElementById('add-hp').value = '';
-  document.getElementById('add-ac').value = '';
-  document.getElementById('add-name').focus();
-}
-
-function adjustHp(id, delta) {
-  const c = state.combatants.find(x => x.id === id);
-  if (!c) return;
-  const inp = document.getElementById('hp-inp-' + id);
-  const amount = parseInt(inp.value) || 1;
-  c.hp = Math.max(0, Math.min(c.maxHp, c.hp + delta * amount));
-  save();
-  updateHpDisplay(id);
-}
-
-function updateHpDisplay(id) {
-  const c = state.combatants.find(x => x.id === id);
-  if (!c) return;
-  const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
-  const cls = pct <= 0.25 ? 'low' : pct <= 0.5 ? 'mid' : '';
-  const fill = document.getElementById('hp-fill-' + id);
-  const text = document.getElementById('hp-text-' + id);
-  if (fill) { fill.style.width = (pct * 100) + '%'; fill.className = 'hp-fill ' + cls; }
-  if (text) { text.textContent = c.hp + ' / ' + c.maxHp; text.className = 'hp-text ' + cls; }
-}
-
-function toggleCondition(id, cond) {
-  const c = state.combatants.find(x => x.id === id);
-  if (!c) return;
-  const idx = c.conditions.indexOf(cond);
-  if (idx === -1) c.conditions.push(cond);
-  else c.conditions.splice(idx, 1);
-  if (cond === 'Unconscious') {
-    const el = document.getElementById('card-' + id);
-    if (el) el.classList.toggle('unconscious', c.conditions.includes('Unconscious'));
-  }
-  save();
-  const tag = document.getElementById('cond-' + id + '-' + cond);
-  if (tag) tag.classList.toggle('active', c.conditions.includes(cond));
-}
-
-function removeCombatant(id) {
-  state.combatants = state.combatants.filter(x => x.id !== id);
-  save();
-  render();
-}
-
-function render() {
-  document.getElementById('round-num').textContent = state.round;
-  const list = document.getElementById('combatant-list');
-  const empty = document.getElementById('empty-state');
-
-  if (!state.combatants.length) {
-    list.innerHTML = '';
-    list.appendChild(empty);
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  list.innerHTML = state.combatants.map((c, i) => {
-    const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
-    const cls = pct <= 0.25 ? 'low' : pct <= 0.5 ? 'mid' : '';
-    const isEnemy = c.type === 'enemy';
-    const isUnconscious = c.conditions.includes('Unconscious');
-    return `<div class="combatant${isEnemy ? ' enemy-card' : ''}${isUnconscious ? ' unconscious' : ''}"
-        id="card-${c.id}" draggable="true"
-        ondragstart="dragStart(event,${i})"
-        ondragover="dragOver(event)"
-        ondrop="drop(event,${i})"
-        ondragleave="dragLeave(event)"
-        ondragend="dragEnd(event)">
-      <div class="combatant-top">
-        <div class="init-badge">${c.init}</div>
-        <div>
-          <div class="combatant-name">${c.name}</div>
-          <div class="combatant-meta">${isEnemy ? 'Enemy' : 'Player'}</div>
-        </div>
-        <div class="stat-pill">AC ${c.ac}</div>
-        <div class="stat-pill">#${i + 1}</div>
-        <button class="remove-btn" onclick="removeCombatant(${c.id})">✕</button>
-      </div>
-      <div class="hp-row">
-        <span class="hp-label">HP</span>
-        <div class="hp-track"><div class="hp-fill ${cls}" id="hp-fill-${c.id}" style="width:${pct*100}%"></div></div>
-        <span class="hp-text ${cls}" id="hp-text-${c.id}">${c.hp} / ${c.maxHp}</span>
-        <div class="hp-adj">
-          <button class="hp-btn damage" onclick="adjustHp(${c.id},-1)">−</button>
-          <input class="hp-input" type="number" id="hp-inp-${c.id}" value="1" min="1">
-          <button class="hp-btn heal" onclick="adjustHp(${c.id},1)">+</button>
-        </div>
-      </div>
-      <div class="conditions-row">
-        ${CONDITIONS.map(cond => `<span class="cond-tag${c.conditions.includes(cond) ? ' active' : ''}" id="cond-${c.id}-${cond}" onclick="toggleCondition(${c.id},'${cond}')">${cond}</span>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// Drag to reorder
-let dragIdx = null;
-function dragStart(e, i) { dragIdx = i; e.currentTarget.classList.add('dragging'); }
-function dragEnd(e) { e.currentTarget.classList.remove('dragging'); dragIdx = null; }
-function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-function drop(e, i) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (dragIdx === null || dragIdx === i) return;
-  const moved = state.combatants.splice(dragIdx, 1)[0];
-  state.combatants.splice(i, 0, moved);
-  save();
-  render();
-}
-
-document.getElementById('add-name').addEventListener('keydown', e => { if (e.key === 'Enter') addCombatant(); });
 </script>
 </body>
 </html>

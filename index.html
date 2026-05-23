@@ -593,8 +593,23 @@
   .modal-msg.success { color: var(--green); font-style: normal; font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.05em; }
 
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes slideInUp { from { transform:translateY(80px); opacity:0; } to { transform:translateY(0); opacity:1; } }
   @keyframes diceSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
   @keyframes diceReveal { 0%{transform:scale(0.2);opacity:0;} 65%{transform:scale(1.12);opacity:1;} 100%{transform:scale(1);opacity:1;} }
+  @keyframes combatPulse { 0%,100%{box-shadow:0 4px 20px rgba(0,0,0,0.8),0 0 15px rgba(154,112,0,0.4);} 50%{box-shadow:0 4px 20px rgba(0,0,0,0.8),0 0 35px rgba(154,112,0,0.85);} }
+  @keyframes combatPulseFast { 0%,100%{box-shadow:0 4px 20px rgba(0,0,0,0.8),0 0 15px rgba(122,21,21,0.5);} 50%{box-shadow:0 4px 20px rgba(0,0,0,0.8),0 0 35px rgba(122,21,21,0.9);} }
+  /* Combat floating button */
+  .combat-float-btn { position:fixed;bottom:24px;right:24px;z-index:200;background:linear-gradient(135deg,#2a1400,#3a1c00);border:2px solid var(--gold);border-radius:3px;color:var(--gold-light);font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:14px 22px;cursor:pointer;animation:combatPulse 2s infinite,slideInUp 0.4s ease;transition:background 0.2s; }
+  .combat-float-btn:hover { background:linear-gradient(135deg,#3a1c00,#5a2a00); }
+  .combat-float-btn.your-turn { border-color:var(--red);color:#d06060;animation:combatPulseFast 0.7s infinite,slideInUp 0.4s ease; }
+  /* Combat nav tab active state */
+  .nav-btn.combat-active { background:rgba(122,21,21,0.2);border-color:var(--red);color:#d06060; }
+  /* DM active combatant card */
+  .cb-active-card { background:linear-gradient(160deg,#1c1000,#140b00);border:1px solid var(--gold);border-radius:3px;padding:10px 12px;margin-bottom:8px; }
+  .cb-active-card-name { font-family:'Cinzel',serif;font-size:0.78rem;font-weight:700;color:var(--gold-light);margin-bottom:8px; }
+  .cb-active-stats { display:flex;gap:16px;font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--border-light); }
+  .cb-active-stat-val { font-size:1.1rem;font-weight:700;color:var(--parchment);display:block;line-height:1.1;margin-bottom:2px; }
+  .cb-combatant.cb-active-turn { border-color:var(--gold) !important;box-shadow:0 0 0 1px var(--gold); }
   /* Dice roller */
   .dice-die-btn { font-family:'Cinzel',serif;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:7px 12px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;transition:all 0.15s; }
   .dice-die-btn:hover { background:rgba(154,112,0,0.1);border-color:var(--border-light); }
@@ -877,6 +892,7 @@
   <button class="nav-btn" id="ann-view-btn" onclick="reopenAnnouncement()" style="display:none;">👁 View</button>
   <button class="nav-btn" id="items-tab-btn" onclick="toggleItemsTab()">🗡️ Items</button>
   <button class="nav-btn" id="dice-btn" onclick="toggleDicePanel()" style="display:none;">🎲 Roll</button>
+  <button class="nav-btn" id="combat-nav-tab" onclick="goToCombat()" style="display:none;">⚔ Combat</button>
 </div>
 
 <!-- SESSION ANNOUNCEMENTS TAB -->
@@ -1109,6 +1125,18 @@
       </div>
       <!-- Active Combat -->
       <div id="cb-active" style="display:none;">
+        <!-- Active combatant summary card -->
+        <div id="cb-active-card" class="cb-active-card" style="display:none;">
+          <div class="cb-active-card-name" id="cb-active-card-name">—</div>
+          <div class="cb-active-stats">
+            <div><span class="cb-active-stat-val" id="cb-active-card-hp">—</span>HP</div>
+            <div><span class="cb-active-stat-val" id="cb-active-card-maxhp">—</span>Max</div>
+            <div><span class="cb-active-stat-val" id="cb-active-card-ac">—</span>AC</div>
+          </div>
+          <div id="cb-active-card-conds" style="font-family:'Cinzel',serif;font-size:0.55rem;color:var(--border-light);margin-top:6px;"></div>
+        </div>
+        <!-- End Turn button -->
+        <button id="cb-end-turn-btn" class="dm-btn" onclick="combatEndTurn()" style="display:none;width:100%;margin-bottom:10px;background:rgba(90,50,0,0.35);border-color:var(--gold);color:var(--gold-light);font-size:0.65rem;padding:9px;">⚡ End Turn — Next Combatant →</button>
         <div class="cb-round-bar">
           <button class="cb-round-btn" onclick="combatChangeRound(-1)">−</button>
           <div style="text-align:center;flex:1;">
@@ -1136,6 +1164,11 @@
               </div>
             </div>
           </div>
+        </div>
+        <!-- Show Enemy HP toggles -->
+        <div id="cb-show-hp-section" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+          <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-bottom:7px;">👁 Reveal Enemy HP to Players</div>
+          <div id="cb-show-hp-list"></div>
         </div>
       </div>
     </div>
@@ -1635,6 +1668,8 @@ firebase.auth().onAuthStateChanged(async user => {
     if (_isDM) renderDMActiveEvent(_campaignData.announcement && _campaignData.announcement.active ? _campaignData.announcement : null);
     // Initial dice mode
     updateDiceModeUI(_campaignData.diceMode || 'inperson');
+    // Watch combat state for float button + your-turn toast
+    startCombatWatcher();
 
     // Determine my slot
     const players = _campaignData.players || {};
@@ -3467,9 +3502,9 @@ async function combatStartBattle() {
   const maxRounds = winCond === 'timed' ? (parseInt(document.getElementById('cb-max-rounds').value) || 5) : 0;
   const combatants = [
     ...players.map(p => ({ id:'p_'+p.uid, name:p.name, hp:p.maxHp, maxHp:p.maxHp, ac:p.ac, type:'player', conditions:[] })),
-    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[] })),
+    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[], showHp:false })),
   ];
-  _combatState = { mode:'active', round:1, winCond, maxRounds, combatants, result:null };
+  _combatState = { mode:'active', round:1, winCond, maxRounds, combatants, result:null, currentTurnIndex:0 };
   await combatSave();
   combatRenderMode();
 }
@@ -3542,18 +3577,61 @@ function combatRenderActive() {
     else if (r==='time') { banner.style.display=''; banner.innerHTML='<div style="text-align:center;padding:10px;font-family:\'Cinzel\',serif;font-size:0.82rem;font-weight:600;color:var(--gold);border:1px solid var(--gold);border-radius:3px;background:rgba(154,112,0,0.12);">⏳ Time\'s up! The battle has ended.</div>'; }
     else banner.style.display = 'none';
   }
+  // Active combatant card
+  const cs = _combatState.combatants || [];
+  const curIdx = _combatState.currentTurnIndex || 0;
+  const activeCombatant = cs[curIdx];
+  const activeCard = document.getElementById('cb-active-card');
+  const endBtn = document.getElementById('cb-end-turn-btn');
+  if (activeCard) {
+    if (activeCombatant) {
+      activeCard.style.display = '';
+      document.getElementById('cb-active-card-name').textContent =
+        activeCombatant.name + ' — ' + (activeCombatant.type === 'player' ? 'Player' : 'Enemy');
+      document.getElementById('cb-active-card-hp').textContent    = activeCombatant.hp;
+      document.getElementById('cb-active-card-maxhp').textContent = activeCombatant.maxHp;
+      document.getElementById('cb-active-card-ac').textContent    = activeCombatant.ac;
+      const condsEl = document.getElementById('cb-active-card-conds');
+      if (condsEl) condsEl.textContent = (activeCombatant.conditions||[]).length
+        ? 'Conditions: ' + activeCombatant.conditions.join(', ')
+        : '';
+    } else {
+      activeCard.style.display = 'none';
+    }
+  }
+  if (endBtn) endBtn.style.display = cs.length > 0 ? '' : 'none';
+
+  // Show HP toggles for enemies
+  const showHpSection = document.getElementById('cb-show-hp-section');
+  const showHpList    = document.getElementById('cb-show-hp-list');
+  const enemies = cs.filter(c => c.type === 'enemy');
+  if (showHpSection) showHpSection.style.display = enemies.length ? '' : 'none';
+  if (showHpList) {
+    showHpList.innerHTML = enemies.map(e => {
+      const sid = escHtml(String(e.id));
+      return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.58rem;color:var(--border-light);margin-bottom:5px;">
+        <input type="checkbox" ${e.showHp ? 'checked' : ''} onchange="combatToggleShowHp('${sid}')" style="accent-color:var(--gold);">
+        ${escHtml(e.name)}
+      </label>`;
+    }).join('');
+  }
+
   const list = document.getElementById('cb-list');
   if (!list) return;
-  list.innerHTML = (_combatState.combatants || []).map(c => {
+  list.innerHTML = cs.map((c, i) => {
     const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
     const hc  = pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : '';
     const isE = c.type === 'enemy';
+    const isCurTurn = i === curIdx;
     const sid = escHtml(String(c.id));
+    const turnBadge = isCurTurn
+      ? `<span style="font-family:'Cinzel',serif;font-size:0.46rem;border:1px solid var(--gold);color:var(--gold);padding:1px 4px;border-radius:2px;margin-left:4px;">TURN</span>`
+      : '';
     const conds = (c.conditions||[]).map(cd =>
       `<span class="cb-cond active" onclick="combatToggleCondition('${sid}','${cd}')" title="Remove">${cd}</span>`).join('');
     const rest = _combatConditions.filter(cd=>!(c.conditions||[]).includes(cd)).map(cd =>
       `<span class="cb-cond" onclick="combatToggleCondition('${sid}','${cd}')">${cd}</span>`).join('');
-    return `<div class="cb-combatant${isE?' cb-enemy':''}${c.hp===0?' cb-unconscious':''}" data-cbid="${sid}"
+    return `<div class="cb-combatant${isE?' cb-enemy':''}${c.hp===0?' cb-unconscious':''}${isCurTurn?' cb-active-turn':''}" data-cbid="${sid}"
       draggable="true"
       ondragstart="combatDragStart(event,'${sid}')"
       ondragend="combatDragEnd(event)"
@@ -3562,7 +3640,7 @@ function combatRenderActive() {
       ondrop="combatDrop(event,'${sid}')">
       <div class="cb-top">
         <span class="cb-drag-handle" title="Drag to reorder">⠿</span>
-        <span class="cb-name">${escHtml(c.name)}</span>
+        <span class="cb-name">${escHtml(c.name)}${turnBadge}</span>
         <span class="cb-meta">AC ${c.ac}</span>
         <span class="cb-pill">${isE?'Enemy':'Player'}</span>
       </div>
@@ -3634,6 +3712,97 @@ async function combatDrop(e, targetId) {
   _combatState.combatants = arr;
   await combatSave();
   combatRenderActive();
+}
+
+async function combatEndTurn() {
+  const cs = _combatState.combatants || [];
+  if (!cs.length) return;
+  let next = ((_combatState.currentTurnIndex || 0) + 1) % cs.length;
+  if (next === 0) {
+    _combatState.round = (_combatState.round || 1) + 1;
+    combatCheckResult();
+  }
+  _combatState.currentTurnIndex = next;
+  await combatSave();
+  combatRenderActive();
+}
+
+async function combatToggleShowHp(id) {
+  const c = (_combatState.combatants||[]).find(x=>x.id===id);
+  if (!c) return;
+  c.showHp = !c.showHp;
+  await combatSave();
+  combatRenderActive();
+}
+
+// ─── COMBAT FLOAT BUTTON & TURN WATCHER ──────────────────────────
+
+let _watchCombatUnsub   = null;
+let _lastNotifiedTurnIdx = -1;
+
+function startCombatWatcher() {
+  if (_watchCombatUnsub) return;
+  _watchCombatUnsub = db.collection('campaigns').doc(campaignId)
+    .collection('combat').doc('state')
+    .onSnapshot(snap => {
+      if (!snap.exists || snap.data().mode !== 'active') {
+        updateCombatFloatBtn(false, false);
+        const navTab = document.getElementById('combat-nav-tab');
+        if (navTab) navTab.style.display = 'none';
+        return;
+      }
+      const state = snap.data();
+      const cs    = state.combatants || [];
+      const idx   = state.currentTurnIndex || 0;
+      let isMyTurn = false;
+      if (!_isDM && _currentUser) {
+        const cur = cs[idx];
+        if (cur && cur.id === 'p_' + _currentUser.uid) {
+          isMyTurn = true;
+          if (idx !== _lastNotifiedTurnIdx) {
+            _lastNotifiedTurnIdx = idx;
+            showYourTurnToast(cur.name);
+          }
+        }
+      }
+      // Show float button and nav tab for players only
+      const showForPlayer = !_isDM;
+      updateCombatFloatBtn(showForPlayer, isMyTurn);
+      const navTab = document.getElementById('combat-nav-tab');
+      if (navTab) {
+        navTab.style.display = showForPlayer ? '' : 'none';
+        navTab.classList.toggle('combat-active', isMyTurn);
+      }
+    });
+}
+
+function updateCombatFloatBtn(show, isMyTurn) {
+  const btn = document.getElementById('combat-float-btn');
+  if (!btn) return;
+  btn.style.display = show ? '' : 'none';
+  if (!show) return;
+  if (isMyTurn) {
+    btn.textContent = '⚔ Your Turn!';
+    btn.classList.add('your-turn');
+  } else {
+    btn.textContent = '⚔ Go to Combat';
+    btn.classList.remove('your-turn');
+  }
+}
+
+let _yourTurnToastTimer = null;
+function showYourTurnToast(name) {
+  const toast  = document.getElementById('your-turn-toast');
+  const nameEl = document.getElementById('your-turn-toast-name');
+  if (!toast) return;
+  if (nameEl) nameEl.textContent = `It's ${name}'s turn!`;
+  toast.style.display = '';
+  clearTimeout(_yourTurnToastTimer);
+  _yourTurnToastTimer = setTimeout(() => { if (toast) toast.style.display = 'none'; }, 8000);
+}
+
+function goToCombat() {
+  window.location.href = 'combat.html?c=' + campaignId;
 }
 
 let _announceMode = 'text';
@@ -4628,6 +4797,16 @@ function renderDiceHistory() {
   }).join('');
 }
 </script>
+
+<!-- FLOATING COMBAT BUTTON (players only, when combat active) -->
+<button class="combat-float-btn" id="combat-float-btn" onclick="goToCombat()" style="display:none;">⚔ Go to Combat</button>
+
+<!-- YOUR TURN TOAST (on index.html when combat is active and it's this player's turn) -->
+<div id="your-turn-toast" style="display:none;position:fixed;bottom:90px;right:24px;z-index:201;background:linear-gradient(135deg,#1a0800,#2a1000);border:2px solid var(--gold);border-radius:3px;padding:14px 18px;max-width:240px;box-shadow:0 0 25px rgba(154,112,0,0.5);animation:slideInUp 0.4s ease;">
+  <div style="font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;color:var(--gold-light);margin-bottom:4px;">⚔ Your Turn!</div>
+  <div id="your-turn-toast-name" style="font-family:'Crimson Text',serif;font-size:0.85rem;color:var(--parchment-dark);margin-bottom:10px;"></div>
+  <button onclick="goToCombat()" style="width:100%;padding:7px;background:rgba(154,112,0,0.2);border:1px solid var(--gold);border-radius:2px;color:var(--gold-light);font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">Go to Combat →</button>
+</div>
 
 <!-- DICE ANIMATION OVERLAY -->
 <div id="dice-anim-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:300;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
