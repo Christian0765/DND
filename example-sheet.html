@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║     D&D CAMPAIGN TRACKER — CHARACTER SHEET TEMPLATE             ║
+  ║     Version 1.0  |  Compatible with campaign tracker import     ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOW TO FILL THIS SHEET (for AI assistants)                     ║
+  ║  ─────────────────────────────────────────                      ║
+  ║  1. Every fillable field has id="f-*". Set its value/content.   ║
+  ║     • <input>    → set the `value` attribute                    ║
+  ║     • <textarea> → put text between the opening and closing tag ║
+  ║                                                                  ║
+  ║  2. Ability score MODIFIERS follow the formula:                 ║
+  ║     modifier = floor((score - 10) / 2)                          ║
+  ║     Write as "+2" or "-1" (include sign).                       ║
+  ║                                                                  ║
+  ║  3. At the bottom of <body> is a <script id="char-inventory">   ║
+  ║     block containing a JSON array. Replace the example items    ║
+  ║     with the character's actual inventory.                       ║
+  ║                                                                  ║
+  ║  INVENTORY JSON FORMAT                                           ║
+  ║  ─────────────────────                                           ║
+  ║  Each item object requires:                                      ║
+  ║    name     : string  — item name, e.g. "Longsword"             ║
+  ║    category : string  — one of the 7 valid categories below     ║
+  ║    qty      : integer — quantity (minimum 1)                     ║
+  ║  Optional:                                                       ║
+  ║    cost     : number  — gold pieces paid (default 0)            ║
+  ║                                                                  ║
+  ║  VALID CATEGORIES (use exactly as written):                     ║
+  ║    weapons   — swords, bows, daggers, staffs, etc.              ║
+  ║    armor     — armor, shields, helmets, etc.                    ║
+  ║    resources — arrows, rope, torches, spell components, etc.    ║
+  ║    magical   — magic items, wands, rods, orbs, etc.             ║
+  ║    healing   — potions, bandages, antitoxins, etc.              ║
+  ║    food      — rations, food, drink, etc.                       ║
+  ║    misc      — everything else (tools, clothing, containers)    ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D Character Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c4920a;
+    --gold-light: #e8d5a8;
+    --parchment: #f5e6c8;
+    --parchment-dark: #e8d5a8;
+    --border: #9a7000;
+    --border-light: #c4a84a;
+    --bg: #1a0e04;
+    --text: #2a1a06;
+    --red: #7a1515;
+    --green: #2a5a1a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Crimson Text', serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    font-size: 1rem;
+  }
+
+  .sheet {
+    max-width: 900px;
+    margin: 0 auto;
+    background: linear-gradient(160deg, var(--parchment) 0%, #f0ddb0 50%, var(--parchment-dark) 100%);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    padding: 32px 36px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.6);
+  }
+
+  .sheet-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--red);
+    text-align: center;
+    letter-spacing: 0.12em;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--red);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 3px;
+    margin: 20px 0 12px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 8px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .field label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--border);
+    text-transform: uppercase;
+  }
+
+  .field input, .field textarea, .field select {
+    font-family: 'Crimson Text', serif;
+    font-size: 0.95rem;
+    background: rgba(255,255,255,0.45);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 4px 8px;
+    color: var(--text);
+    outline: none;
+  }
+
+  .field input:focus, .field textarea:focus {
+    background: rgba(255,255,255,0.7);
+    border-color: var(--border);
+  }
+
+  .field.wide input, .field.wide textarea { width: 280px; }
+  .field.medium input { width: 160px; }
+  .field.short input { width: 72px; }
+  .field.tiny input  { width: 52px; }
+  .field.xsmall input { width: 40px; }
+
+  .ability-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .ability-block {
+    text-align: center;
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    padding: 8px 4px 6px;
+    background: rgba(255,255,255,0.3);
+  }
+
+  .ability-block .ability-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--red);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .ability-block input {
+    font-family: 'Crimson Text', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-align: center;
+    width: 48px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 2px 0;
+    color: var(--text);
+    display: block;
+    margin: 0 auto 4px;
+  }
+
+  .ability-block .mod-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    color: var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .ability-block .mod-input {
+    font-family: 'Crimson Text', serif;
+    font-size: 0.95rem;
+    text-align: center;
+    width: 40px;
+    background: rgba(255,255,255,0.4);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 1px 0;
+    color: var(--text);
+    display: block;
+    margin: 0 auto;
+  }
+
+  .combat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .stat-box {
+    text-align: center;
+    border: 1px solid var(--border-light);
+    border-radius: 3px;
+    padding: 6px 4px;
+    background: rgba(255,255,255,0.3);
+  }
+
+  .stat-box label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--border);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .stat-box input {
+    font-family: 'Crimson Text', serif;
+    font-size: 1.1rem;
+    text-align: center;
+    width: 100%;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 2px 0;
+    color: var(--text);
+  }
+
+  textarea {
+    font-family: 'Crimson Text', serif;
+    font-size: 0.9rem;
+    width: 100%;
+    resize: vertical;
+    background: rgba(255,255,255,0.4);
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
+    padding: 6px 8px;
+    color: var(--text);
+    line-height: 1.5;
+    outline: none;
+  }
+
+  textarea:focus {
+    background: rgba(255,255,255,0.65);
+    border-color: var(--border);
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  .field-block { margin-bottom: 12px; }
+  .field-block label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--border);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .inv-note {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    color: var(--border);
+    letter-spacing: 0.05em;
+    background: rgba(154,112,0,0.1);
+    border: 1px dashed var(--border-light);
+    border-radius: 3px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    line-height: 1.7;
+  }
+
+  .download-note {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    color: var(--border-light);
+    letter-spacing: 0.08em;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+  }
+</style>
+</head>
+<body>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  AI ASSISTANT QUICK REFERENCE
+  ───────────────────────────────────────────────────────────
+  Fill every id="f-*" element, then update the JSON block at
+  the very bottom of this file (id="char-inventory").
+
+  ALL FIELD IDs:
+    Identity  : f-name, f-class, f-race, f-bg, f-align, f-player
+    Combat    : f-prof, f-ac, f-init, f-speed, f-curhp, f-maxhp,
+                f-hd, f-pp, f-gold, f-gold2, f-carry
+    Abilities : f-str, f-strmod, f-dex, f-dexmod, f-con, f-conmod,
+                f-int, f-intmod, f-wis, f-wismod, f-cha, f-chamod
+    Personality: f-traits, f-ideals, f-bonds, f-flaws
+    Text blocks: f-notes, f-profs, f-features, f-backstory
+    Item lists : f-weapons (one item per line), f-equipment (one item per line)
+  ═══════════════════════════════════════════════════════════
+-->
+
+<div class="sheet">
+
+  <div class="sheet-title">⚔ Character Sheet</div>
+
+  <!-- ═══════════════════ IDENTITY ═══════════════════ -->
+  <div class="section-title">Character Identity</div>
+
+  <div class="field-group">
+    <!-- FIELD: f-name | TYPE: text input | DESCRIPTION: Character's full name (required) -->
+    <div class="field wide">
+      <label for="f-name">Character Name *</label>
+      <input type="text" id="f-name" placeholder="e.g. Dracula Nightborn" value="">
+    </div>
+
+    <!-- FIELD: f-player | TYPE: text input | DESCRIPTION: Real player's name or username -->
+    <div class="field medium">
+      <label for="f-player">Player Name</label>
+      <input type="text" id="f-player" placeholder="e.g. Christian" value="">
+    </div>
+  </div>
+
+  <div class="field-group">
+    <!-- FIELD: f-class | TYPE: text input | DESCRIPTION: Character class and level, e.g. "Fighter 3" or "Wizard 5 / Rogue 2" -->
+    <div class="field medium">
+      <label for="f-class">Class &amp; Level</label>
+      <input type="text" id="f-class" placeholder="e.g. Fighter 3" value="">
+    </div>
+
+    <!-- FIELD: f-race | TYPE: text input | DESCRIPTION: Character race/species, e.g. "Human", "Elf", "Half-Orc" -->
+    <div class="field medium">
+      <label for="f-race">Race</label>
+      <input type="text" id="f-race" placeholder="e.g. Human" value="">
+    </div>
+
+    <!-- FIELD: f-bg | TYPE: text input | DESCRIPTION: Character background, e.g. "Soldier", "Noble", "Outlander" -->
+    <div class="field medium">
+      <label for="f-bg">Background</label>
+      <input type="text" id="f-bg" placeholder="e.g. Soldier" value="">
+    </div>
+
+    <!-- FIELD: f-align | TYPE: text input | DESCRIPTION: Alignment, e.g. "Lawful Good", "Chaotic Neutral", "True Neutral" -->
+    <div class="field medium">
+      <label for="f-align">Alignment</label>
+      <input type="text" id="f-align" placeholder="e.g. Chaotic Neutral" value="">
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ABILITY SCORES ═══════════════════ -->
+  <div class="section-title">Ability Scores</div>
+  <!-- Formula: modifier = floor((score - 10) / 2). Write modifier as "+2" or "-1" -->
+
+  <div class="ability-grid">
+
+    <!-- FIELD: f-str | TYPE: number input | DESCRIPTION: Strength score (1–30) -->
+    <!-- FIELD: f-strmod | TYPE: text input | DESCRIPTION: Strength modifier, e.g. "+3" or "-1" -->
+    <div class="ability-block">
+      <span class="ability-label">STR</span>
+      <input type="number" id="f-str" min="1" max="30" placeholder="10" value="">
+      <span class="mod-label">Modifier</span>
+      <input type="text" class="mod-input" id="f-strmod" placeholder="+0" value="">
+    </div>
+
+    <!-- FIELD: f-dex | TYPE: number input | DESCRIPTION: Dexterity score (1–30) -->
+    <!-- FIELD: f-dexmod | TYPE: text input | DESCRIPTION: Dexterity modifier -->
+    <div class="ability-block">
+      <span class="ability-label">DEX</span>
+      <input type="number" id="f-dex" min="1" max="30" placeholder="10" value="">
+      <span class="mod-label">Modifier</span>
+      <input type="text" class="mod-input" id="f-dexmod" placeholder="+0" value="">
+    </div>
+
+    <!-- FIELD: f-con | TYPE: number input | DESCRIPTION: Constitution score (1–30) -->
+    <!-- FIELD: f-conmod | TYPE: text input | DESCRIPTION: Constitution modifier -->
+    <div class="ability-block">
+      <span class="ability-label">CON</span>
+      <input type="number" id="f-con" min="1" max="30" placeholder="10" value="">
+      <span class="mod-label">Modifier</span>
+      <input type="text" class="mod-input" id="f-conmod" placeholder="+0" value="">
+    </div>
+
+    <!-- FIELD: f-int | TYPE: number input | DESCRIPTION: Intelligence score (1–30) -->
+    <!-- FIELD: f-intmod | TYPE: text input | DESCRIPTION: Intelligence modifier -->
+    <div class="ability-block">
+      <span class="ability-label">INT</span>
+      <input type="number" id="f-int" min="1" max="30" placeholder="10" value="">
+      <span class="mod-label">Modifier</span>
+      <input type="text" class="mod-input" id="f-intmod" placeholder="+0" value="">
+    </div>
+
+    <!-- FIELD: f-wis | TYPE: number input | DESCRIPTION: Wisdom score (1–30) -->
+    <!-- FIELD: f-wismod | TYPE: text input | DESCRIPTION: Wisdom modifier -->
+    <div class="ability-block">
+      <span class="ability-label">WIS</span>
+      <input type="number" id="f-wis" min="1" max="30" placeholder="10" value="">
+      <span class="mod-label">Modifier</span>
+      <input type="text" class="mod-input" id="f-wismod" placeholder="+0" value="">
+    </div>
+
+    <!-- FIELD: f-cha | TYPE: number input | DESCRIPTION: Charisma score (1–30) -->
+    <!-- FIELD: f-chamod | TYPE: text input | DESCRIPTION: Charisma modifier -->
+    <div class="ability-block">
+      <span class="ability-label">CHA</span>
+      <input type="number" id="f-cha" min="1" max="30" placeholder="10" value="">
+      <span class="mod-label">Modifier</span>
+      <input type="text" class="mod-input" id="f-chamod" placeholder="+0" value="">
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════ COMBAT STATS ═══════════════════ -->
+  <div class="section-title">Combat &amp; Stats</div>
+
+  <div class="combat-grid">
+    <!-- FIELD: f-prof | TYPE: text input | DESCRIPTION: Proficiency bonus, e.g. "+2" or "+4" -->
+    <div class="stat-box">
+      <label for="f-prof">Prof. Bonus</label>
+      <input type="text" id="f-prof" placeholder="+2" value="">
+    </div>
+
+    <!-- FIELD: f-ac | TYPE: number input | DESCRIPTION: Armor Class (integer) -->
+    <div class="stat-box">
+      <label for="f-ac">Armor Class</label>
+      <input type="number" id="f-ac" placeholder="12" value="">
+    </div>
+
+    <!-- FIELD: f-init | TYPE: text input | DESCRIPTION: Initiative bonus, e.g. "+2" or "-1" -->
+    <div class="stat-box">
+      <label for="f-init">Initiative</label>
+      <input type="text" id="f-init" placeholder="+2" value="">
+    </div>
+
+    <!-- FIELD: f-speed | TYPE: text input | DESCRIPTION: Movement speed in feet, e.g. "30 ft" -->
+    <div class="stat-box">
+      <label for="f-speed">Speed</label>
+      <input type="text" id="f-speed" placeholder="30 ft" value="">
+    </div>
+
+    <!-- FIELD: f-curhp | TYPE: number input | DESCRIPTION: Current hit points -->
+    <div class="stat-box">
+      <label for="f-curhp">Current HP</label>
+      <input type="number" id="f-curhp" placeholder="0" value="">
+    </div>
+
+    <!-- FIELD: f-maxhp | TYPE: number input | DESCRIPTION: Maximum hit points -->
+    <div class="stat-box">
+      <label for="f-maxhp">Max HP</label>
+      <input type="number" id="f-maxhp" placeholder="0" value="">
+    </div>
+
+    <!-- FIELD: f-hd | TYPE: text input | DESCRIPTION: Hit dice, e.g. "3d10" or "2d8+1d6" -->
+    <div class="stat-box">
+      <label for="f-hd">Hit Dice</label>
+      <input type="text" id="f-hd" placeholder="3d10" value="">
+    </div>
+
+    <!-- FIELD: f-pp | TYPE: number input | DESCRIPTION: Passive Perception score (integer) -->
+    <div class="stat-box">
+      <label for="f-pp">Passive Perc.</label>
+      <input type="number" id="f-pp" placeholder="10" value="">
+    </div>
+
+    <!-- FIELD: f-gold | TYPE: number input | DESCRIPTION: Gold pieces (primary currency) -->
+    <div class="stat-box">
+      <label for="f-gold">Gold (GP)</label>
+      <input type="number" id="f-gold" placeholder="0" value="">
+    </div>
+
+    <!-- FIELD: f-gold2 | TYPE: text input | DESCRIPTION: Other currency (silver, copper, etc.), e.g. "10 SP, 5 CP" -->
+    <div class="stat-box">
+      <label for="f-gold2">Other Currency</label>
+      <input type="text" id="f-gold2" placeholder="10 SP" value="">
+    </div>
+
+    <!-- FIELD: f-carry | TYPE: text input | DESCRIPTION: Carrying capacity or current carry weight, e.g. "150 lbs" -->
+    <div class="stat-box">
+      <label for="f-carry">Carry Cap.</label>
+      <input type="text" id="f-carry" placeholder="150 lbs" value="">
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PERSONALITY ═══════════════════ -->
+  <div class="section-title">Personality</div>
+
+  <div class="two-col">
+    <div>
+      <!-- FIELD: f-traits | TYPE: text input | DESCRIPTION: Personality traits (brief description of character's mannerisms) -->
+      <div class="field-block">
+        <label for="f-traits">Personality Traits</label>
+        <textarea id="f-traits" rows="3" placeholder="e.g. I'm haunted by memories of war and rarely sleep."></textarea>
+      </div>
+
+      <!-- FIELD: f-ideals | TYPE: text input | DESCRIPTION: Character's ideals and core beliefs -->
+      <div class="field-block">
+        <label for="f-ideals">Ideals</label>
+        <textarea id="f-ideals" rows="2" placeholder="e.g. I must protect those who cannot protect themselves."></textarea>
+      </div>
+    </div>
+    <div>
+      <!-- FIELD: f-bonds | TYPE: text input | DESCRIPTION: Character's bonds — connections to people, places, or events -->
+      <div class="field-block">
+        <label for="f-bonds">Bonds</label>
+        <textarea id="f-bonds" rows="2" placeholder="e.g. My hometown was destroyed; I seek revenge."></textarea>
+      </div>
+
+      <!-- FIELD: f-flaws | TYPE: text input | DESCRIPTION: Character's flaws and weaknesses -->
+      <div class="field-block">
+        <label for="f-flaws">Flaws</label>
+        <textarea id="f-flaws" rows="3" placeholder="e.g. I have a weakness for beautiful people and will do anything for them."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PROFICIENCIES & FEATURES ═══════════════════ -->
+  <div class="section-title">Proficiencies &amp; Features</div>
+
+  <div class="two-col">
+    <!-- FIELD: f-profs | TYPE: textarea | DESCRIPTION: Proficiencies — list of skills, tools, languages, armor, weapons the character is proficient with. One per line or comma separated. -->
+    <div class="field-block">
+      <label for="f-profs">Proficiencies &amp; Languages</label>
+      <textarea id="f-profs" rows="6" placeholder="Skills: Athletics, Intimidation&#10;Languages: Common, Elvish&#10;Armor: Light, Medium, Heavy, Shields&#10;Weapons: Simple, Martial&#10;Tools: None"></textarea>
+    </div>
+
+    <!-- FIELD: f-features | TYPE: textarea | DESCRIPTION: Class features, racial traits, and special abilities. One per line. -->
+    <div class="field-block">
+      <label for="f-features">Features &amp; Traits</label>
+      <textarea id="f-features" rows="6" placeholder="Second Wind&#10;Action Surge&#10;Fighting Style: Defense&#10;Darkvision 60 ft&#10;Fey Ancestry"></textarea>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ WEAPONS & EQUIPMENT ═══════════════════ -->
+  <div class="section-title">Weapons &amp; Equipment (Text)</div>
+  <p style="font-size:0.8rem;color:var(--border);margin-bottom:10px;">
+    These text fields are imported as plain text. For structured inventory import, use the JSON block below instead.
+  </p>
+
+  <div class="two-col">
+    <!-- FIELD: f-weapons | TYPE: textarea | DESCRIPTION: Weapons list. One weapon per line. You may include attack bonus and damage in parentheses, e.g. "Longsword (atk +5, 1d8+3 slashing)". The import system strips the parenthetical notes and uses the name only. -->
+    <div class="field-block">
+      <label for="f-weapons">Weapons</label>
+      <textarea id="f-weapons" rows="6" placeholder="Longsword (atk +5, 1d8+3 slashing)&#10;Handaxe (atk +5, 1d6+3 slashing)&#10;Longbow (atk +4, 1d8+2 piercing)"></textarea>
+    </div>
+
+    <!-- FIELD: f-equipment | TYPE: textarea | DESCRIPTION: Equipment and gear list. One item per line. The import system uses the text before any comma or parenthesis as the item name. -->
+    <div class="field-block">
+      <label for="f-equipment">Equipment</label>
+      <textarea id="f-equipment" rows="6" placeholder="Leather Armor&#10;Backpack&#10;Rope, Hempen (50 ft)&#10;Tinderbox&#10;Torch x10&#10;Rations x5"></textarea>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ NOTES & BACKSTORY ═══════════════════ -->
+  <div class="section-title">Notes &amp; Backstory</div>
+
+  <!-- FIELD: f-notes | TYPE: textarea | DESCRIPTION: General campaign notes, reminders, or miscellaneous information -->
+  <div class="field-block">
+    <label for="f-notes">Notes</label>
+    <textarea id="f-notes" rows="3" placeholder="Any notes about current quests, NPCs met, etc."></textarea>
+  </div>
+
+  <!-- FIELD: f-backstory | TYPE: textarea | DESCRIPTION: Character's backstory and history. Can be multiple paragraphs. -->
+  <div class="field-block">
+    <label for="f-backstory">Backstory</label>
+    <textarea id="f-backstory" rows="6" placeholder="Write the character's history here. Where did they come from? What drives them? What shaped who they are today?"></textarea>
+  </div>
+
+  <!-- ═══════════════════ INVENTORY NOTE ═══════════════════ -->
+  <div class="section-title">Structured Inventory (for AI &amp; Import)</div>
+
+  <div class="inv-note">
+    📦 The JSON block below is what gets imported directly into the campaign inventory system.<br>
+    Edit the array inside the &lt;script id="char-inventory"&gt; tag at the bottom of this file.<br>
+    Valid categories: <strong>weapons · armor · resources · magical · healing · food · misc</strong>
+  </div>
+
+  <div class="download-note">
+    D&D Campaign Tracker · example-sheet.html · Upload this file on the character creation screen
+  </div>
+
+</div><!-- end .sheet -->
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  STRUCTURED INVENTORY — EDIT THIS JSON ARRAY
+  ═══════════════════════════════════════════════════════════════════
+  Rules:
+    • Each object needs: "name" (string), "category" (string), "qty" (integer ≥ 1)
+    • "cost" is optional (gold pieces paid; default 0)
+    • Valid category values (use exactly as written, lowercase):
+        weapons   → swords, bows, axes, daggers, staffs, spears, etc.
+        armor     → armor, shields, helmets, bracers, etc.
+        resources → arrows, bolts, rope, torches, spell components, etc.
+        magical   → magic items, wands, rods, orbs, rings, etc.
+        healing   → potions of healing, bandages, antitoxin, etc.
+        food      → rations, food, water, ale, etc.
+        misc      → tools, clothing, containers, instruments, everything else
+    • Remove the example items and replace with the character's actual inventory
+    • Keep valid JSON — no trailing commas on the last item
+  ═══════════════════════════════════════════════════════════════════
+-->
+<script type="application/json" id="char-inventory">
+[
+  {"name": "Longsword",      "category": "weapons",   "qty": 1, "cost": 15},
+  {"name": "Handaxe",        "category": "weapons",   "qty": 1, "cost": 5},
+  {"name": "Leather Armor",  "category": "armor",     "qty": 1, "cost": 10},
+  {"name": "Arrow",          "category": "resources", "qty": 20,"cost": 1},
+  {"name": "Rope, Hempen",   "category": "resources", "qty": 1, "cost": 1},
+  {"name": "Torch",          "category": "resources", "qty": 10,"cost": 0},
+  {"name": "Health Potion",  "category": "healing",   "qty": 2, "cost": 25},
+  {"name": "Rations",        "category": "food",      "qty": 5, "cost": 0},
+  {"name": "Backpack",       "category": "misc",      "qty": 1, "cost": 2},
+  {"name": "Waterskin",      "category": "misc",      "qty": 1, "cost": 0}
+]
+</script>
+
+</body>
+</html>
