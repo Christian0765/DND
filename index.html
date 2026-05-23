@@ -1681,6 +1681,34 @@ async function approveCharacter(uid, btn) {
       })).filter(item => item.name);
       if (inventoryEntries.length > 0) {
         await db.collection('campaigns').doc(campaignId).collection('characters').doc(slot).update({ inventory: inventoryEntries });
+
+        // Sync new items to the encyclopedia items catalog (skip duplicates by name)
+        const catalogSnap = await db.collection('campaigns').doc(campaignId).collection('items').get();
+        const existingNames = new Set(catalogSnap.docs.map(d => (d.data().name || '').toLowerCase()));
+        const batch = db.batch();
+        let newCatalogCount = 0;
+        inventoryEntries.forEach(item => {
+          const key = item.name.toLowerCase();
+          if (!existingNames.has(key)) {
+            existingNames.add(key);
+            const ref = db.collection('campaigns').doc(campaignId).collection('items').doc();
+            batch.set(ref, {
+              name:        item.name,
+              category:    item.category,
+              rarity:      'common',
+              cost:        item.cost,
+              weight:      0,
+              description: '',
+              createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
+            });
+            newCatalogCount++;
+          }
+        });
+        if (newCatalogCount > 0) {
+          await batch.commit();
+          _itemsLoaded = false; // force reload next time items tab opens
+          if (document.getElementById('items-tab')?.style.display !== 'none') await loadItems();
+        }
       }
     }
 
