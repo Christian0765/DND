@@ -424,9 +424,37 @@ body {
 #redirect-msg-text {
   font-family: 'Cinzel', serif;
   font-size: 1.1rem;
-  color: var(--border-light);
+  color: var(--parchment-dark);
   letter-spacing: 0.1em;
 }
+#redirect-msg-sub {
+  font-family: 'Crimson Text', serif;
+  font-size: 0.9rem;
+  color: var(--border-light);
+}
+
+/* Loading overlay */
+#loading-overlay {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 998;
+}
+#loading-overlay.hidden { display: none; }
+#loading-text {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--border-light);
+}
+@keyframes loadingPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+#loading-sword { font-size: 2.5rem; animation: loadingPulse 1.5s ease-in-out infinite; }
 
 /* ── TURN OVERLAY ── */
 #turn-overlay {
@@ -488,9 +516,16 @@ body {
 </head>
 <body>
 
+<!-- LOADING OVERLAY (shown until first snapshot fires) -->
+<div id="loading-overlay">
+  <div id="loading-sword">⚔️</div>
+  <div id="loading-text">Loading Combat...</div>
+</div>
+
 <!-- REDIRECT MESSAGE -->
 <div id="redirect-msg">
-  <div id="redirect-msg-text">No Active Combat — Returning...</div>
+  <div id="redirect-msg-text">No Active Combat</div>
+  <div id="redirect-msg-sub">Returning to campaign...</div>
 </div>
 
 <!-- TOP BAR -->
@@ -594,14 +629,20 @@ function hpBarClass(pct) {
   return 'hp-red';
 }
 
-// ── Redirect ──
+// ── Loading / Redirect ──
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+
 function showRedirect() {
+  hideLoading();
   document.getElementById('redirect-msg').classList.add('visible');
   setTimeout(goBack, 1500);
 }
 
 // ── Render ──
 function renderCombat(state) {
+  hideLoading();
   const combatants = state.combatants || [];
   const curIdx = state.currentTurnIndex ?? 0;
   const myId = currentUser ? 'p_' + currentUser.uid : null;
