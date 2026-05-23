@@ -849,6 +849,10 @@
     </div>
     <!-- DM create form (shown only for DM) -->
     <div id="items-dm" class="dm-section" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:18px;">
+      <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;" id="items-sync-row">
+        <button class="dm-btn" onclick="syncInventoriesToCatalog(this)" style="font-size:0.65rem;padding:6px 14px;">🔄 Sync from Character Inventories</button>
+        <span id="items-sync-msg" style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.06em;color:var(--green);"></span>
+      </div>
       <div class="dm-section-title">Add New Item</div>
       <div class="dm-field"><label>Name *</label>
         <input type="text" id="item-form-name" placeholder="e.g. Iron Sword"
@@ -3367,6 +3371,70 @@ function setItemFilter(cat) {
   const btn = document.getElementById('ifilter-' + cat);
   if (btn) btn.classList.add('active');
   renderItems();
+}
+
+async function syncInventoriesToCatalog(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  const syncMsg = document.getElementById('items-sync-msg');
+  try {
+    const slots = Object.values(_campaignData?.players || {}).map(p => p.slot).filter(Boolean);
+    if (!slots.length) {
+      if (syncMsg) { syncMsg.textContent = 'No characters found.'; setTimeout(()=>syncMsg.textContent='',4000); }
+      return;
+    }
+
+    const charDocs = await Promise.all(
+      slots.map(s => db.collection('campaigns').doc(campaignId).collection('characters').doc(s).get())
+    );
+
+    const allItems = [];
+    charDocs.forEach(doc => {
+      if (!doc.exists) return;
+      (doc.data().inventory || []).forEach(item => { if (item && item.name) allItems.push(item); });
+    });
+
+    if (!allItems.length) {
+      if (syncMsg) { syncMsg.textContent = 'No inventory items found on any character.'; setTimeout(()=>syncMsg.textContent='',4000); }
+      return;
+    }
+
+    const catalogSnap = await db.collection('campaigns').doc(campaignId).collection('items').get();
+    const existingNames = new Set(catalogSnap.docs.map(d => (d.data().name || '').toLowerCase()));
+
+    const batch = db.batch();
+    let added = 0;
+    allItems.forEach(item => {
+      const key = (item.name || '').toLowerCase();
+      if (!key || existingNames.has(key)) return;
+      existingNames.add(key);
+      const ref = db.collection('campaigns').doc(campaignId).collection('items').doc();
+      batch.set(ref, {
+        name:        String(item.name).trim(),
+        category:    item.category || 'misc',
+        rarity:      'common',
+        cost:        Math.max(0, parseFloat(item.cost) || 0),
+        weight:      0,
+        description: '',
+        createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      added++;
+    });
+
+    if (added > 0) await batch.commit();
+    _itemsLoaded = false;
+    await loadItems();
+
+    if (syncMsg) {
+      syncMsg.textContent = added > 0
+        ? `✓ ${added} new item${added !== 1 ? 's' : ''} added to catalog`
+        : 'All inventory items are already in the catalog.';
+      setTimeout(() => syncMsg.textContent = '', 5000);
+    }
+  } catch(e) {
+    if (syncMsg) syncMsg.textContent = 'Sync failed: ' + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Sync from Character Inventories'; }
+  }
 }
 
 async function addItem() {
