@@ -593,6 +593,12 @@
   .modal-msg.success { color: var(--green); font-style: normal; font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.05em; }
 
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes diceSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+  @keyframes diceReveal { 0%{transform:scale(0.2);opacity:0;} 65%{transform:scale(1.12);opacity:1;} 100%{transform:scale(1);opacity:1;} }
+  /* Dice roller */
+  .dice-die-btn { font-family:'Cinzel',serif;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:7px 12px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;transition:all 0.15s; }
+  .dice-die-btn:hover { background:rgba(154,112,0,0.1);border-color:var(--border-light); }
+  .dice-die-btn.selected { background:rgba(154,112,0,0.2);border-color:var(--gold);color:var(--gold-light); }
 
   @media (max-width: 500px) {
     .site-title { font-size: 2rem; }
@@ -870,6 +876,7 @@
   <button class="nav-btn" id="announce-btn" onclick="toggleAnnouncePanel()" style="display:none;">📢 Events</button>
   <button class="nav-btn" id="ann-view-btn" onclick="reopenAnnouncement()" style="display:none;">👁 View</button>
   <button class="nav-btn" id="items-tab-btn" onclick="toggleItemsTab()">🗡️ Items</button>
+  <button class="nav-btn" id="dice-btn" onclick="toggleDicePanel()" style="display:none;">🎲 Roll</button>
 </div>
 
 <!-- SESSION ANNOUNCEMENTS TAB -->
@@ -1140,6 +1147,44 @@
   </div>
 </div>
 
+<!-- DICE ROLLER PANEL -->
+<div id="dice-panel" style="display:none;max-width:820px;margin:0 auto 32px;">
+  <div style="background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);box-shadow:0 0 0 3px #080604,0 8px 30px rgba(0,0,0,0.8);border-radius:3px;padding:24px 28px;">
+    <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;letter-spacing:0.05em;">🎲 Dice Roller</div>
+    <!-- Die selector -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" id="dice-die-row"></div>
+    <!-- Quantity + label + Roll -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div>
+        <label style="font-family:'Cinzel',serif;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);display:block;margin-bottom:3px;">Qty</label>
+        <input type="number" id="dice-qty" min="1" max="10" value="1" oninput="updateDiceLabel()"
+               style="width:52px;text-align:center;font-family:'Cinzel',serif;font-size:1rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:6px;outline:none;">
+      </div>
+      <div id="dice-roll-label" style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:900;color:var(--gold-light);flex:1;text-align:center;">1d20</div>
+      <button class="dm-btn" onclick="rollDice()" style="font-size:0.75rem;padding:8px 20px;">🎲 Roll!</button>
+    </div>
+    <!-- DM-only: secret roll -->
+    <div id="dice-secret-row" style="display:none;margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.6rem;color:var(--border-light);">
+        <input type="checkbox" id="dice-secret" style="accent-color:var(--gold);">
+        Secret Roll — only you see the result
+      </label>
+    </div>
+    <!-- Animation preference -->
+    <div style="margin-bottom:16px;border-top:1px solid rgba(122,90,40,0.3);padding-top:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.58rem;color:var(--border-light);">
+        <input type="checkbox" id="dice-anim-toggle" style="accent-color:var(--gold);" onchange="saveDiceAnimPref()">
+        Show roll animations
+      </label>
+    </div>
+    <!-- Roll history -->
+    <div style="border-top:1px solid rgba(122,90,40,0.3);padding-top:12px;">
+      <div style="font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-bottom:8px;">Session Roll Log</div>
+      <div id="dice-history-list" style="font-size:0.78rem;color:var(--parchment-dark);font-family:'Crimson Text',serif;line-height:1.7;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- DM PANEL -->
 <div class="dm-panel" id="dm-panel" style="display:none;max-width:820px;margin:0 auto 32px;background:linear-gradient(160deg,#1a0e04 0%,#0d0802 100%);border:1px solid var(--border);box-shadow:0 0 0 3px #080604,0 8px 30px rgba(0,0,0,0.8);border-radius:3px;padding:24px 28px;">
   <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;letter-spacing:0.05em;">🔐 Dungeon Master Panel</div>
@@ -1160,6 +1205,14 @@
     <div class="dm-section-title">Secret DM Notes</div>
     <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans...&#10;&#10;Players cannot see this section."></textarea>
     <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
+  </div>
+  <div class="dm-section" id="dice-mode-section">
+    <div class="dm-section-title">Dice Mode</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button class="dm-btn" id="dmode-btn-inperson" onclick="setDiceMode('inperson')" style="flex:1;">🎲 In-Person</button>
+      <button class="dm-btn" id="dmode-btn-virtual"  onclick="setDiceMode('virtual')"  style="flex:1;">📱 Virtual</button>
+    </div>
+    <div id="dice-mode-desc" style="font-size:0.68rem;color:var(--border-light);line-height:1.5;"></div>
   </div>
 
 </div>
@@ -1542,6 +1595,13 @@ let _currentAnnouncement = null;
 let _shownAnnouncementAt = 0;
 let _currentSessionNotes = [];
 
+// Dice roller state
+let _diceMode        = 'inperson';
+let _selectedDie     = 'd20';
+let _shownDiceRollAt = 0;
+let _diceHistory     = [];
+let _diceAnimTimer   = null;
+
 // ─── AUTH GUARD ───────────────────────────────────────────────
 firebase.auth().onAuthStateChanged(async user => {
   if (!user) { window.location.href = 'home.html'; return; }
@@ -1573,6 +1633,8 @@ firebase.auth().onAuthStateChanged(async user => {
     loadSessionNotes(_campaignData.sessionNotes || []);
     // Seed active event display for DM on page load
     if (_isDM) renderDMActiveEvent(_campaignData.announcement && _campaignData.announcement.active ? _campaignData.announcement : null);
+    // Initial dice mode
+    updateDiceModeUI(_campaignData.diceMode || 'inperson');
 
     // Determine my slot
     const players = _campaignData.players || {};
@@ -1592,6 +1654,21 @@ firebase.auth().onAuthStateChanged(async user => {
       if (!snap.exists) return;
       const data = snap.data();
       loadSessionNotes(data.sessionNotes || []);
+
+      // Dice mode change
+      const newMode = data.diceMode || 'inperson';
+      if (newMode !== _diceMode) updateDiceModeUI(newMode);
+
+      // Dice roll broadcast
+      const roll = data.diceRoll;
+      if (roll && roll.rolledAt) {
+        const rolledAt = roll.rolledAt.toMillis ? roll.rolledAt.toMillis() : 0;
+        if (rolledAt !== _shownDiceRollAt) {
+          _shownDiceRollAt = rolledAt;
+          showDiceAnimation({ roller: roll.roller, isDM: roll.isDM, qty: roll.quantity, die: roll.die, results: roll.results, total: roll.total, secret: false });
+        }
+      }
+
       const ann = data.announcement;
       if (!ann || !ann.active) {
         _currentAnnouncement = null;
@@ -2181,6 +2258,7 @@ function toggleDMPanel() {
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
+  document.getElementById('dice-panel').style.display = 'none';
   panel.style.display = isOpen ? 'none' : '';
 }
 
@@ -2251,6 +2329,7 @@ function toggleLandsSection() {
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
+  document.getElementById('dice-panel').style.display = 'none';
   _landsOpen = !isOpen;
   section.style.display = _landsOpen ? '' : 'none';
   if (_landsOpen && !_landsDataLoaded) {
@@ -3118,6 +3197,7 @@ function toggleAnnouncementsTab() {
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
+  document.getElementById('dice-panel').style.display = 'none';
   tab.style.display = isOpen ? 'none' : '';
   if (!isOpen) {
     const seenKey = 'dnd-seen-notes-' + campaignId;
@@ -3201,6 +3281,7 @@ function toggleAnnouncePanel() {
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
+  document.getElementById('dice-panel').style.display = 'none';
   panel.style.display = isOpen ? 'none' : '';
   if (isOpen) {
     combatUnsubscribe();
@@ -3903,6 +3984,7 @@ function toggleItemsTab() {
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
+  document.getElementById('dice-panel').style.display = 'none';
   tab.style.display = isOpen ? 'none' : '';
   if (!isOpen && !_itemsLoaded) loadItems();
 }
@@ -4366,6 +4448,201 @@ async function showDMInventory(slot, charName) {
 function closeDMInventory() {
   document.getElementById('dm-inv-modal')?.classList.remove('open');
 }
+
+// ─── VIRTUAL DICE ROLLER ──────────────────────────────────────────
+
+async function setDiceMode(mode) {
+  await db.collection('campaigns').doc(campaignId).update({ diceMode: mode });
+}
+
+function updateDiceModeUI(mode) {
+  _diceMode = mode || 'inperson';
+  const diceBtn = document.getElementById('dice-btn');
+  if (diceBtn) diceBtn.style.display = _diceMode === 'virtual' ? '' : 'none';
+  if (_diceMode !== 'virtual') {
+    const p = document.getElementById('dice-panel');
+    if (p) p.style.display = 'none';
+  }
+  ['inperson','virtual'].forEach(m => {
+    const b = document.getElementById('dmode-btn-' + m);
+    if (!b) return;
+    b.style.background  = m === mode ? 'rgba(154,112,0,0.2)' : '';
+    b.style.borderColor = m === mode ? 'var(--gold)'         : '';
+    b.style.color       = m === mode ? 'var(--gold-light)'   : '';
+  });
+  const desc = document.getElementById('dice-mode-desc');
+  if (desc) desc.textContent = mode === 'virtual'
+    ? 'All players see a dice roller in the nav bar. Public rolls broadcast an animated result to every screen.'
+    : 'Players use physical dice. The virtual roller is hidden for everyone.';
+}
+
+function toggleDicePanel() {
+  const panel = document.getElementById('dice-panel');
+  const isOpen = panel.style.display !== 'none';
+  document.getElementById('dm-panel').style.display = 'none';
+  document.getElementById('announce-panel').style.display = 'none';
+  document.getElementById('announcements-tab').style.display = 'none';
+  document.getElementById('items-tab').style.display = 'none';
+  document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
+  panel.style.display = isOpen ? 'none' : '';
+  if (!isOpen) renderDiePicker();
+}
+
+function renderDiePicker() {
+  const row = document.getElementById('dice-die-row');
+  if (!row) return;
+  const dice = ['d4','d6','d8','d10','d12','d20','d100'];
+  row.innerHTML = dice.map(d =>
+    `<button class="dice-die-btn${d === _selectedDie ? ' selected' : ''}" onclick="selectDie('${d}')">${d}</button>`
+  ).join('');
+  const sr = document.getElementById('dice-secret-row');
+  if (sr) sr.style.display = _isDM ? '' : 'none';
+  const animToggle = document.getElementById('dice-anim-toggle');
+  if (animToggle) animToggle.checked = getDiceAnimPref();
+  updateDiceLabel();
+  renderDiceHistory();
+}
+
+function selectDie(die) {
+  _selectedDie = die;
+  renderDiePicker();
+}
+
+function updateDiceLabel() {
+  const qty = Math.min(10, Math.max(1, parseInt(document.getElementById('dice-qty')?.value) || 1));
+  const lbl = document.getElementById('dice-roll-label');
+  if (lbl) lbl.textContent = qty + _selectedDie;
+}
+
+function rollDice() {
+  const qty     = Math.min(10, Math.max(1, parseInt(document.getElementById('dice-qty')?.value) || 1));
+  const sides   = parseInt(_selectedDie.replace('d',''));
+  const results = Array.from({length: qty}, () => Math.floor(Math.random() * sides) + 1);
+  const total   = results.reduce((a,b) => a+b, 0);
+  const secret  = _isDM && document.getElementById('dice-secret')?.checked;
+  const roller  = _currentUser?.displayName || _currentUser?.email || 'Unknown';
+  const entry   = { roller, isDM: _isDM, qty, die: _selectedDie, results, total, secret };
+  addToHistory(entry);
+  if (secret) {
+    showDiceAnimation(entry);
+  } else {
+    rollDicePublic(entry);
+  }
+}
+
+async function rollDicePublic(entry) {
+  try {
+    await db.collection('campaigns').doc(campaignId).update({
+      diceRoll: {
+        roller:   entry.roller,
+        isDM:     entry.isDM,
+        die:      entry.die,
+        quantity: entry.qty,
+        results:  entry.results,
+        total:    entry.total,
+        rolledAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }
+    });
+  } catch(e) {
+    showDiceAnimation(entry);
+  }
+}
+
+function showDiceAnimation(entry) {
+  if (!getDiceAnimPref()) { showDiceToast(entry); return; }
+  const overlay = document.getElementById('dice-anim-overlay');
+  const p1      = document.getElementById('dice-anim-phase1');
+  const p2      = document.getElementById('dice-anim-phase2');
+  if (!overlay) return;
+  p1.style.display = '';
+  p2.style.display = 'none';
+  document.getElementById('dice-anim-rand').textContent = '—';
+  document.getElementById('dice-anim-rolling-label').textContent =
+    entry.secret ? '🔒 Secret Roll…' : `${entry.roller} is rolling ${entry.qty}${entry.die}…`;
+  overlay.style.display = 'flex';
+  const sides = parseInt(entry.die.replace('d',''));
+  const ticker = setInterval(() => {
+    const fake = Array.from({length: entry.qty}, () => Math.floor(Math.random() * sides) + 1)
+                      .reduce((a,b) => a+b, 0);
+    document.getElementById('dice-anim-rand').textContent = fake;
+  }, 80);
+  _diceAnimTimer = setTimeout(() => {
+    clearInterval(ticker);
+    p1.style.display = 'none';
+    document.getElementById('dice-anim-total').textContent     = entry.total;
+    document.getElementById('dice-anim-die-label').textContent = entry.qty + entry.die;
+    document.getElementById('dice-anim-breakdown').textContent =
+      entry.results.length > 1 ? entry.results.join(' + ') + ' = ' + entry.total : '';
+    document.getElementById('dice-anim-roller').textContent =
+      entry.secret ? '🔒 Secret (DM only)' : `Rolled by ${entry.roller}`;
+    p2.style.display = '';
+  }, 1600);
+}
+
+function closeDiceAnim() {
+  clearTimeout(_diceAnimTimer);
+  const overlay = document.getElementById('dice-anim-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function showDiceToast(entry) {
+  const label = entry.secret
+    ? `🔒 Secret: ${entry.qty}${entry.die} = ${entry.total}`
+    : `🎲 ${entry.roller}: ${entry.qty}${entry.die} = ${entry.total}`;
+  const toast = document.createElement('div');
+  toast.textContent = label;
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+    'background:#1a0e04;border:1px solid var(--gold);border-radius:3px;' +
+    'padding:10px 18px;font-family:\'Cinzel\',serif;font-size:0.7rem;' +
+    'color:var(--gold-light);z-index:300;animation:fadeIn 0.25s ease;pointer-events:none;';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function getDiceAnimPref() {
+  return localStorage.getItem('dnd-dice-anim') !== 'off';
+}
+function saveDiceAnimPref() {
+  const on = document.getElementById('dice-anim-toggle')?.checked;
+  localStorage.setItem('dnd-dice-anim', on ? 'on' : 'off');
+}
+
+function addToHistory(entry) {
+  _diceHistory.unshift(entry);
+  if (_diceHistory.length > 10) _diceHistory.pop();
+  renderDiceHistory();
+}
+
+function renderDiceHistory() {
+  const el = document.getElementById('dice-history-list');
+  if (!el) return;
+  if (!_diceHistory.length) { el.textContent = 'No rolls this session.'; return; }
+  el.innerHTML = _diceHistory.map(e => {
+    const breakdown = e.results.length > 1 ? ` (${e.results.join('+')})` : '';
+    const badge     = e.secret ? ' 🔒' : ' 📢';
+    return `<div style="padding:3px 0;border-bottom:1px solid rgba(122,90,40,0.12);">` +
+      `<span style="color:var(--gold-light);font-weight:600;">${escHtml(e.roller)}</span> ` +
+      `rolled <span style="color:var(--parchment);">${e.qty}${e.die}</span> ` +
+      `→ <span style="color:var(--gold-light);font-weight:700;">${e.total}</span>` +
+      `${breakdown}<span style="color:var(--border-light);">${badge}</span></div>`;
+  }).join('');
+}
 </script>
+
+<!-- DICE ANIMATION OVERLAY -->
+<div id="dice-anim-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:300;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+  <div id="dice-anim-phase1">
+    <div id="dice-anim-icon" style="font-size:5rem;margin-bottom:12px;display:inline-block;animation:diceSpin 0.35s linear infinite;">🎲</div>
+    <div id="dice-anim-rand" style="font-family:'Cinzel',serif;font-size:3rem;font-weight:900;color:var(--gold-light);min-width:80px;">—</div>
+    <div id="dice-anim-rolling-label" style="font-family:'Cinzel',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--border-light);margin-top:8px;">Rolling…</div>
+  </div>
+  <div id="dice-anim-phase2" style="display:none;">
+    <div id="dice-anim-total" style="font-family:'Cinzel',serif;font-size:6rem;font-weight:900;color:var(--gold-light);line-height:1;">—</div>
+    <div id="dice-anim-die-label" style="font-family:'Cinzel',serif;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--gold);margin:8px 0 4px;">1d20</div>
+    <div id="dice-anim-breakdown" style="font-family:'Crimson Text',serif;font-size:1rem;color:var(--parchment-dark);margin-bottom:6px;"></div>
+    <div id="dice-anim-roller" style="font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-bottom:20px;"></div>
+    <button class="dm-btn" onclick="closeDiceAnim()" style="font-size:0.6rem;">✕ Dismiss</button>
+  </div>
+</div>
 </body>
 </html>
