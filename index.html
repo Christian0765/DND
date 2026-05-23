@@ -3194,9 +3194,10 @@ function toggleAnnouncePanel() {
 }
 
 // ─── EMBEDDED COMBAT TRACKER ──────────────────────────────────────
-let _combatState = { round: 1, combatants: [] };
+let _combatState = { mode:'setup', round:1, combatants:[], winCond:'victory', maxRounds:5, result:null };
 let _combatUnsubscribe = null;
 let _combatDragSrc = null;
+let _combatSetup = { step:1, players:[], enemies:[], winCond:'victory' };
 
 const _combatConditions = ['Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated','Paralyzed','Poisoned','Prone','Restrained','Stunned','Unconscious'];
 
@@ -3205,13 +3206,11 @@ function combatSubscribe() {
   _combatUnsubscribe = db.collection('campaigns').doc(campaignId)
     .collection('combat').doc('state')
     .onSnapshot(snap => {
-      if (snap.exists) {
-        _combatState = snap.data();
-      } else {
-        _combatState = { round: 1, combatants: [] };
-      }
-      combatRender();
-    }, () => {});
+      _combatState = snap.exists ? snap.data() : { mode:'setup', round:1, combatants:[], winCond:'victory', maxRounds:5, result:null };
+      combatRenderMode();
+    }, err => {
+      console.warn('Combat snapshot error:', err);
+    });
 }
 
 function combatUnsubscribe() {
@@ -3219,128 +3218,281 @@ function combatUnsubscribe() {
 }
 
 async function combatSave() {
-  await db.collection('campaigns').doc(campaignId)
-    .collection('combat').doc('state').set(_combatState);
+  await db.collection('campaigns').doc(campaignId).collection('combat').doc('state').set(_combatState);
+}
+
+function combatRenderMode() {
+  const setup  = document.getElementById('cb-setup');
+  const active = document.getElementById('cb-active');
+  if (!setup || !active) return;
+  if (_combatState.mode === 'active') {
+    setup.style.display  = 'none';
+    active.style.display = '';
+    combatRenderActive();
+  } else {
+    setup.style.display  = '';
+    active.style.display = 'none';
+    combatSetupGoTo(_combatSetup.step);
+  }
+}
+
+// ── Setup wizard ──────────────────────────────────────────────────
+async function combatLoadPlayers() {
+  const el = document.getElementById('cb-player-list');
+  if (!el) return;
+  el.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>';
+  try {
+    const entries = Object.entries(_campaignData?.players || {}).filter(([, info]) => info && info.slot);
+    if (!entries.length) {
+      el.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">No players have joined yet.</div>';
+      return;
+    }
+    const docs = await Promise.all(entries.map(([uid, info]) =>
+      db.collection('campaigns').doc(campaignId).collection('characters').doc(info.slot).get()
+        .then(snap => ({ uid, slot: info.slot, snap }))
+    ));
+    const fresh = docs
+      .filter(({ snap }) => snap.exists && snap.data()['f-name'])
+      .map(({ uid, slot, snap }) => {
+        const d   = snap.data();
+        const old = _combatSetup.players.find(p => p.uid === uid) || {};
+        return { uid, slot,
+          name:    d['f-name'] || 'Unknown',
+          charCls: [d['f-class'], d['f-race']].filter(Boolean).join(' · '),
+          maxHp:   parseInt(d['f-maxhp']) || 10,
+          ac:      parseInt(d['f-ac'])    || 10,
+          init:    old.init !== undefined ? old.init : '',
+          selected: old.selected || false,
+        };
+      });
+    if (!fresh.length) {
+      el.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">No approved characters found — players need an approved character sheet.</div>';
+      return;
+    }
+    _combatSetup.players = fresh;
+    combatRenderPlayers();
+  } catch(e) {
+    el.innerHTML = '<div style="font-style:italic;color:var(--red);font-size:0.8rem;">Failed to load players: ' + escHtml(e.message) + '</div>';
+  }
+}
+
+function combatRenderPlayers() {
+  const el = document.getElementById('cb-player-list');
+  if (!el) return;
+  if (!_combatSetup.players.length) {
+    el.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">No approved characters found.</div>';
+    return;
+  }
+  el.innerHTML = _combatSetup.players.map((p, i) => `
+    <div class="cb-player-card${p.selected?' selected':''}" onclick="combatTogglePlayer(${i})">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="cb-player-check">${p.selected?'✓':''}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Cinzel',serif;font-size:0.78rem;font-weight:600;color:var(--ink);">${escHtml(p.name)}</div>
+          <div style="font-size:0.68rem;color:var(--ink-light);">${escHtml(p.charCls||'—')} · HP ${p.maxHp} · AC ${p.ac}</div>
+        </div>
+        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+          <label style="font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-light);">Init</label>
+          <input type="number" class="cb-hp-input" style="width:42px;background:rgba(255,255,255,0.55);color:var(--ink);border-color:var(--border-light);"
+            placeholder="—" value="${escHtml(String(p.init))}"
+            oninput="_combatSetup.players[${i}].init=parseInt(this.value)||0"
+            onclick="this.select()">
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function combatTogglePlayer(i) {
+  _combatSetup.players[i].selected = !_combatSetup.players[i].selected;
+  combatRenderPlayers();
+}
+
+function combatSetupGoTo(step) {
+  _combatSetup.step = step;
+  [1,2,3].forEach(n => {
+    const s = document.getElementById('cb-step-' + n);
+    if (s) s.style.display = n === step ? '' : 'none';
+    const pip = document.getElementById('cb-pip-' + n);
+    if (pip) pip.className = 'cb-step-pip' + (n === step ? ' active' : n < step ? ' done' : '');
+    if (n < 3) {
+      const line = document.getElementById('cb-line-' + n + (n+1));
+      if (line) line.className = 'cb-step-line' + (n < step ? ' done' : '');
+    }
+  });
+  const labels = {1:'Step 1 — Select Players', 2:'Step 2 — Add Enemies', 3:'Step 3 — Win Condition'};
+  const lbl = document.getElementById('cb-step-label');
+  if (lbl) lbl.textContent = labels[step] || '';
+  if (step === 1) combatLoadPlayers();
+  if (step === 2) combatRenderEnemies();
+}
+
+function combatSetupNext() { combatSetupGoTo(Math.min(3, _combatSetup.step + 1)); }
+function combatSetupBack() { combatSetupGoTo(Math.max(1, _combatSetup.step - 1)); }
+
+function combatAddEnemy() {
+  const name  = document.getElementById('cb-en-name').value.trim();
+  const init  = parseInt(document.getElementById('cb-en-init').value) || 0;
+  const maxHp = parseInt(document.getElementById('cb-en-hp').value)   || 10;
+  const ac    = parseInt(document.getElementById('cb-en-ac').value)   || 10;
+  if (!name) { document.getElementById('cb-en-name').focus(); return; }
+  _combatSetup.enemies.push({ id: Date.now(), name, init, maxHp, ac });
+  ['cb-en-name','cb-en-init','cb-en-hp','cb-en-ac'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('cb-en-name').focus();
+  combatRenderEnemies();
+}
+
+function combatRemoveEnemy(id) {
+  _combatSetup.enemies = _combatSetup.enemies.filter(e => e.id !== id);
+  combatRenderEnemies();
+}
+
+function combatRenderEnemies() {
+  const el = document.getElementById('cb-enemy-list');
+  if (!el) return;
+  if (!_combatSetup.enemies.length) {
+    el.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:6px 0;">No enemies added yet.</div>';
+    return;
+  }
+  el.innerHTML = _combatSetup.enemies.map(e => `
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(122,90,40,0.15);">
+      <span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--red);min-width:22px;text-align:center;">${e.init}</span>
+      <span style="font-family:'Cinzel',serif;font-size:0.75rem;flex:1;color:var(--parchment);">${escHtml(e.name)}</span>
+      <span style="font-size:0.66rem;color:var(--border-light);">HP ${e.maxHp} · AC ${e.ac}</span>
+      <button class="cb-remove" onclick="combatRemoveEnemy(${e.id})">✕</button>
+    </div>`).join('');
+}
+
+function combatSelectWin(type) {
+  _combatSetup.winCond = type;
+  document.getElementById('cb-win-victory').classList.toggle('selected', type === 'victory');
+  document.getElementById('cb-win-timed').classList.toggle('selected', type === 'timed');
+  const ri = document.getElementById('cb-rounds-input');
+  if (ri) ri.style.display = type === 'timed' ? 'flex' : 'none';
+}
+
+async function combatStartBattle() {
+  const players = _combatSetup.players.filter(p => p.selected);
+  const enemies = _combatSetup.enemies;
+  if (!players.length && !enemies.length) { alert('Add at least one combatant before starting!'); return; }
+  const winCond   = _combatSetup.winCond;
+  const maxRounds = winCond === 'timed' ? (parseInt(document.getElementById('cb-max-rounds').value) || 5) : 0;
+  const combatants = [
+    ...players.map(p => ({ id:'p_'+p.uid, name:p.name, init:parseInt(p.init)||0, hp:p.maxHp, maxHp:p.maxHp, ac:p.ac, type:'player', conditions:[] })),
+    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, init:e.init,              hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[] })),
+  ].sort((a,b) => b.init - a.init);
+  _combatState = { mode:'active', round:1, winCond, maxRounds, combatants, result:null };
+  await combatSave();
+  combatRenderMode();
+}
+
+async function combatEndBattle() {
+  if (!confirm('End combat and return to setup?')) return;
+  _combatState = { mode:'setup', round:1, combatants:[], winCond:'victory', maxRounds:5, result:null };
+  _combatSetup.enemies = [];
+  _combatSetup.players.forEach(p => { p.selected = false; p.init = ''; });
+  _combatSetup.step = 1;
+  await combatSave();
+  combatRenderMode();
+}
+
+// ── Active combat ─────────────────────────────────────────────────
+function combatCheckResult() {
+  if (_combatState.mode !== 'active') return;
+  const cs = _combatState.combatants || [];
+  const hasE = cs.some(c => c.type === 'enemy'),  allEDead = hasE && cs.filter(c=>c.type==='enemy').every(c=>c.hp<=0);
+  const hasP = cs.some(c => c.type === 'player'), allPDead = hasP && cs.filter(c=>c.type==='player').every(c=>c.hp<=0);
+  if (_combatState.winCond === 'timed' && _combatState.round > _combatState.maxRounds) _combatState.result = 'time';
+  else if (allEDead) _combatState.result = 'win';
+  else if (allPDead) _combatState.result = 'loss';
+  else _combatState.result = null;
 }
 
 async function combatChangeRound(delta) {
   _combatState.round = Math.max(1, (_combatState.round || 1) + delta);
-  combatRender();
+  combatCheckResult();
   await combatSave();
+  combatRenderActive();
 }
 
-async function combatReset() {
-  if (!confirm('Reset combat? This clears all combatants and resets the round to 1.')) return;
-  _combatState = { round: 1, combatants: [] };
-  combatRender();
-  await combatSave();
-}
-
-async function combatAddCombatant() {
-  const name = document.getElementById('cb-new-name').value.trim();
-  const init = parseInt(document.getElementById('cb-new-init').value) || 0;
-  const maxHp = parseInt(document.getElementById('cb-new-hp').value) || 10;
-  const ac   = parseInt(document.getElementById('cb-new-ac').value) || 10;
-  const type = document.getElementById('cb-new-type').value;
-  if (!name) { document.getElementById('cb-new-name').focus(); return; }
-  const c = { id: Date.now() + Math.random(), name, init, hp: maxHp, maxHp, ac, type, conditions: [] };
-  _combatState.combatants = (_combatState.combatants || []).concat(c);
-  _combatState.combatants.sort((a,b) => b.init - a.init);
-  document.getElementById('cb-new-name').value = '';
-  document.getElementById('cb-new-init').value = '';
-  document.getElementById('cb-new-hp').value = '';
-  document.getElementById('cb-new-ac').value = '';
-  combatRender();
-  await combatSave();
-}
-
-async function combatAdjustHp(id, delta) {
-  const c = (_combatState.combatants || []).find(x => x.id === id);
-  if (!c) return;
-  c.hp = Math.max(0, Math.min(c.maxHp, (c.hp || 0) + delta));
-  combatUpdateHpDisplay(id, c);
-  await combatSave();
-}
-
-async function combatSetHp(id, val) {
-  const c = (_combatState.combatants || []).find(x => x.id === id);
-  if (!c) return;
-  const n = parseInt(val);
-  if (isNaN(n)) return;
-  c.hp = Math.max(0, Math.min(c.maxHp, n));
-  combatUpdateHpDisplay(id, c);
-  await combatSave();
-}
-
-function combatUpdateHpDisplay(id, c) {
-  const card = document.querySelector('[data-cbid="' + id + '"]');
-  if (!card) return;
-  const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
-  const fill = card.querySelector('.cb-hp-fill');
-  const val  = card.querySelector('.cb-hp-val');
-  if (fill) { fill.style.width = (pct * 100) + '%'; fill.className = 'cb-hp-fill' + (pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : ''); }
-  if (val)  { val.textContent = c.hp + '/' + c.maxHp; val.className = 'cb-hp-val' + (pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : ''); }
-  if (c.hp === 0) card.classList.add('cb-unconscious'); else card.classList.remove('cb-unconscious');
-}
-
-async function combatToggleCondition(id, cond) {
-  const c = (_combatState.combatants || []).find(x => x.id === id);
-  if (!c) return;
-  c.conditions = c.conditions || [];
-  if (c.conditions.includes(cond)) c.conditions = c.conditions.filter(x => x !== cond);
-  else c.conditions.push(cond);
-  combatRender();
-  await combatSave();
-}
-
-async function combatRemoveCombatant(id) {
-  _combatState.combatants = (_combatState.combatants || []).filter(x => x.id !== id);
-  combatRender();
-  await combatSave();
-}
-
-function combatRender() {
+function combatRenderActive() {
   const roundEl = document.getElementById('cb-round-num');
   if (roundEl) roundEl.textContent = _combatState.round || 1;
+  const wcEl = document.getElementById('cb-wincond-label');
+  if (wcEl) wcEl.textContent = _combatState.winCond === 'timed'
+    ? `Round ${_combatState.round} of ${_combatState.maxRounds}`
+    : 'Until Victory';
+  const banner = document.getElementById('cb-result-banner');
+  if (banner) {
+    const r = _combatState.result;
+    if (r === 'win')  { banner.style.display=''; banner.innerHTML='<div style="text-align:center;padding:10px;font-family:\'Cinzel\',serif;font-size:0.82rem;font-weight:600;color:#5a9a3a;border:1px solid #5a9a3a;border-radius:3px;background:rgba(40,90,24,0.15);">🏆 Victory! All enemies have fallen.</div>'; }
+    else if (r==='loss') { banner.style.display=''; banner.innerHTML='<div style="text-align:center;padding:10px;font-family:\'Cinzel\',serif;font-size:0.82rem;font-weight:600;color:var(--red);border:1px solid var(--red);border-radius:3px;background:rgba(122,21,21,0.15);">💀 Defeat. The party has fallen.</div>'; }
+    else if (r==='time') { banner.style.display=''; banner.innerHTML='<div style="text-align:center;padding:10px;font-family:\'Cinzel\',serif;font-size:0.82rem;font-weight:600;color:var(--gold);border:1px solid var(--gold);border-radius:3px;background:rgba(154,112,0,0.12);">⏳ Time\'s up! The battle has ended.</div>'; }
+    else banner.style.display = 'none';
+  }
   const list = document.getElementById('cb-list');
   if (!list) return;
-  const combatants = _combatState.combatants || [];
-  list.innerHTML = combatants.map(c => {
+  list.innerHTML = (_combatState.combatants || []).map(c => {
     const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
-    const hpClass = pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : '';
-    const isEnemy = c.type === 'enemy';
-    const conds = (c.conditions || []).map(cd =>
-      `<span class="cb-cond active" onclick="combatToggleCondition(${c.id},'${cd}')" title="Remove">${cd}</span>`
-    ).join('');
-    const allConds = _combatConditions.filter(cd => !(c.conditions||[]).includes(cd)).map(cd =>
-      `<span class="cb-cond" onclick="combatToggleCondition(${c.id},'${cd}')">${cd}</span>`
-    ).join('');
-    return `<div class="cb-combatant${isEnemy?' cb-enemy':''}${c.hp===0?' cb-unconscious':''}" data-cbid="${c.id}"
+    const hc  = pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : '';
+    const isE = c.type === 'enemy';
+    const sid = escHtml(String(c.id));
+    const conds = (c.conditions||[]).map(cd =>
+      `<span class="cb-cond active" onclick="combatToggleCondition('${sid}','${cd}')" title="Remove">${cd}</span>`).join('');
+    const rest = _combatConditions.filter(cd=>!(c.conditions||[]).includes(cd)).map(cd =>
+      `<span class="cb-cond" onclick="combatToggleCondition('${sid}','${cd}')">${cd}</span>`).join('');
+    return `<div class="cb-combatant${isE?' cb-enemy':''}${c.hp===0?' cb-unconscious':''}" data-cbid="${sid}"
       draggable="true"
-      ondragstart="combatDragStart(event,${c.id})"
+      ondragstart="combatDragStart(event,'${sid}')"
       ondragend="combatDragEnd(event)"
-      ondragover="combatDragOver(event,${c.id})"
+      ondragover="combatDragOver(event,'${sid}')"
       ondragleave="combatDragLeave(event)"
-      ondrop="combatDrop(event,${c.id})">
+      ondrop="combatDrop(event,'${sid}')">
       <div class="cb-top">
         <span class="cb-init">${c.init}</span>
         <span class="cb-name">${escHtml(c.name)}</span>
         <span class="cb-meta">AC ${c.ac}</span>
-        <span class="cb-pill">${isEnemy?'Enemy':'Player'}</span>
-        <button class="cb-remove" onclick="combatRemoveCombatant(${c.id})" title="Remove">✕</button>
+        <span class="cb-pill">${isE?'Enemy':'Player'}</span>
       </div>
       <div class="cb-hp-row">
         <span class="cb-hp-label">HP</span>
-        <span class="cb-hp-track"><span class="cb-hp-fill${hpClass}" style="width:${Math.round(pct*100)}%"></span></span>
-        <span class="cb-hp-val${hpClass}">${c.hp}/${c.maxHp}</span>
-        <button class="cb-hp-btn dmg" onclick="combatAdjustHp(${c.id},-1)">−</button>
+        <span class="cb-hp-track"><span class="cb-hp-fill${hc}" style="width:${Math.round(pct*100)}%"></span></span>
+        <span class="cb-hp-val${hc}">${c.hp}/${c.maxHp}</span>
+        <button class="cb-hp-btn dmg"  onclick="combatAdjustHp('${sid}',-1)">−</button>
         <input class="cb-hp-input" type="number" value="${c.hp}" min="0" max="${c.maxHp}"
-               onchange="combatSetHp(${c.id},this.value)" onclick="this.select()">
-        <button class="cb-hp-btn heal" onclick="combatAdjustHp(${c.id},1)">+</button>
+               onchange="combatSetHp('${sid}',this.value)" onclick="this.select()">
+        <button class="cb-hp-btn heal" onclick="combatAdjustHp('${sid}',1)">+</button>
       </div>
-      <div class="cb-conds">${conds}${allConds}</div>
+      <div class="cb-conds">${conds}${rest}</div>
     </div>`;
   }).join('');
+}
+
+async function combatAdjustHp(id, delta) {
+  const c = (_combatState.combatants||[]).find(x=>x.id===id);
+  if (!c) return;
+  c.hp = Math.max(0, Math.min(c.maxHp, (c.hp||0)+delta));
+  combatCheckResult();
+  await combatSave();
+  combatRenderActive();
+}
+
+async function combatSetHp(id, val) {
+  const c = (_combatState.combatants||[]).find(x=>x.id===id);
+  if (!c) return;
+  const n = parseInt(val); if (isNaN(n)) return;
+  c.hp = Math.max(0, Math.min(c.maxHp, n));
+  combatCheckResult();
+  await combatSave();
+  combatRenderActive();
+}
+
+async function combatToggleCondition(id, cond) {
+  const c = (_combatState.combatants||[]).find(x=>x.id===id);
+  if (!c) return;
+  c.conditions = c.conditions||[];
+  c.conditions = c.conditions.includes(cond) ? c.conditions.filter(x=>x!==cond) : [...c.conditions, cond];
+  await combatSave();
+  combatRenderActive();
 }
 
 function combatDragStart(e, id) {
@@ -3361,16 +3513,14 @@ function combatDragOver(e, id) {
 function combatDragLeave(e) { e.currentTarget.classList.remove('cb-drag-over'); }
 async function combatDrop(e, targetId) {
   e.preventDefault();
-  if (_combatDragSrc == null || _combatDragSrc === targetId) return;
+  if (!_combatDragSrc || _combatDragSrc === targetId) return;
   const arr = _combatState.combatants || [];
-  const srcIdx = arr.findIndex(c => c.id === _combatDragSrc);
-  const tgtIdx = arr.findIndex(c => c.id === targetId);
-  if (srcIdx === -1 || tgtIdx === -1) return;
-  const [moved] = arr.splice(srcIdx, 1);
-  arr.splice(tgtIdx, 0, moved);
+  const si = arr.findIndex(c=>c.id===_combatDragSrc), ti = arr.findIndex(c=>c.id===targetId);
+  if (si===-1||ti===-1) return;
+  const [m] = arr.splice(si,1); arr.splice(ti,0,m);
   _combatState.combatants = arr;
-  combatRender();
   await combatSave();
+  combatRenderActive();
 }
 
 let _announceMode = 'text';
@@ -3385,7 +3535,7 @@ function switchAnnounceMode(mode) {
   if (sendRow) sendRow.style.display = mode === 'combat' ? 'none' : '';
   if (mode === 'npc') { loadAnnouncementLands(); loadAnnouncementNPCs(); }
   if (mode === 'shop') loadAnnouncementLands();
-  if (mode === 'combat') combatSubscribe();
+  if (mode === 'combat') { combatSubscribe(); combatLoadPlayers(); }
   else combatUnsubscribe();
 }
 
