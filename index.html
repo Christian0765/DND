@@ -750,8 +750,9 @@
   .cb-combatant.cb-unconscious { opacity:0.5; }
   .cb-enemy { background:linear-gradient(160deg,#2a1008,#1a0804);border-color:#7a1515; }
   .cb-top { display:grid;grid-template-columns:30px 1fr auto auto auto;gap:8px;align-items:center;margin-bottom:7px; }
-  .cb-init { font-family:'Cinzel',serif;font-size:0.95rem;font-weight:900;color:var(--gold-light);text-align:center; }
-  .cb-enemy .cb-init { color:#e04040; }
+  .cb-drag-handle { font-size:1rem;color:var(--border-light);text-align:center;cursor:grab;user-select:none;letter-spacing:-2px;opacity:0.6; }
+  .cb-combatant:hover .cb-drag-handle { opacity:1; }
+  .cb-enemy .cb-drag-handle { color:rgba(255,255,255,0.25); }
   .cb-name { font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;color:var(--ink); }
   .cb-enemy .cb-name { color:var(--parchment-dark); }
   .cb-meta { font-size:0.68rem;color:var(--ink-light);font-style:italic; }
@@ -1062,9 +1063,8 @@
         <!-- Step 2: Add Enemies -->
         <div id="cb-step-2" style="display:none;">
           <div class="cb-add-form" style="margin-bottom:10px;">
-            <div style="display:grid;grid-template-columns:1fr 55px 65px 55px auto;gap:8px;align-items:end;">
-              <div><label>Enemy Name</label><input type="text" id="cb-en-name" placeholder="Goblin…"></div>
-              <div><label>Init</label><input type="number" id="cb-en-init" placeholder="8" style="text-align:center;"></div>
+            <div style="display:grid;grid-template-columns:1fr 65px 55px auto;gap:8px;align-items:end;">
+              <div><label>Enemy Name</label><input type="text" id="cb-en-name" placeholder="Goblin…" onkeydown="if(event.key==='Enter')combatAddEnemy()"></div>
               <div><label>Max HP</label><input type="number" id="cb-en-hp" placeholder="15" style="text-align:center;"></div>
               <div><label>AC</label><input type="number" id="cb-en-ac" placeholder="12" style="text-align:center;"></div>
               <div style="padding-top:16px;"><button class="cb-add-btn" onclick="combatAddEnemy()">+ Add</button></div>
@@ -1113,6 +1113,23 @@
         </div>
         <div id="cb-result-banner" style="display:none;margin-bottom:10px;"></div>
         <div id="cb-list"></div>
+        <!-- Mid-battle: add enemy -->
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+          <div id="cb-mid-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="combatToggleMidForm()">
+            <span style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);">➕ Add Enemy</span>
+            <span id="cb-mid-arrow" style="font-size:0.6rem;color:var(--border-light);transition:transform 0.15s;">▶</span>
+          </div>
+          <div id="cb-mid-form" style="display:none;margin-top:8px;">
+            <div class="cb-add-form">
+              <div style="display:grid;grid-template-columns:1fr 65px 55px auto;gap:8px;align-items:end;">
+                <div><label>Enemy Name</label><input type="text" id="cb-mid-name" placeholder="Troll…" onkeydown="if(event.key==='Enter')combatAddMidBattle()"></div>
+                <div><label>Max HP</label><input type="number" id="cb-mid-hp" placeholder="30" style="text-align:center;"></div>
+                <div><label>AC</label><input type="number" id="cb-mid-ac" placeholder="14" style="text-align:center;"></div>
+                <div style="padding-top:16px;"><button class="cb-add-btn" onclick="combatAddMidBattle()">+ Add</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div id="ann-send-row" style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap;">
@@ -3291,13 +3308,6 @@ function combatRenderPlayers() {
           <div style="font-family:'Cinzel',serif;font-size:0.78rem;font-weight:600;color:var(--ink);">${escHtml(p.name)}</div>
           <div style="font-size:0.68rem;color:var(--ink-light);">${escHtml(p.charCls||'—')} · HP ${p.maxHp} · AC ${p.ac}</div>
         </div>
-        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
-          <label style="font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-light);">Init</label>
-          <input type="number" class="cb-hp-input" style="width:42px;background:rgba(255,255,255,0.55);color:var(--ink);border-color:var(--border-light);"
-            placeholder="—" value="${escHtml(String(p.init))}"
-            oninput="_combatSetup.players[${i}].init=parseInt(this.value)||0"
-            onclick="this.select()">
-        </div>
       </div>
     </div>`).join('');
 }
@@ -3331,12 +3341,11 @@ function combatSetupBack() { combatSetupGoTo(Math.max(1, _combatSetup.step - 1))
 
 function combatAddEnemy() {
   const name  = document.getElementById('cb-en-name').value.trim();
-  const init  = parseInt(document.getElementById('cb-en-init').value) || 0;
-  const maxHp = parseInt(document.getElementById('cb-en-hp').value)   || 10;
-  const ac    = parseInt(document.getElementById('cb-en-ac').value)   || 10;
+  const maxHp = parseInt(document.getElementById('cb-en-hp').value) || 10;
+  const ac    = parseInt(document.getElementById('cb-en-ac').value) || 10;
   if (!name) { document.getElementById('cb-en-name').focus(); return; }
-  _combatSetup.enemies.push({ id: Date.now(), name, init, maxHp, ac });
-  ['cb-en-name','cb-en-init','cb-en-hp','cb-en-ac'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  _combatSetup.enemies.push({ id: Date.now(), name, maxHp, ac });
+  ['cb-en-name','cb-en-hp','cb-en-ac'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cb-en-name').focus();
   combatRenderEnemies();
 }
@@ -3355,7 +3364,6 @@ function combatRenderEnemies() {
   }
   el.innerHTML = _combatSetup.enemies.map(e => `
     <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(122,90,40,0.15);">
-      <span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--red);min-width:22px;text-align:center;">${e.init}</span>
       <span style="font-family:'Cinzel',serif;font-size:0.75rem;flex:1;color:var(--parchment);">${escHtml(e.name)}</span>
       <span style="font-size:0.66rem;color:var(--border-light);">HP ${e.maxHp} · AC ${e.ac}</span>
       <button class="cb-remove" onclick="combatRemoveEnemy(${e.id})">✕</button>
@@ -3377,9 +3385,9 @@ async function combatStartBattle() {
   const winCond   = _combatSetup.winCond;
   const maxRounds = winCond === 'timed' ? (parseInt(document.getElementById('cb-max-rounds').value) || 5) : 0;
   const combatants = [
-    ...players.map(p => ({ id:'p_'+p.uid, name:p.name, init:parseInt(p.init)||0, hp:p.maxHp, maxHp:p.maxHp, ac:p.ac, type:'player', conditions:[] })),
-    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, init:e.init,              hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[] })),
-  ].sort((a,b) => b.init - a.init);
+    ...players.map(p => ({ id:'p_'+p.uid, name:p.name, hp:p.maxHp, maxHp:p.maxHp, ac:p.ac, type:'player', conditions:[] })),
+    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[] })),
+  ];
   _combatState = { mode:'active', round:1, winCond, maxRounds, combatants, result:null };
   await combatSave();
   combatRenderMode();
@@ -3389,10 +3397,34 @@ async function combatEndBattle() {
   if (!confirm('End combat and return to setup?')) return;
   _combatState = { mode:'setup', round:1, combatants:[], winCond:'victory', maxRounds:5, result:null };
   _combatSetup.enemies = [];
-  _combatSetup.players.forEach(p => { p.selected = false; p.init = ''; });
+  _combatSetup.players.forEach(p => { p.selected = false; });
   _combatSetup.step = 1;
   await combatSave();
   combatRenderMode();
+}
+
+function combatToggleMidForm() {
+  const form  = document.getElementById('cb-mid-form');
+  const arrow = document.getElementById('cb-mid-arrow');
+  if (!form) return;
+  const open = form.style.display !== 'none';
+  form.style.display  = open ? 'none' : '';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
+  if (!open) setTimeout(() => { const n = document.getElementById('cb-mid-name'); if(n) n.focus(); }, 50);
+}
+
+async function combatAddMidBattle() {
+  const name  = document.getElementById('cb-mid-name').value.trim();
+  const maxHp = parseInt(document.getElementById('cb-mid-hp').value) || 10;
+  const ac    = parseInt(document.getElementById('cb-mid-ac').value) || 10;
+  if (!name) { document.getElementById('cb-mid-name').focus(); return; }
+  const c = { id:'e_'+Date.now(), name, hp:maxHp, maxHp, ac, type:'enemy', conditions:[] };
+  _combatState.combatants = (_combatState.combatants || []).concat(c);
+  ['cb-mid-name','cb-mid-hp','cb-mid-ac'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('cb-mid-name').focus();
+  combatCheckResult();
+  await combatSave();
+  combatRenderActive();
 }
 
 // ── Active combat ─────────────────────────────────────────────────
@@ -3448,7 +3480,7 @@ function combatRenderActive() {
       ondragleave="combatDragLeave(event)"
       ondrop="combatDrop(event,'${sid}')">
       <div class="cb-top">
-        <span class="cb-init">${c.init}</span>
+        <span class="cb-drag-handle" title="Drag to reorder">⠿</span>
         <span class="cb-name">${escHtml(c.name)}</span>
         <span class="cb-meta">AC ${c.ac}</span>
         <span class="cb-pill">${isE?'Enemy':'Player'}</span>
