@@ -1,0 +1,383 @@
+================================================================================
+D&D CAMPAIGN TRACKER — PROJECT OVERVIEW
+================================================================================
+Prepared for handoff to another AI model for feature brainstorming and planning.
+================================================================================
+
+
+APP SUMMARY
+-----------
+
+This is a real-time, web-based Dungeons & Dragons campaign manager built for
+one Dungeon Master (DM) and up to four players. The core problem it solves is
+coordination during live sessions: previously, the DM had to manage paper notes,
+group chats, separate HP spreadsheets, and verbal shop transactions all at once.
+This app centralises everything — character sheets, item inventories, world
+encyclopaedia, in-game events, and turn-based combat — into a single screen that
+all participants share in real time from their own devices.
+
+The app is intentionally DM-first. The DM controls what players see: they push
+events, run combat, manage shops, and approve characters. Players receive and
+react. The result is something close to a digital game table, where the DM's
+screen is the source of truth and every connected player sees changes within
+about 100 milliseconds.
+
+
+KEY FEATURES
+------------
+
+CHARACTER SYSTEM
+
+  - Three character creation modes:
+      1. Manual form (player types all fields directly into the app)
+      2. AI-assisted (player downloads an HTML template, sends it to an AI
+         assistant to fill out based on a character concept, then uploads the
+         completed file back into the app)
+      3. Sheet import (upload a pre-filled HTML file; the app validates it and
+         shows an import report listing fields filled, missing required fields,
+         and how many inventory items were imported or rejected)
+
+  - Pending approval queue: submitted characters wait for DM review before
+    appearing on the party roster. DM can preview the full sheet, then approve
+    or reject. On approval, any inventory items in the character sheet are
+    automatically added to the campaign's shared items catalog.
+
+  - Individual character sheet pages (sheet-1.html through sheet-4.html) show
+    all stats, ability scores, and equipment.
+
+  - DM can live-edit HP, AC, Gold, and Passive Perception for any player directly
+    from the party roster view. Changes write instantly to Firestore.
+
+ENCYCLOPEDIA
+
+  - Lands and cities: DM creates named locations with expandable cards. Each
+    land has three sub-tabs:
+      - Shops: shop name, district, type, and a full item inventory with
+        quantities and costs. Players can purchase items from shops during a
+        live Shop event.
+      - NPCs: name, race, class/role, alignment, location within the city, and
+        DM-only secret notes about the NPC.
+      - Maps: named areas within the location, optional uploaded map image,
+        and DM hazard/secret notes.
+
+  - General NPCs (not tied to any specific land) support three formats:
+      - Simple: name, portrait image, race, alignment, HP, AC, description
+      - Full sheet: all six ability scores, background, personality traits,
+        full combat stats
+      - Goon: combat-only stats (HP, AC, attack bonus, damage dice, CR)
+
+  - All lands and NPCs have a Draft/Live toggle. Draft items are visible to the
+    DM but completely hidden from players.
+
+  - Shared Items Catalog: a campaign-wide library of items. Seven categories
+    (Weapons, Armor, Resources, Magical, Healing, Food, Misc) and five rarities
+    (Common, Uncommon, Rare, Very Rare, Legendary). DM can add items with name,
+    category, rarity, cost, weight, and description. Players can filter and
+    search the catalog. A "Sync from Character Inventories" button bulk-imports
+    unique items from all approved character sheets into the catalog.
+
+SHOP SYSTEM
+
+  - DM builds shop stock by browsing the items catalog (live search picker) or
+    creating a new item inline. All new items created in a shop are automatically
+    added to the catalog.
+
+  - During a Shop event, players see the shop inventory and can purchase items.
+    The purchase atomically deducts gold from the player's character, decrements
+    the shop's stock, and adds the item to the player's inventory.
+
+  - DM can adjust shop stock quantities mid-session.
+
+EVENTS AND ANNOUNCEMENTS
+
+  - Out-of-game Announcements tab: DM posts session reminders and notes (next
+    session date, campaign updates). Players see a timestamped list. An unread
+    notification dot appears on the nav button until the tab is opened.
+
+  - In-game Events panel (DM-only): the DM sends events to all players as modal
+    overlays. Five event types:
+      1. Text — scene narration or NPC dialogue
+      2. Image — uploaded image with an optional caption
+      3. NPC — select an NPC from the encyclopaedia; shows their full card
+      4. Shop — select a shop; players can browse and buy directly in the modal
+      5. Combat — launches the full combat tracker (see below)
+
+  - An active event banner appears for the DM showing what is currently live.
+    The DM can end the event at any time. Players can re-open the last event
+    using a "View" button in the nav bar.
+
+COMBAT TRACKER
+
+  The combat tracker is embedded inside the Events panel as one of the five
+  event modes.
+
+  Setup wizard (3 steps before battle begins):
+    Step 1 — Select Players: checkboxes for each approved character, showing
+             name, class/race, HP, and AC. The DM picks which players are
+             participating in this encounter.
+    Step 2 — Add Enemies: DM enters each enemy by name, Max HP, and AC. Can
+             add as many as needed and remove any before starting.
+    Step 3 — Win Condition: choose "Until Victory" (combat ends automatically
+             when all enemies or all players reach 0 HP) or "Timed Battle"
+             (ends after a DM-specified number of rounds).
+
+  Active combat interface:
+    - Round counter with + and - buttons
+    - Win condition label (timed mode shows "Round X of N")
+    - Combatant cards sorted in the current turn order. Each card shows:
+        - A drag handle (the DM can drag any card up or down to reorder
+          the turn sequence mid-fight)
+        - Character name and AC
+        - HP bar colour-coded green (healthy), gold (wounded), red (critical)
+        - Plus/minus buttons and a direct HP input field
+        - Player or Enemy badge
+        - Twelve D&D 5e condition pills: Blinded, Charmed, Deafened,
+          Frightened, Grappled, Incapacitated, Paralyzed, Poisoned, Prone,
+          Restrained, Stunned, Unconscious. Clicking a condition toggles it
+          on or off. Active conditions are highlighted in red.
+        - Cards at 0 HP are visually faded (unconscious state)
+    - A collapsible "Add Enemy" panel at the bottom for adding new enemies
+      mid-fight without ending the battle
+    - A result banner that automatically appears when the win condition is met:
+        Victory (all enemies down), Defeat (all players down), or Time's Up
+    - An "End" button that confirms and returns the DM to the setup wizard
+
+  The full combat state syncs in real time via Firestore, so the DM and all
+  players see the same round count and combatant states live.
+
+DM PANEL
+
+  - Campaign name: editable field that updates the page title for all users.
+  - Campaign banner: image upload displayed at the top of the page for everyone.
+  - Secret DM Notes: a large textarea that is never shown to players. For NPC
+    motives, plot spoilers, and session planning.
+
+
+ARCHITECTURE OVERVIEW
+---------------------
+
+The app is a single HTML page application without a framework or build system.
+
+MAIN FILE: index.html
+  All panels, tabs, modals, and navigation live in one large HTML document.
+  Visibility is toggled using style.display — nothing is dynamically added to
+  or removed from the DOM. The entire JavaScript codebase (approximately 3,500
+  lines) lives in one script block at the bottom of the file. There are no
+  modules, imports, or separate JS files. All functions are global.
+
+SUPPORTING PAGES
+  - home.html: login and signup page
+  - dashboard.html: lists all campaigns the user belongs to; allows joining
+    via invite code or creating a new campaign
+  - sheet-1.html through sheet-4.html: individual character sheet pages,
+    one per player slot
+  - example-sheet.html: the downloadable AI-assistant template for character
+    creation
+  - combat.html: a legacy standalone combat tracker page, now superseded by
+    the embedded version in index.html
+  - seed-dracula.html: developer utility for seeding a test character
+
+FIRESTORE DATA STRUCTURE (top-level collections)
+  campaigns/{campaignId}/
+    - (document fields): name, dmUid, createdAt, bannerId, dmNotes, players map
+    - characters/{slot}: character sheet data (f-* fields), inventory array,
+      approvedAt, pendingData
+    - items/{itemId}: catalog items (name, category, rarity, cost, weight,
+      description)
+    - combat/state: single document holding the entire current battle state
+    - lands/{landId}: land name, description, published flag
+      - shops/{shopId}: shop name, type, items array
+      - npcs/{npcId}: NPC data
+    - npcs/{npcId}: general (non-land) NPCs
+    - announcements/{announcementId}: session notes
+    - announcement: single document holding the current active in-game event
+
+ROLE SYSTEM
+  Two roles: DM and Player. The DM is identified as the user whose UID matches
+  the dmUid field on the campaign document. This check (_isDM) is done once at
+  page load. DM-only UI elements have style.display set to '' or 'none'
+  based on this flag. There is no server-side role enforcement in the app code;
+  Firestore security rules handle that.
+
+CSS ARCHITECTURE
+  All styles live in a single style block at the top of index.html.
+  CSS custom properties define the colour palette (--gold, --gold-light,
+  --parchment, --parchment-dark, --red, --green, --bg, --ink, --ink-light,
+  --border, --border-light). The visual theme is dark parchment — near-black
+  backgrounds with gold, warm cream, and red accents. Google Fonts: Cinzel
+  (headings and labels) and Crimson Text (body and form text).
+
+
+TECH STACK
+----------
+
+Languages
+  - HTML5
+  - CSS3 (custom properties, flexbox, grid, transitions)
+  - Vanilla JavaScript ES2020 (async/await, template literals, optional
+    chaining, destructuring, Promise.all)
+
+Database and Authentication
+  - Firebase Firestore (NoSQL document database, real-time onSnapshot listeners)
+  - Firebase Authentication (email/password; Google sign-in available)
+
+Hosting
+  - GitHub Pages (static file hosting, no server-side code or API routes)
+
+Fonts
+  - Google Fonts: Cinzel, Crimson Text
+
+Build Tooling
+  - None. Files are edited directly and deployed by pushing to the main branch.
+    No webpack, Vite, npm, TypeScript, or transpilation step of any kind.
+
+Image Handling
+  - All uploaded images (campaign banners, NPC portraits, event images) are
+    converted to base64 data URLs in the browser and stored directly as string
+    fields in Firestore documents. There is no separate file storage bucket.
+
+
+DATA FLOW
+---------
+
+DM SENDS A COMBAT EVENT
+
+  The DM opens the Events panel and clicks the Combat tab. The app subscribes
+  to a Firestore onSnapshot listener on campaigns/{id}/combat/state. The DM
+  steps through the setup wizard: selects which player characters are
+  participating, adds enemy combatants with their stats, and chooses a win
+  condition. Clicking "Start Battle" writes the full combat state object
+  (mode, round, combatants array, win condition) to that Firestore document.
+  All connected players have the same onSnapshot listener running — the write
+  triggers their listeners within ~100ms, and the combat modal opens on their
+  screens. From that point, every HP change, condition toggle, round increment,
+  or mid-battle enemy addition is a full write of the combat document, and all
+  listeners re-render automatically from the latest snapshot.
+
+PLAYER BUYS FROM A SHOP
+
+  The DM has sent a Shop event, which opens a shop modal on each player's
+  screen. The player sees the shop's inventory with buy buttons. When the player
+  clicks Buy, the app reads their character document to check current gold.
+  If the player has enough, a Firestore batch write executes three operations
+  atomically: it deducts gold from the character document, decrements the item's
+  quantity in the shop document, and appends the item to the character's
+  inventory array. All three writes commit together or not at all. The party
+  roster, shop inventory, and the player's own inventory panel all update via
+  their respective onSnapshot listeners within moments.
+
+CHARACTER SHEET IMPORT
+
+  A player uploads an HTML file (either hand-filled or AI-generated using the
+  example-sheet.html template). The app uses the browser's DOMParser to read
+  the file in memory. A field mapping table (CF_MAP) links each f-* element ID
+  in the HTML to the corresponding form input in the app. The inventory is
+  extracted from a JSON script tag in the file. Both the fields and inventory
+  items are sanitised and validated. The app then displays an import report
+  modal: how many fields were filled, which required fields are missing, which
+  important fields are missing, and how many inventory items passed or failed
+  validation. The player can confirm the import, which pre-fills the character
+  creation form. When they submit, the data is written to the character's slot
+  in Firestore with a "pending" status. The DM sees a badge showing pending
+  count, opens the approval panel, reviews the character, and approves or
+  rejects. On approval, the pending data is promoted to the live character
+  record (status field removed, approvedAt timestamp added) and any new
+  inventory items are batch-written to the campaign's items catalog.
+
+
+NOTABLE PATTERNS AND DESIGN DECISIONS
+--------------------------------------
+
+All state lives in Firestore
+  There is no meaningful client-side state that persists between sessions.
+  The exception is unread announcement tracking, which uses localStorage.
+  Every page refresh loads fresh data from Firestore. This makes the app
+  predictable but means it can be slow to open tabs with many items.
+
+DM access control is UI-level only
+  DM-only sections are hidden by checking the _isDM boolean at render time.
+  Firestore security rules are the real enforcement layer. A technically
+  capable player could read DM data from the browser console, but cannot
+  write to protected paths without matching the rules.
+
+innerHTML with escaping for dynamic UIs
+  Complex interfaces (combat cards, shop inventories, NPC panels) are built
+  as JavaScript template-literal strings and injected via innerHTML. The
+  escHtml() utility function is called on all user-supplied strings to prevent
+  XSS. This pattern is consistent throughout the codebase but means the app
+  has no virtual DOM and re-renders whole sections on each update.
+
+No pagination anywhere
+  All items, NPCs, lands, combatants, and announcements are fetched in full
+  each time a tab is opened. At small campaign scale (one campaign, a few
+  players, dozens of items) this is imperceptible. At larger scale it would
+  create noticeable load times and Firestore read costs.
+
+Single document for combat state
+  The entire battle — every combatant, every condition, the round count, the
+  win condition — lives in one Firestore document. Every HP click rewrites
+  that document. This is simple and easy to reason about, but it means
+  concurrent edits from two DM windows could overwrite each other. For a
+  single-DM use case this is acceptable.
+
+Structured HTML as an API contract
+  The example-sheet.html template uses f-* element IDs as a public contract
+  between the import pipeline and AI assistants. An AI that fills f-name,
+  f-class, f-ac, and the inventory JSON block will have its output correctly
+  imported without any custom parsing logic.
+
+Images stored as base64 in Firestore
+  Uploading images as base64 strings in document fields avoids any dependency
+  on Firebase Storage. The trade-off is larger document sizes, higher Firestore
+  read costs for documents with images, and a practical size ceiling (Firestore
+  has a 1MB per-document limit). For small campaign portraits this is fine;
+  for high-resolution battle maps it would be a problem.
+
+
+WHAT IS CURRENTLY MISSING
+--------------------------
+
+The following features are absent and are the most obvious candidates for
+the next phase of development:
+
+  - Dice roller: players and the DM currently roll physical dice or use a
+    separate app. There is no integrated dice rolling of any kind.
+
+  - Spell slot and resource tracking: characters with spellcasting have no
+    way to track spell slots, ki points, superiority dice, or other
+    per-rest resources in the app.
+
+  - Quest and objective tracker: there is no way for the DM to share active
+    quests, objectives, or story milestones with the party.
+
+  - Session history and combat log: no record is kept of past battles, who
+    took damage, what was purchased, or what events were sent. Every session
+    starts with a blank slate.
+
+  - In-app messaging: players cannot communicate with each other or the DM
+    through the app. They use external group chats.
+
+  - Mobile layout: the app is usable on phones but was not designed for them.
+    The DM panels in particular are dense and difficult to use on small screens.
+
+  - Offline support: the app requires an active network connection. There is
+    no service worker or caching strategy.
+
+  - Dynamic character sheets: sheets 1 through 4 are static HTML files. There
+    is no system for generating a new sheet page when a fifth player joins, and
+    no sheet-editing UI built into the main app.
+
+  - Turn timer: combat has no clock per turn. The DM must manage pacing verbally.
+
+  - XP and levelling: there is no experience point tracking or level-up flow.
+
+  - Initiative automation: the DM manually sets turn order by dragging cards.
+    There is no dice-roll integration or automatic initiative sorting.
+
+  - Firebase Storage: all images are stored as base64 in Firestore documents.
+    Large images (battle maps, detailed illustrations) would exceed practical
+    limits without a dedicated storage bucket.
+
+================================================================================
+END OF OVERVIEW
+================================================================================
