@@ -783,6 +783,21 @@
   .cb-cond.active { background:rgba(122,21,21,0.15);border-color:var(--red);color:var(--red);font-weight:600; }
   .cb-enemy .cb-cond { background:rgba(0,0,0,0.2);border-color:rgba(255,255,255,0.12);color:#a08060; }
   .cb-enemy .cb-cond.active { background:rgba(122,21,21,0.3);border-color:#e04040;color:#e04040; }
+  /* Combat wizard */
+  .cb-wizard-steps { display:flex;align-items:center;margin-bottom:16px; }
+  .cb-step-pip { width:24px;height:24px;border-radius:50%;border:2px solid var(--border);background:rgba(255,255,255,0.05);font-family:'Cinzel',serif;font-size:0.58rem;font-weight:700;color:var(--border-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s; }
+  .cb-step-pip.active { border-color:var(--gold);color:var(--gold-light);background:rgba(154,112,0,0.12); }
+  .cb-step-pip.done { border-color:#5a9a3a;color:#5a9a3a;background:rgba(40,90,24,0.12); }
+  .cb-step-line { flex:1;height:1px;background:var(--border);max-width:36px;margin:0 4px;transition:background 0.2s; }
+  .cb-step-line.done { background:#5a9a3a; }
+  .cb-player-card { background:linear-gradient(160deg,#f7edd8,#ecdcb5);border:2px solid var(--border);border-radius:3px;padding:9px 12px;margin-bottom:6px;cursor:pointer;transition:all 0.15s;user-select:none; }
+  .cb-player-card.selected { border-color:var(--gold);background:linear-gradient(160deg,#fdf5e2,#f5e6c0); }
+  .cb-player-card:hover { border-color:var(--border-light); }
+  .cb-player-check { width:17px;height:17px;border-radius:2px;border:2px solid var(--border-light);background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;font-size:0.62rem;color:var(--gold);font-weight:900;flex-shrink:0;transition:all 0.15s; }
+  .cb-player-card.selected .cb-player-check { border-color:var(--gold);background:rgba(154,112,0,0.2); }
+  .cb-win-card { flex:1;min-width:120px;background:rgba(255,255,255,0.03);border:2px solid var(--border);border-radius:3px;padding:14px 16px;cursor:pointer;transition:all 0.15s;user-select:none; }
+  .cb-win-card:hover { border-color:var(--border-light); }
+  .cb-win-card.selected { border-color:var(--gold);background:rgba(154,112,0,0.08); }
   .ann-note-text { font-family:'Crimson Text',serif;font-size:0.9rem;color:var(--parchment-dark);line-height:1.5; }
   .ann-note-date { font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);margin-top:6px; }
   .ann-note-del { position:absolute;top:8px;right:8px;background:none;border:none;font-size:0.65rem;color:var(--border-light);cursor:pointer;display:none; }
@@ -1024,34 +1039,81 @@
       <div id="ann-shop-preview" style="margin-top:10px;"></div>
     </div>
     <div id="ann-combat-mode" style="display:none;">
-      <!-- Round counter -->
-      <div class="cb-round-bar">
-        <button class="cb-round-btn" onclick="combatChangeRound(-1)">−</button>
-        <div style="text-align:center;flex:1;">
-          <div style="font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--border-light);margin-bottom:2px;">Round</div>
-          <div class="cb-round-num" id="cb-round-num">1</div>
+      <!-- Setup Wizard -->
+      <div id="cb-setup">
+        <div class="cb-wizard-steps">
+          <div class="cb-step-pip active" id="cb-pip-1">1</div>
+          <div class="cb-step-line" id="cb-line-12"></div>
+          <div class="cb-step-pip" id="cb-pip-2">2</div>
+          <div class="cb-step-line" id="cb-line-23"></div>
+          <div class="cb-step-pip" id="cb-pip-3">3</div>
+          <div style="flex:1;"></div>
+          <div id="cb-step-label" style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);">Step 1 — Select Players</div>
         </div>
-        <button class="cb-round-btn" onclick="combatChangeRound(1)">+</button>
-        <button class="dm-btn danger" onclick="combatReset()" style="font-size:0.5rem;padding:4px 10px;margin-left:10px;">↺ Reset</button>
-      </div>
-      <!-- Add combatant form -->
-      <div class="cb-add-form">
-        <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 90px auto;gap:8px;align-items:end;">
-          <div><label>Name</label><input type="text" id="cb-new-name" placeholder="Goblin…"></div>
-          <div><label>Init</label><input type="number" id="cb-new-init" placeholder="12" style="text-align:center;"></div>
-          <div><label>Max HP</label><input type="number" id="cb-new-hp" placeholder="20" style="text-align:center;"></div>
-          <div><label>AC</label><input type="number" id="cb-new-ac" placeholder="13" style="text-align:center;"></div>
-          <div><label>Type</label>
-            <select id="cb-new-type">
-              <option value="player">Player</option>
-              <option value="enemy">Enemy</option>
-            </select>
+        <!-- Step 1: Select Players -->
+        <div id="cb-step-1">
+          <div id="cb-player-list" style="margin-bottom:12px;min-height:40px;">
+            <div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>
           </div>
-          <div><button class="cb-add-btn" onclick="combatAddCombatant()">+ Add</button></div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="dm-btn" onclick="combatSetupNext()">Next → Add Enemies</button>
+          </div>
+        </div>
+        <!-- Step 2: Add Enemies -->
+        <div id="cb-step-2" style="display:none;">
+          <div class="cb-add-form" style="margin-bottom:10px;">
+            <div style="display:grid;grid-template-columns:1fr 55px 65px 55px auto;gap:8px;align-items:end;">
+              <div><label>Enemy Name</label><input type="text" id="cb-en-name" placeholder="Goblin…"></div>
+              <div><label>Init</label><input type="number" id="cb-en-init" placeholder="8" style="text-align:center;"></div>
+              <div><label>Max HP</label><input type="number" id="cb-en-hp" placeholder="15" style="text-align:center;"></div>
+              <div><label>AC</label><input type="number" id="cb-en-ac" placeholder="12" style="text-align:center;"></div>
+              <div style="padding-top:16px;"><button class="cb-add-btn" onclick="combatAddEnemy()">+ Add</button></div>
+            </div>
+          </div>
+          <div id="cb-enemy-list" style="margin-bottom:12px;"></div>
+          <div style="display:flex;justify-content:space-between;">
+            <button class="dm-btn" onclick="combatSetupBack()">← Back</button>
+            <button class="dm-btn" onclick="combatSetupNext()">Next → Win Condition</button>
+          </div>
+        </div>
+        <!-- Step 3: Win Condition -->
+        <div id="cb-step-3" style="display:none;">
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <div class="cb-win-card selected" id="cb-win-victory" onclick="combatSelectWin('victory')">
+              <div style="font-size:1.3rem;margin-bottom:5px;">⚔️</div>
+              <div style="font-family:'Cinzel',serif;font-size:0.68rem;font-weight:600;color:var(--gold-light);margin-bottom:4px;">Until Victory</div>
+              <div style="font-size:0.7rem;color:var(--border-light);line-height:1.45;">Combat ends when all enemies or all players fall to 0 HP.</div>
+            </div>
+            <div class="cb-win-card" id="cb-win-timed" onclick="combatSelectWin('timed')">
+              <div style="font-size:1.3rem;margin-bottom:5px;">⏳</div>
+              <div style="font-family:'Cinzel',serif;font-size:0.68rem;font-weight:600;color:var(--gold-light);margin-bottom:4px;">Timed Battle</div>
+              <div style="font-size:0.7rem;color:var(--border-light);line-height:1.45;">Combat ends after a set number of rounds.</div>
+              <div id="cb-rounds-input" style="display:none;margin-top:8px;align-items:center;gap:6px;">
+                <input type="number" id="cb-max-rounds" min="1" value="5" style="width:50px;text-align:center;font-family:'Cinzel',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment);padding:4px 6px;outline:none;">
+                <span style="font-family:'Cinzel',serif;font-size:0.52rem;color:var(--border-light);">rounds</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <button class="dm-btn" onclick="combatSetupBack()">← Back</button>
+            <button class="dm-btn" style="background:rgba(154,112,0,0.2);border-color:var(--gold);color:var(--gold-light);" onclick="combatStartBattle()">⚔️ Start Battle!</button>
+          </div>
         </div>
       </div>
-      <!-- Combatant list -->
-      <div id="cb-list"></div>
+      <!-- Active Combat -->
+      <div id="cb-active" style="display:none;">
+        <div class="cb-round-bar">
+          <button class="cb-round-btn" onclick="combatChangeRound(-1)">−</button>
+          <div style="text-align:center;flex:1;">
+            <div class="cb-round-num" id="cb-round-num">1</div>
+            <div id="cb-wincond-label" style="font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--border-light);margin-top:3px;"></div>
+          </div>
+          <button class="cb-round-btn" onclick="combatChangeRound(1)">+</button>
+          <button class="dm-btn danger" onclick="combatEndBattle()" style="font-size:0.5rem;padding:4px 10px;margin-left:10px;">🏳 End</button>
+        </div>
+        <div id="cb-result-banner" style="display:none;margin-bottom:10px;"></div>
+        <div id="cb-list"></div>
+      </div>
     </div>
     <div id="ann-send-row" style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap;">
       <button class="dm-btn" onclick="postAnnouncement()">📢 Send to Players</button>
