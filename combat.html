@@ -520,6 +520,7 @@ body {
 <div id="loading-overlay">
   <div id="loading-sword">⚔️</div>
   <div id="loading-text">Loading Combat...</div>
+  <button onclick="goBack()" style="margin-top:18px;font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);background:none;border:1px solid var(--border);border-radius:2px;padding:6px 14px;cursor:pointer;">← Back to Campaign</button>
 </div>
 
 <!-- REDIRECT MESSAGE -->
@@ -608,6 +609,7 @@ let currentUser = null;
 let _lastShownTurnIndex = -1;
 let _overlayTimer = null;
 let _overlayDismissing = false;
+let _loadingTimeout = null;
 
 // ── Utilities ──
 function escHtml(s) {
@@ -630,7 +632,11 @@ function hpBarClass(pct) {
 }
 
 // ── Loading / Redirect ──
+let _loadingDone = false;
 function hideLoading() {
+  if (_loadingDone) return;
+  _loadingDone = true;
+  clearTimeout(_loadingTimeout);
   document.getElementById('loading-overlay').classList.add('hidden');
 }
 
@@ -638,6 +644,13 @@ function showRedirect() {
   hideLoading();
   document.getElementById('redirect-msg').classList.add('visible');
   setTimeout(goBack, 1500);
+}
+
+// Safety net: if snapshot never fires within 8s, go back
+function startLoadingTimeout() {
+  _loadingTimeout = setTimeout(() => {
+    if (!_loadingDone) goBack();
+  }, 8000);
 }
 
 // ── Render ──
@@ -900,6 +913,8 @@ function dismissOverlay() {
 }
 
 // ── Firebase Init ──
+startLoadingTimeout();
+
 firebase.auth().onAuthStateChanged(user => {
   if (!user) {
     window.location.href = 'home.html';
@@ -912,17 +927,17 @@ firebase.auth().onAuthStateChanged(user => {
     db.collection('campaigns').doc(campaignId)
       .collection('combat').doc('state')
       .onSnapshot(snap => {
-        if (!snap.exists || snap.data().mode !== 'active') {
+        if (!snap.exists || (snap.data() && snap.data().mode !== 'active')) {
           showRedirect();
-        } else {
+        } else if (snap.exists) {
           renderCombat(snap.data());
         }
       }, err => {
-        console.error('Snapshot error:', err);
+        console.error('Combat snapshot error:', err);
         showRedirect();
       });
   } catch (e) {
-    console.error('Firebase error:', e);
+    console.error('Firebase init error:', e);
     showRedirect();
   }
 });
