@@ -732,6 +732,57 @@
   .ann-notif-dot { display:inline-block;width:7px;height:7px;background:var(--gold-light);border-radius:50%;margin-left:5px;vertical-align:middle;animation:annpulse 1.8s ease-in-out infinite; }
   @keyframes annpulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .ann-note-card { background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:3px;padding:12px 14px;margin-bottom:8px;position:relative; }
+  /* Combat tracker (embedded in Events panel) */
+  .cb-round-bar { display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:3px;padding:10px 16px;margin-bottom:14px; }
+  .cb-round-num { font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--gold-light);min-width:48px;text-align:center; }
+  .cb-round-btn { font-family:'Cinzel',serif;font-size:1rem;font-weight:900;color:var(--gold-light);background:none;border:1px solid var(--gold);border-radius:2px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s; }
+  .cb-round-btn:hover { background:rgba(154,112,0,0.2); }
+  .cb-add-form { background:linear-gradient(160deg,#f7edd8,#ecdcb5);border:1px solid var(--border);border-radius:3px;padding:12px 16px;margin-bottom:12px; }
+  .cb-add-form label { font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-light);display:block;margin-bottom:2px; }
+  .cb-add-form input, .cb-add-form select { font-family:'Crimson Text',serif;font-size:0.85rem;background:rgba(255,255,255,0.55);border:1px solid var(--border-light);border-radius:2px;color:var(--ink);padding:4px 7px;width:100%;outline:none; }
+  .cb-add-form input:focus { border-color:var(--gold);background:rgba(255,255,255,0.85); }
+  .cb-add-btn { font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-light);background:none;border:1px solid var(--gold);border-radius:2px;padding:5px 14px;cursor:pointer;white-space:nowrap;height:30px;transition:background 0.15s; }
+  .cb-add-btn:hover { background:rgba(154,112,0,0.15); }
+  .cb-combatant { background:linear-gradient(160deg,#f7edd8,#ecdcb5 50%,#f2e6cc);border:1px solid var(--border);border-radius:3px;padding:10px 13px;margin-bottom:7px;position:relative;cursor:grab; }
+  .cb-combatant:active { cursor:grabbing; }
+  .cb-combatant.cb-dragging { opacity:0.4; }
+  .cb-combatant.cb-drag-over { border-color:var(--gold);box-shadow:0 0 0 2px var(--gold); }
+  .cb-combatant.cb-unconscious { opacity:0.5; }
+  .cb-enemy { background:linear-gradient(160deg,#2a1008,#1a0804);border-color:#7a1515; }
+  .cb-top { display:grid;grid-template-columns:30px 1fr auto auto auto;gap:8px;align-items:center;margin-bottom:7px; }
+  .cb-init { font-family:'Cinzel',serif;font-size:0.95rem;font-weight:900;color:var(--gold-light);text-align:center; }
+  .cb-enemy .cb-init { color:#e04040; }
+  .cb-name { font-family:'Cinzel',serif;font-size:0.85rem;font-weight:600;color:var(--ink); }
+  .cb-enemy .cb-name { color:var(--parchment-dark); }
+  .cb-meta { font-size:0.68rem;color:var(--ink-light);font-style:italic; }
+  .cb-enemy .cb-meta { color:var(--parchment-dark); }
+  .cb-pill { font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;letter-spacing:0.06em;padding:2px 7px;border-radius:2px;border:1px solid var(--border-light);background:rgba(255,255,255,0.3);color:var(--ink-light);white-space:nowrap; }
+  .cb-enemy .cb-pill { background:rgba(0,0,0,0.2);border-color:rgba(122,21,21,0.4);color:var(--parchment-dark); }
+  .cb-remove { font-size:0.65rem;color:var(--border-light);background:none;border:none;cursor:pointer;padding:1px 4px;font-family:'Cinzel',serif;transition:color 0.15s; }
+  .cb-remove:hover { color:var(--red); }
+  .cb-hp-row { display:flex;align-items:center;gap:7px;margin-bottom:7px; }
+  .cb-hp-label { font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-light);min-width:16px; }
+  .cb-enemy .cb-hp-label { color:var(--parchment-dark); }
+  .cb-hp-track { flex:1;background:rgba(0,0,0,0.1);border-radius:2px;height:7px;overflow:hidden; }
+  .cb-hp-fill { height:100%;background:var(--green);border-radius:2px;transition:width 0.3s,background 0.3s; }
+  .cb-hp-fill.mid { background:var(--gold); }
+  .cb-hp-fill.low { background:var(--red); }
+  .cb-hp-val { font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;color:var(--green);min-width:50px;text-align:right; }
+  .cb-hp-val.mid { color:var(--gold); }
+  .cb-hp-val.low { color:var(--red); }
+  .cb-hp-btn { font-family:'Cinzel',serif;font-size:0.75rem;font-weight:900;background:rgba(255,255,255,0.4);border:1px solid var(--border-light);border-radius:2px;width:22px;height:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.1s; }
+  .cb-hp-btn:hover { background:rgba(255,255,255,0.7); }
+  .cb-hp-btn.heal { color:var(--green);border-color:var(--green); }
+  .cb-hp-btn.heal:hover { background:rgba(40,90,24,0.1); }
+  .cb-hp-btn.dmg  { color:var(--red);border-color:var(--red); }
+  .cb-hp-btn.dmg:hover  { background:rgba(122,21,21,0.1); }
+  .cb-hp-input { font-family:'Cinzel',serif;font-size:0.68rem;width:32px;text-align:center;background:rgba(255,255,255,0.5);border:1px solid var(--border-light);border-radius:2px;color:var(--ink);padding:2px 3px;outline:none; }
+  .cb-enemy .cb-hp-input { background:rgba(0,0,0,0.2);color:var(--parchment);border-color:rgba(122,21,21,0.4); }
+  .cb-conds { display:flex;flex-wrap:wrap;gap:3px; }
+  .cb-cond { font-family:'Cinzel',serif;font-size:0.43rem;text-transform:uppercase;letter-spacing:0.07em;padding:2px 5px;border-radius:2px;cursor:pointer;border:1px solid var(--border-light);color:var(--ink-light);background:rgba(255,255,255,0.2);transition:all 0.12s;user-select:none; }
+  .cb-cond.active { background:rgba(122,21,21,0.15);border-color:var(--red);color:var(--red);font-weight:600; }
+  .cb-enemy .cb-cond { background:rgba(0,0,0,0.2);border-color:rgba(255,255,255,0.12);color:#a08060; }
+  .cb-enemy .cb-cond.active { background:rgba(122,21,21,0.3);border-color:#e04040;color:#e04040; }
   .ann-note-text { font-family:'Crimson Text',serif;font-size:0.9rem;color:var(--parchment-dark);line-height:1.5; }
   .ann-note-date { font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);margin-top:6px; }
   .ann-note-del { position:absolute;top:8px;right:8px;background:none;border:none;font-size:0.65rem;color:var(--border-light);cursor:pointer;display:none; }
@@ -799,7 +850,6 @@
   <a class="nav-btn" href="dashboard.html">← Dashboard</a>
   <button class="nav-btn" id="dm-panel-btn" onclick="toggleDMPanel()" style="display:none;">🔐 DM Panel</button>
   <button class="nav-btn" id="lands-btn" onclick="toggleLandsSection()">📖 Encyclopedia</button>
-  <a class="nav-btn" id="combat-link" href="#" style="display:none;">⚔ Combat Tracker</a>
   <button class="nav-btn" id="ann-tab-btn" onclick="toggleAnnouncementsTab()">📋 Announcements</button>
   <button class="nav-btn" id="announce-btn" onclick="toggleAnnouncePanel()" style="display:none;">📢 Events</button>
   <button class="nav-btn" id="ann-view-btn" onclick="reopenAnnouncement()" style="display:none;">👁 View</button>
@@ -919,6 +969,7 @@
       <button id="ann-tab-image" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('image')">🖼 Image</button>
       <button id="ann-tab-npc" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('npc')">👤 NPC</button>
       <button id="ann-tab-shop" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('shop')">🏪 Shop</button>
+      <button id="ann-tab-combat" class="dm-btn ann-tab-btn" onclick="switchAnnounceMode('combat')">⚔️ Combat</button>
     </div>
     <div id="ann-text-mode">
       <div class="dm-field">
@@ -972,7 +1023,37 @@
       </div>
       <div id="ann-shop-preview" style="margin-top:10px;"></div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap;">
+    <div id="ann-combat-mode" style="display:none;">
+      <!-- Round counter -->
+      <div class="cb-round-bar">
+        <button class="cb-round-btn" onclick="combatChangeRound(-1)">−</button>
+        <div style="text-align:center;flex:1;">
+          <div style="font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--border-light);margin-bottom:2px;">Round</div>
+          <div class="cb-round-num" id="cb-round-num">1</div>
+        </div>
+        <button class="cb-round-btn" onclick="combatChangeRound(1)">+</button>
+        <button class="dm-btn danger" onclick="combatReset()" style="font-size:0.5rem;padding:4px 10px;margin-left:10px;">↺ Reset</button>
+      </div>
+      <!-- Add combatant form -->
+      <div class="cb-add-form">
+        <div style="display:grid;grid-template-columns:1fr 60px 70px 60px 90px auto;gap:8px;align-items:end;">
+          <div><label>Name</label><input type="text" id="cb-new-name" placeholder="Goblin…"></div>
+          <div><label>Init</label><input type="number" id="cb-new-init" placeholder="12" style="text-align:center;"></div>
+          <div><label>Max HP</label><input type="number" id="cb-new-hp" placeholder="20" style="text-align:center;"></div>
+          <div><label>AC</label><input type="number" id="cb-new-ac" placeholder="13" style="text-align:center;"></div>
+          <div><label>Type</label>
+            <select id="cb-new-type">
+              <option value="player">Player</option>
+              <option value="enemy">Enemy</option>
+            </select>
+          </div>
+          <div><button class="cb-add-btn" onclick="combatAddCombatant()">+ Add</button></div>
+        </div>
+      </div>
+      <!-- Combatant list -->
+      <div id="cb-list"></div>
+    </div>
+    <div id="ann-send-row" style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap;">
       <button class="dm-btn" onclick="postAnnouncement()">📢 Send to Players</button>
       <button class="dm-btn danger" onclick="clearAnnouncement()">✕ Clear Active</button>
       <span id="ann-status" style="font-size:0.72rem;color:var(--border-light);font-style:italic;"></span>
@@ -1401,10 +1482,7 @@ firebase.auth().onAuthStateChanged(async user => {
     }
 
     // DM-only controls
-    const combatLink = document.getElementById('combat-link');
     if (_isDM) {
-      combatLink.href = 'combat.html?c=' + campaignId;
-      combatLink.style.display = '';
       document.getElementById('dm-panel-btn').style.display = '';
       document.getElementById('announce-btn').style.display = '';
       document.getElementById('session-notes-dm').style.display = '';
@@ -3045,22 +3123,208 @@ function toggleAnnouncePanel() {
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   panel.style.display = isOpen ? 'none' : '';
-  if (!isOpen) {
+  if (isOpen) {
+    combatUnsubscribe();
+  } else {
     loadAnnouncementNPCs();
     loadAnnouncementLands();
   }
 }
 
+// ─── EMBEDDED COMBAT TRACKER ──────────────────────────────────────
+let _combatState = { round: 1, combatants: [] };
+let _combatUnsubscribe = null;
+let _combatDragSrc = null;
+
+const _combatConditions = ['Blinded','Charmed','Deafened','Frightened','Grappled','Incapacitated','Paralyzed','Poisoned','Prone','Restrained','Stunned','Unconscious'];
+
+function combatSubscribe() {
+  if (_combatUnsubscribe) return;
+  _combatUnsubscribe = db.collection('campaigns').doc(campaignId)
+    .collection('combat').doc('state')
+    .onSnapshot(snap => {
+      if (snap.exists) {
+        _combatState = snap.data();
+      } else {
+        _combatState = { round: 1, combatants: [] };
+      }
+      combatRender();
+    }, () => {});
+}
+
+function combatUnsubscribe() {
+  if (_combatUnsubscribe) { _combatUnsubscribe(); _combatUnsubscribe = null; }
+}
+
+async function combatSave() {
+  await db.collection('campaigns').doc(campaignId)
+    .collection('combat').doc('state').set(_combatState);
+}
+
+async function combatChangeRound(delta) {
+  _combatState.round = Math.max(1, (_combatState.round || 1) + delta);
+  combatRender();
+  await combatSave();
+}
+
+async function combatReset() {
+  if (!confirm('Reset combat? This clears all combatants and resets the round to 1.')) return;
+  _combatState = { round: 1, combatants: [] };
+  combatRender();
+  await combatSave();
+}
+
+async function combatAddCombatant() {
+  const name = document.getElementById('cb-new-name').value.trim();
+  const init = parseInt(document.getElementById('cb-new-init').value) || 0;
+  const maxHp = parseInt(document.getElementById('cb-new-hp').value) || 10;
+  const ac   = parseInt(document.getElementById('cb-new-ac').value) || 10;
+  const type = document.getElementById('cb-new-type').value;
+  if (!name) { document.getElementById('cb-new-name').focus(); return; }
+  const c = { id: Date.now() + Math.random(), name, init, hp: maxHp, maxHp, ac, type, conditions: [] };
+  _combatState.combatants = (_combatState.combatants || []).concat(c);
+  _combatState.combatants.sort((a,b) => b.init - a.init);
+  document.getElementById('cb-new-name').value = '';
+  document.getElementById('cb-new-init').value = '';
+  document.getElementById('cb-new-hp').value = '';
+  document.getElementById('cb-new-ac').value = '';
+  combatRender();
+  await combatSave();
+}
+
+async function combatAdjustHp(id, delta) {
+  const c = (_combatState.combatants || []).find(x => x.id === id);
+  if (!c) return;
+  c.hp = Math.max(0, Math.min(c.maxHp, (c.hp || 0) + delta));
+  combatUpdateHpDisplay(id, c);
+  await combatSave();
+}
+
+async function combatSetHp(id, val) {
+  const c = (_combatState.combatants || []).find(x => x.id === id);
+  if (!c) return;
+  const n = parseInt(val);
+  if (isNaN(n)) return;
+  c.hp = Math.max(0, Math.min(c.maxHp, n));
+  combatUpdateHpDisplay(id, c);
+  await combatSave();
+}
+
+function combatUpdateHpDisplay(id, c) {
+  const card = document.querySelector('[data-cbid="' + id + '"]');
+  if (!card) return;
+  const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
+  const fill = card.querySelector('.cb-hp-fill');
+  const val  = card.querySelector('.cb-hp-val');
+  if (fill) { fill.style.width = (pct * 100) + '%'; fill.className = 'cb-hp-fill' + (pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : ''); }
+  if (val)  { val.textContent = c.hp + '/' + c.maxHp; val.className = 'cb-hp-val' + (pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : ''); }
+  if (c.hp === 0) card.classList.add('cb-unconscious'); else card.classList.remove('cb-unconscious');
+}
+
+async function combatToggleCondition(id, cond) {
+  const c = (_combatState.combatants || []).find(x => x.id === id);
+  if (!c) return;
+  c.conditions = c.conditions || [];
+  if (c.conditions.includes(cond)) c.conditions = c.conditions.filter(x => x !== cond);
+  else c.conditions.push(cond);
+  combatRender();
+  await combatSave();
+}
+
+async function combatRemoveCombatant(id) {
+  _combatState.combatants = (_combatState.combatants || []).filter(x => x.id !== id);
+  combatRender();
+  await combatSave();
+}
+
+function combatRender() {
+  const roundEl = document.getElementById('cb-round-num');
+  if (roundEl) roundEl.textContent = _combatState.round || 1;
+  const list = document.getElementById('cb-list');
+  if (!list) return;
+  const combatants = _combatState.combatants || [];
+  list.innerHTML = combatants.map(c => {
+    const pct = c.maxHp > 0 ? c.hp / c.maxHp : 0;
+    const hpClass = pct < 0.25 ? ' low' : pct < 0.5 ? ' mid' : '';
+    const isEnemy = c.type === 'enemy';
+    const conds = (c.conditions || []).map(cd =>
+      `<span class="cb-cond active" onclick="combatToggleCondition(${c.id},'${cd}')" title="Remove">${cd}</span>`
+    ).join('');
+    const allConds = _combatConditions.filter(cd => !(c.conditions||[]).includes(cd)).map(cd =>
+      `<span class="cb-cond" onclick="combatToggleCondition(${c.id},'${cd}')">${cd}</span>`
+    ).join('');
+    return `<div class="cb-combatant${isEnemy?' cb-enemy':''}${c.hp===0?' cb-unconscious':''}" data-cbid="${c.id}"
+      draggable="true"
+      ondragstart="combatDragStart(event,${c.id})"
+      ondragend="combatDragEnd(event)"
+      ondragover="combatDragOver(event,${c.id})"
+      ondragleave="combatDragLeave(event)"
+      ondrop="combatDrop(event,${c.id})">
+      <div class="cb-top">
+        <span class="cb-init">${c.init}</span>
+        <span class="cb-name">${escHtml(c.name)}</span>
+        <span class="cb-meta">AC ${c.ac}</span>
+        <span class="cb-pill">${isEnemy?'Enemy':'Player'}</span>
+        <button class="cb-remove" onclick="combatRemoveCombatant(${c.id})" title="Remove">✕</button>
+      </div>
+      <div class="cb-hp-row">
+        <span class="cb-hp-label">HP</span>
+        <span class="cb-hp-track"><span class="cb-hp-fill${hpClass}" style="width:${Math.round(pct*100)}%"></span></span>
+        <span class="cb-hp-val${hpClass}">${c.hp}/${c.maxHp}</span>
+        <button class="cb-hp-btn dmg" onclick="combatAdjustHp(${c.id},-1)">−</button>
+        <input class="cb-hp-input" type="number" value="${c.hp}" min="0" max="${c.maxHp}"
+               onchange="combatSetHp(${c.id},this.value)" onclick="this.select()">
+        <button class="cb-hp-btn heal" onclick="combatAdjustHp(${c.id},1)">+</button>
+      </div>
+      <div class="cb-conds">${conds}${allConds}</div>
+    </div>`;
+  }).join('');
+}
+
+function combatDragStart(e, id) {
+  _combatDragSrc = id;
+  e.currentTarget.classList.add('cb-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function combatDragEnd(e) {
+  e.currentTarget.classList.remove('cb-dragging');
+  document.querySelectorAll('.cb-combatant').forEach(el => el.classList.remove('cb-drag-over'));
+}
+function combatDragOver(e, id) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.cb-combatant').forEach(el => el.classList.remove('cb-drag-over'));
+  if (id !== _combatDragSrc) e.currentTarget.classList.add('cb-drag-over');
+}
+function combatDragLeave(e) { e.currentTarget.classList.remove('cb-drag-over'); }
+async function combatDrop(e, targetId) {
+  e.preventDefault();
+  if (_combatDragSrc == null || _combatDragSrc === targetId) return;
+  const arr = _combatState.combatants || [];
+  const srcIdx = arr.findIndex(c => c.id === _combatDragSrc);
+  const tgtIdx = arr.findIndex(c => c.id === targetId);
+  if (srcIdx === -1 || tgtIdx === -1) return;
+  const [moved] = arr.splice(srcIdx, 1);
+  arr.splice(tgtIdx, 0, moved);
+  _combatState.combatants = arr;
+  combatRender();
+  await combatSave();
+}
+
 let _announceMode = 'text';
 function switchAnnounceMode(mode) {
   _announceMode = mode;
-  ['text','image','npc','shop'].forEach(m => {
+  ['text','image','npc','shop','combat'].forEach(m => {
     document.getElementById('ann-' + m + '-mode').style.display = m === mode ? '' : 'none';
     const tab = document.getElementById('ann-tab-' + m);
     if (tab) tab.classList.toggle('active', m === mode);
   });
+  const sendRow = document.getElementById('ann-send-row');
+  if (sendRow) sendRow.style.display = mode === 'combat' ? 'none' : '';
   if (mode === 'npc') { loadAnnouncementLands(); loadAnnouncementNPCs(); }
   if (mode === 'shop') loadAnnouncementLands();
+  if (mode === 'combat') combatSubscribe();
+  else combatUnsubscribe();
 }
 
 let _announceImageData = null;
