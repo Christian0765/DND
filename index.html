@@ -1698,7 +1698,7 @@ firebase.auth().onAuthStateChanged(async user => {
       const roll = data.diceRoll;
       if (roll && roll.rolledAt) {
         const rolledAt = roll.rolledAt.toMillis ? roll.rolledAt.toMillis() : 0;
-        if (rolledAt !== _shownDiceRollAt) {
+        if (rolledAt > _shownDiceRollAt) {
           _shownDiceRollAt = rolledAt;
           showDiceAnimation({ roller: roll.roller, isDM: roll.isDM, qty: roll.quantity, die: roll.die, results: roll.results, total: roll.total, secret: false });
         }
