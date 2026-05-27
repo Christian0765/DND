@@ -787,6 +787,10 @@
           </div>
           <div id="friend-requests-list"></div>
         </div>
+        <div id="sent-requests-section" style="display:none;margin-bottom:20px;">
+          <div class="cc-req-title">📤 Sent Requests</div>
+          <div id="sent-requests-list"></div>
+        </div>
         <div class="friends-list" id="friends-list">
           <div style="text-align: center; color: var(--border-light); padding: 40px 20px;">
             <div style="font-size: 2rem; margin-bottom: 12px;">👥</div>
@@ -1368,6 +1372,29 @@
           reqList.innerHTML = '';
         }
 
+        // Sent requests — show pending requests with an Unsend button
+        const sentSection = document.getElementById('sent-requests-section');
+        const sentList = document.getElementById('sent-requests-list');
+        const pendingSent = sentRequests.filter(u => !myFriendUids.includes(u));
+        if (pendingSent.length > 0) {
+          sentSection.style.display = '';
+          const sentDocs = await Promise.all(pendingSent.map(u => db.collection('users').doc(u).get()));
+          sentList.innerHTML = sentDocs.map(d => {
+            const f = d.exists ? d.data() : {};
+            const name = f.displayName || f.email || 'Unknown user';
+            return `
+              <div class="cc-req-card" id="sent-req-${d.id}">
+                <div class="cc-req-avatar">${(name.charAt(0) || '?').toUpperCase()}</div>
+                <div class="cc-req-name">${escHtml(name)}</div>
+                <span style="font-family:'Crimson Text',serif;font-size:0.78rem;color:var(--border-light);flex:1;">Pending…</span>
+                <button class="cc-req-decline" onclick="unsendFriendRequest('${d.id}',this)">Unsend</button>
+              </div>`;
+          }).join('');
+        } else {
+          sentSection.style.display = 'none';
+          sentList.innerHTML = '';
+        }
+
         // Friends list — use own friends array only (no unreliable reverse query)
         if (myFriendUids.length === 0) {
           list.innerHTML = `
@@ -1486,6 +1513,19 @@
       db.collection('users').doc(currentUser.uid).set({
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
       }, { merge: true }).catch(e => console.error('Decline failed:', e));
+    }
+
+    function unsendFriendRequest(toUid, btn) {
+      if (btn) {
+        const card = btn.closest('.cc-req-card');
+        if (card) card.remove();
+      }
+      if (!document.querySelector('#sent-requests-list .cc-req-card')) {
+        document.getElementById('sent-requests-section').style.display = 'none';
+      }
+      db.collection('users').doc(currentUser.uid).update({
+        sentRequests: firebase.firestore.FieldValue.arrayRemove(toUid)
+      }).catch(e => console.error('Unsend failed:', e));
     }
 
     function removeFriend(friendUid) {
