@@ -1319,7 +1319,6 @@
         const ownData = ownDoc.exists ? ownDoc.data() : {};
         const myFriendUids = [...(ownData.friends || [])];
         const sentRequests = ownData.sentRequests || [];
-        const processed = [...new Set([...(ownData.processedRequests || []), ..._localProcessed()])];
 
         // Lazy acceptance: for each sent request check if the other party accepted us,
         // OR if they also sent US a request (mutual) — auto-accept both sides on our end.
@@ -1348,8 +1347,9 @@
         }
 
         // Incoming requests from others
+        // If they're actively in sentRequests they want to connect — show even if previously declined
         const reqSnap = await db.collection('users').where('sentRequests', 'array-contains', uid).get();
-        const incoming = reqSnap.docs.filter(d => !processed.includes(d.id) && !myFriendUids.includes(d.id));
+        const incoming = reqSnap.docs.filter(d => !myFriendUids.includes(d.id));
 
         // Badge
         const tabBtn = document.getElementById('friends-tab-btn');
