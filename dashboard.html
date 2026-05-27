@@ -1166,7 +1166,7 @@
       const heartbeat = () => db.collection('users').doc(currentUser.uid).set({
         displayName: currentUser.displayName,
         photoURL: currentUser.photoURL,
-        email: currentUser.email,
+        email: (currentUser.email || '').toLowerCase(),
         lastSeen: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
       heartbeat();
@@ -1412,11 +1412,26 @@
       if (!email) { showMessage(msg, 'Please enter your friend\'s email.', 'error'); return; }
 
       db.collection('users').where('email', '==', email).limit(1).get()
-        .then(snap => {
-          if (snap.empty) { showMessage(msg, 'No account found with that email.', 'error'); return; }
+        .then(async snap => {
+          if (snap.empty) {
+            showMessage(msg, 'No account found with that email. Make sure they have logged in at least once.', 'error');
+            return;
+          }
           const friendUid = snap.docs[0].id;
           if (friendUid === currentUser.uid) { showMessage(msg, 'You can\'t add yourself.', 'error'); return; }
           const friendData = snap.docs[0].data();
+
+          // Check current state to avoid duplicate / redundant messages
+          const ownDoc = await db.collection('users').doc(currentUser.uid).get();
+          const ownData = ownDoc.exists ? ownDoc.data() : {};
+          if ((ownData.friends || []).includes(friendUid)) {
+            showMessage(msg, `${escHtml(friendData.displayName || email)} is already your friend!`, 'error');
+            return;
+          }
+          if ((ownData.sentRequests || []).includes(friendUid)) {
+            showMessage(msg, `You already sent a request to ${escHtml(friendData.displayName || email)}.`, 'error');
+            return;
+          }
 
           // Write only to OWN doc — no cross-user write needed
           return db.collection('users').doc(currentUser.uid).update({
