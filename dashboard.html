@@ -1308,19 +1308,42 @@
       const reqSection = document.getElementById('friend-requests-section');
       const reqList = document.getElementById('friend-requests-list');
       const uid = currentUser.uid;
-      const ONLINE_MS = 5 * 60 * 1000; // 5 minutes
+      const ONLINE_MS = 5 * 60 * 1000;
 
       try {
         const ownDoc = await db.collection('users').doc(uid).get();
         const ownData = ownDoc.exists ? ownDoc.data() : {};
-        const myFriendUids = ownData.friends || [];
+        const myFriendUids = [...(ownData.friends || [])];
+        const sentRequests = ownData.sentRequests || [];
         const processed = [...new Set([...(ownData.processedRequests || []), ..._localProcessed()])];
 
-        // Incoming requests
+        // Lazy acceptance: for each sent request check if the other party accepted us.
+        // If they have us in their friends array, confirm the friendship on our side too.
+        // This fixes one-sided friendships without needing a reverse collection query.
+        const newlyAccepted = [];
+        await Promise.all(sentRequests.map(async sentUid => {
+          if (myFriendUids.includes(sentUid)) return;
+          try {
+            const theirDoc = await db.collection('users').doc(sentUid).get();
+            if (theirDoc.exists && (theirDoc.data().friends || []).includes(uid)) {
+              newlyAccepted.push(sentUid);
+            }
+          } catch(e) {}
+        }));
+
+        if (newlyAccepted.length > 0) {
+          await db.collection('users').doc(uid).update({
+            friends:      firebase.firestore.FieldValue.arrayUnion(...newlyAccepted),
+            sentRequests: firebase.firestore.FieldValue.arrayRemove(...newlyAccepted)
+          });
+          newlyAccepted.forEach(u => { if (!myFriendUids.includes(u)) myFriendUids.push(u); });
+        }
+
+        // Incoming requests from others
         const reqSnap = await db.collection('users').where('sentRequests', 'array-contains', uid).get();
         const incoming = reqSnap.docs.filter(d => !processed.includes(d.id) && !myFriendUids.includes(d.id));
 
-        // Update Friends tab badge
+        // Badge
         const tabBtn = document.getElementById('friends-tab-btn');
         const oldBadge = tabBtn.querySelector('.tab-badge');
         if (oldBadge) oldBadge.remove();
@@ -1345,12 +1368,8 @@
           reqList.innerHTML = '';
         }
 
-        // Friends list (own + those who have me in their friends)
-        const theyAddedSnap = await db.collection('users').where('friends', 'array-contains', uid).get();
-        const theyAddedUids = theyAddedSnap.docs.map(d => d.id);
-        const allFriendUids = [...new Set([...myFriendUids, ...theyAddedUids])];
-
-        if (allFriendUids.length === 0) {
+        // Friends list — use own friends array only (no unreliable reverse query)
+        if (myFriendUids.length === 0) {
           list.innerHTML = `
             <div style="text-align:center;color:var(--border-light);padding:40px 20px;">
               <div style="font-size:2rem;margin-bottom:12px;">👥</div>
@@ -1360,7 +1379,7 @@
         }
 
         const now = Date.now();
-        const friendDocs = await Promise.all(allFriendUids.map(fid => db.collection('users').doc(fid).get()));
+        const friendDocs = await Promise.all(myFriendUids.map(fid => db.collection('users').doc(fid).get()));
         list.innerHTML = friendDocs.filter(d => d.exists).map(d => {
           const f = d.data();
           const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
@@ -1372,7 +1391,7 @@
                 <div class="friend-avatar">${avatar}</div>
                 <div class="friend-details">
                   <div class="friend-name" style="display:flex;align-items:center;gap:7px;">
-                    ${escHtml(f.displayName || 'Unknown')}
+                    ${escHtml(f.displayName || f.name || 'Unknown')}
                     <span class="online-dot ${isOnline ? 'online' : 'offline'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
                   </div>
                   <div class="friend-campaign">${isOnline ? '<span style="color:var(--green);font-size:0.75rem;">● Online</span>' : '<span style="color:var(--border-light);font-size:0.75rem;">○ Offline</span>'}</div>
