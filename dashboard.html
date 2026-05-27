@@ -1380,7 +1380,21 @@
 
         const now = Date.now();
         const friendDocs = await Promise.all(myFriendUids.map(fid => db.collection('users').doc(fid).get()));
-        list.innerHTML = friendDocs.filter(d => d.exists).map(d => {
+        list.innerHTML = friendDocs.map(d => {
+          if (!d.exists) {
+            // User has never loaded the app — show placeholder
+            return `
+              <div class="friend-card">
+                <div class="friend-info">
+                  <div class="friend-avatar">?</div>
+                  <div class="friend-details">
+                    <div class="friend-name">Unknown user</div>
+                    <div class="friend-campaign" style="color:var(--border-light);font-size:0.75rem;">Ask them to open the app once</div>
+                  </div>
+                </div>
+                <button class="friend-action" onclick="removeFriend('${d.id}')">Remove</button>
+              </div>`;
+          }
           const f = d.data();
           const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
           const lastSeen = f.lastSeen?.toMillis?.() || 0;
