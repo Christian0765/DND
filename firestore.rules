@@ -13,11 +13,11 @@ service cloud.firestore {
          request.auth.uid in resource.data.memberUids);
       allow update: if request.auth != null &&
         (resource.data.dmUid == request.auth.uid ||
-         request.auth.uid in resource.data.memberUids ||
-         // Allow self-join: user adding only themselves to players + memberUids
-         (request.auth.uid in request.resource.data.memberUids &&
-          !(request.auth.uid in resource.data.memberUids) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players', 'memberUids'])));
+         (resource.data.memberUids is list && request.auth.uid in resource.data.memberUids) ||
+         // Allow self-join: user is in the new memberUids but was not in the old one
+         (request.resource.data.memberUids is list &&
+          request.auth.uid in request.resource.data.memberUids &&
+          (!(resource.data.memberUids is list) || !(request.auth.uid in resource.data.memberUids))));
 
       // {document=**} matches ALL subcollections at any depth:
       // characters/, pendingCharacters/, general_npcs/,
