@@ -1504,15 +1504,16 @@
           }
 
           const campaign = snap.docs[0];
-          const players = campaign.data().players || {};
+          const data = campaign.data();
+          const players = data.players || {};
           const playerCount = Object.keys(players).length;
 
-          if ((campaign.data().memberUids || []).includes(currentUser.uid)) {
+          if ((data.memberUids || []).includes(currentUser.uid)) {
             showMessage(msg, 'You\'re already in this campaign.', 'error');
             return;
           }
 
-          if (playerCount >= campaign.data().playerSlots) {
+          if (playerCount >= data.playerSlots) {
             showMessage(msg, 'Campaign is full.', 'error');
             return;
           }
@@ -1520,20 +1521,19 @@
           const slotNum = playerCount + 1;
           const slotKey = `player${slotNum}`;
 
-          db.collection('campaigns').doc(campaign.id).update({
-            [`players.${currentUser.uid}`]: {
-              slot: slotKey,
-              joinedAt: firebase.firestore.Timestamp.now()
-            },
-            memberUids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-          }).then(() => {
+          // Write join request to own user doc (always permitted by Firestore rules).
+          // The DM accepts from the campaign page, which adds the player properly.
+          return db.collection('users').doc(currentUser.uid).set({
+            pendingJoinCampaignId: campaign.id,
+            pendingJoinSlot: slotKey,
+            pendingJoinName: data.name || '',
+            pendingJoinAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).then(() => {
             document.getElementById('join-code').value = '';
-            showMessage(msg, 'Campaign joined! Redirecting…', 'success');
+            showMessage(msg, `Request sent to "${escHtml(data.name || 'campaign')}"! The DM will let you in shortly.`, 'success');
             setTimeout(() => {
               window.location.href = `index.html?c=${campaign.id}`;
-            }, 1500);
-          }).catch(err => {
-            showMessage(msg, 'Could not join: ' + err.message, 'error');
+            }, 2000);
           });
         })
         .catch(err => showMessage(msg, 'Error: ' + err.message, 'error'));

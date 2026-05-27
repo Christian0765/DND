@@ -1239,6 +1239,11 @@
     <textarea class="dm-notes-area" id="dm-notes" placeholder="NPC true motives, plot spoilers, upcoming session plans...&#10;&#10;Players cannot see this section."></textarea>
     <div style="text-align:right;margin-top:6px;"><button class="dm-btn" onclick="saveDMNotes()">Save Notes</button></div>
   </div>
+  <div class="dm-section" id="pending-joins-section" style="display:none;">
+    <div class="dm-section-title">⏳ Join Requests</div>
+    <div id="pending-joins-list" style="font-size:0.78rem;color:var(--parchment-dark);font-family:'Crimson Text',serif;"></div>
+  </div>
+
   <div class="dm-section" id="dice-mode-section">
     <div class="dm-section-title">Dice Mode</div>
     <div style="display:flex;gap:8px;margin-bottom:8px;">
@@ -1742,7 +1747,22 @@ async function loadMyCharacter() {
   }
 
   if (!_myCharSlot) {
-    container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">You are not a player in this campaign.</div>';
+    // Check if they have a pending join request
+    try {
+      const userDoc = await db.collection('users').doc(_currentUser.uid).get();
+      const userData = userDoc.exists ? userDoc.data() : {};
+      if (userData.pendingJoinCampaignId === campaignId) {
+        container.innerHTML = `<div style="text-align:center;padding:18px 0;">
+          <div style="font-size:1.6rem;margin-bottom:8px;">⏳</div>
+          <div style="font-family:'Cinzel',serif;font-size:0.75rem;font-weight:600;color:var(--gold-light);margin-bottom:6px;">Waiting for DM Approval</div>
+          <div style="font-size:0.78rem;color:var(--border-light);line-height:1.5;">Your join request has been sent.<br>The DM will accept you from their panel.</div>
+        </div>`;
+      } else {
+        container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">You are not a player in this campaign.</div>';
+      }
+    } catch(e) {
+      container.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">You are not a player in this campaign.</div>';
+    }
     createBtn.style.display = 'none';
     return;
   }
@@ -2324,6 +2344,63 @@ function loadDMData() {
     if (name) { document.getElementById('dm-campaign-name').value = name; }
     if (banner) { document.getElementById('banner-preview').src = banner; document.getElementById('banner-preview').style.display = 'block'; applyBanner(banner); }
     if (notes) document.getElementById('dm-notes').value = notes;
+  }
+  loadPendingJoins();
+}
+
+async function loadPendingJoins() {
+  const section = document.getElementById('pending-joins-section');
+  const list = document.getElementById('pending-joins-list');
+  if (!section || !list) return;
+  try {
+    const snap = await db.collection('users').where('pendingJoinCampaignId', '==', campaignId).get();
+    const alreadyIn = new Set(Object.keys((_campaignData && _campaignData.players) || {}));
+    const pending = snap.docs.filter(d => !alreadyIn.has(d.id));
+    if (pending.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    list.innerHTML = pending.map(d => {
+      const u = d.data();
+      const name = escHtml(u.displayName || u.name || u.email || 'Unknown');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(122,90,40,0.2);">
+        <span style="color:var(--parchment);">${name}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="dm-btn" style="font-size:0.55rem;padding:4px 10px;color:var(--green);border-color:var(--green);"
+            onclick="acceptPlayerJoin('${escHtml(d.id)}','${escHtml(u.pendingJoinSlot || 'player1')}',this)">✓ Accept</button>
+          <button class="dm-btn" style="font-size:0.55rem;padding:4px 10px;color:var(--red);border-color:var(--red);"
+            onclick="dismissPlayerJoin('${escHtml(d.id)}',this)">✕ Dismiss</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { section.style.display = 'none'; }
+}
+
+async function acceptPlayerJoin(uid, slot, btn) {
+  if (btn) btn.disabled = true;
+  const players = (_campaignData && _campaignData.players) || {};
+  const slotNum = Object.keys(players).length + 1;
+  const finalSlot = slot || `player${slotNum}`;
+  try {
+    await db.collection('campaigns').doc(campaignId).update({
+      [`players.${uid}`]: { slot: finalSlot, joinedAt: firebase.firestore.Timestamp.now() },
+      memberUids: firebase.firestore.FieldValue.arrayUnion(uid)
+    });
+    const row = btn && btn.closest('div[style*="display:flex"]');
+    if (row) row.remove();
+    // If list is now empty, hide section
+    if (!document.querySelector('#pending-joins-list div')) {
+      document.getElementById('pending-joins-section').style.display = 'none';
+    }
+  } catch(e) {
+    alert('Could not accept: ' + e.message);
+    if (btn) btn.disabled = false;
+  }
+}
+
+function dismissPlayerJoin(uid, btn) {
+  const row = btn && btn.closest('div[style*="display:flex"]');
+  if (row) row.remove();
+  if (!document.querySelector('#pending-joins-list div')) {
+    document.getElementById('pending-joins-section').style.display = 'none';
   }
 }
 
