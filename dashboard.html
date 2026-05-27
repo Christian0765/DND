@@ -781,7 +781,10 @@
         </div>
         <div class="message" id="friend-message"></div>
         <div id="friend-requests-section" style="display:none;margin-bottom:20px;">
-          <div class="cc-req-title">📨 Incoming Friend Requests</div>
+          <div class="cc-req-title" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>📨 Incoming Friend Requests</span>
+            <button onclick="loadFriends()" style="font-family:'Cinzel',serif;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);border:1px solid var(--border);border-radius:2px;background:none;padding:3px 8px;cursor:pointer;">↻ Refresh</button>
+          </div>
           <div id="friend-requests-list"></div>
         </div>
         <div class="friends-list" id="friends-list">
@@ -1385,7 +1388,7 @@
     }
 
     function addFriend() {
-      const email = document.getElementById('friend-email').value.trim();
+      const email = document.getElementById('friend-email').value.trim().toLowerCase();
       const msg = document.getElementById('friend-message');
       if (!email) { showMessage(msg, 'Please enter your friend\'s email.', 'error'); return; }
 
@@ -1401,8 +1404,9 @@
             sentRequests: firebase.firestore.FieldValue.arrayUnion(friendUid)
           }).then(() => {
             document.getElementById('friend-email').value = '';
-            showMessage(msg, `Friend request sent to ${escHtml(friendData.displayName || email)}!`, 'success');
+            showMessage(msg, `Friend request sent to ${escHtml(friendData.displayName || friendData.email || email)}!`, 'success');
             setTimeout(() => msg.classList.remove('show'), 3000);
+            loadFriends();
           });
         })
         .catch(err => showMessage(msg, 'Error: ' + err.message, 'error'));
@@ -1503,6 +1507,11 @@
           const players = campaign.data().players || {};
           const playerCount = Object.keys(players).length;
 
+          if ((campaign.data().memberUids || []).includes(currentUser.uid)) {
+            showMessage(msg, 'You\'re already in this campaign.', 'error');
+            return;
+          }
+
           if (playerCount >= campaign.data().playerSlots) {
             showMessage(msg, 'Campaign is full.', 'error');
             return;
@@ -1519,12 +1528,15 @@
             memberUids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
           }).then(() => {
             document.getElementById('join-code').value = '';
-            showMessage(msg, 'Campaign joined!', 'success');
+            showMessage(msg, 'Campaign joined! Redirecting…', 'success');
             setTimeout(() => {
               window.location.href = `index.html?c=${campaign.id}`;
             }, 1500);
+          }).catch(err => {
+            showMessage(msg, 'Could not join: ' + err.message, 'error');
           });
-        });
+        })
+        .catch(err => showMessage(msg, 'Error: ' + err.message, 'error'));
     }
 
 
