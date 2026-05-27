@@ -1321,15 +1321,19 @@
         const sentRequests = ownData.sentRequests || [];
         const processed = [...new Set([...(ownData.processedRequests || []), ..._localProcessed()])];
 
-        // Lazy acceptance: for each sent request check if the other party accepted us.
-        // If they have us in their friends array, confirm the friendship on our side too.
-        // This fixes one-sided friendships without needing a reverse collection query.
+        // Lazy acceptance: for each sent request check if the other party accepted us,
+        // OR if they also sent US a request (mutual) — auto-accept both sides on our end.
         const newlyAccepted = [];
         await Promise.all(sentRequests.map(async sentUid => {
           if (myFriendUids.includes(sentUid)) return;
           try {
             const theirDoc = await db.collection('users').doc(sentUid).get();
-            if (theirDoc.exists && (theirDoc.data().friends || []).includes(uid)) {
+            if (!theirDoc.exists) return;
+            const theirData = theirDoc.data();
+            if (
+              (theirData.friends || []).includes(uid) ||       // they already accepted us
+              (theirData.sentRequests || []).includes(uid)     // mutual — both sent to each other
+            ) {
               newlyAccepted.push(sentUid);
             }
           } catch(e) {}
@@ -1471,6 +1475,19 @@
           }
           if ((ownData.sentRequests || []).includes(friendUid)) {
             showMessage(msg, `You already sent a request to ${escHtml(friendData.displayName || email)}.`, 'error');
+            return;
+          }
+
+          // If they already sent us a request, auto-accept — no need for a pending state
+          if ((friendData.sentRequests || []).includes(currentUser.uid)) {
+            await db.collection('users').doc(currentUser.uid).update({
+              friends: firebase.firestore.FieldValue.arrayUnion(friendUid),
+              processedRequests: firebase.firestore.FieldValue.arrayUnion(friendUid)
+            });
+            document.getElementById('friend-email').value = '';
+            showMessage(msg, `${escHtml(friendData.displayName || email)} already sent you a request — you're now friends!`, 'success');
+            setTimeout(() => msg.classList.remove('show'), 3000);
+            loadFriends();
             return;
           }
 
