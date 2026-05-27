@@ -1478,19 +1478,6 @@
             return;
           }
 
-          // If they already sent us a request, auto-accept — no need for a pending state
-          if ((friendData.sentRequests || []).includes(currentUser.uid)) {
-            await db.collection('users').doc(currentUser.uid).update({
-              friends: firebase.firestore.FieldValue.arrayUnion(friendUid),
-              processedRequests: firebase.firestore.FieldValue.arrayUnion(friendUid)
-            });
-            document.getElementById('friend-email').value = '';
-            showMessage(msg, `${escHtml(friendData.displayName || email)} already sent you a request — you're now friends!`, 'success');
-            setTimeout(() => msg.classList.remove('show'), 3000);
-            loadFriends();
-            return;
-          }
-
           // Write only to OWN doc — no cross-user write needed
           return db.collection('users').doc(currentUser.uid).update({
             sentRequests: firebase.firestore.FieldValue.arrayUnion(friendUid)
