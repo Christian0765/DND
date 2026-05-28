@@ -115,41 +115,52 @@ function luDetermineSteps(){
 
 // ── OPEN WIZARD ──────────────────────────────────────────────
 
+// Shared helper: load char data and populate _luWizard state
+async function _luLoadChar(slot){
+  const snap = await db.collection('campaigns').doc(currentCampaignId)
+    .collection('characters').doc(slot).get();
+  if (!snap.exists){ showToast('Character not found'); return null; }
+  const data = snap.data();
+
+  const cls = (luGetField(data,'class') || '').toLowerCase().trim().replace(/\s*\d+$/, '');
+  // Bug 1 fix: fall back to extracting level from class field if f-level is absent/zero
+  const rawLevel = parseInt(luGetField(data,'level'));
+  const levelFromClass = parseInt((luGetField(data,'class') || '').match(/\d+$/)?.[0]);
+  const lvl = (rawLevel && rawLevel > 0) ? rawLevel : (levelFromClass || 1);
+
+  if (lvl >= 20){ showToast('Character is already max level (20)!'); return null; }
+
+  const existingSubclass = luGetField(data,'subclass') || luGetField(data,'archetype') || '';
+  _luWizard = {
+    open: true, slot, charData: data, className: cls,
+    currentLevel: lvl, newLevel: lvl + 1,
+    step: 0, hpRoll: null, hpChoice: 'average',
+    asiChoice: null, asiStat1: 'str', asiStat2: 'str',
+    featChoice: '', subclassChoice: existingSubclass, changes: [],
+  };
+  luDetermineSteps();
+  return data;
+}
+
+// DM entry point — read-only review modal, sends offer to player
 async function openLevelUpWizard(slot){
   if (!currentCampaignId) return;
   try {
-    const snap = await db.collection('campaigns').doc(currentCampaignId)
-      .collection('characters').doc(slot).get();
-    if (!snap.exists){ showToast('Character not found'); return; }
-    const data = snap.data();
+    const data = await _luLoadChar(slot);
+    if (!data) return;
+    renderLuDMModal();
+  } catch(e){
+    console.error(e);
+    showToast('Error loading character');
+  }
+}
 
-    // Strip trailing numbers from class field (e.g. "fighter 3" → "fighter")
-    const cls = (luGetField(data,'class') || '').toLowerCase().trim().replace(/\s*\d+$/, '');
-    const lvl = parseInt(luGetField(data,'level')) || 1;
-
-    if (lvl >= 20){ showToast('Character is already max level (20)!'); return; }
-
-    // Pre-populate subclass if already stored on the character sheet
-    const existingSubclass = luGetField(data,'subclass') || luGetField(data,'archetype') || '';
-
-    _luWizard = {
-      open: true,
-      slot,
-      charData: data,
-      className: cls,
-      currentLevel: lvl,
-      newLevel: lvl + 1,
-      step: 0,
-      hpRoll: null,
-      hpChoice: 'average',
-      asiChoice: null,
-      asiStat1: 'str',
-      asiStat2: 'str',
-      featChoice: '',
-      subclassChoice: existingSubclass,
-      changes: [],
-    };
-    luDetermineSteps();
+// Player entry point — interactive wizard that applies the level up
+async function openLevelUpWizardPlayer(slot){
+  if (!currentCampaignId) return;
+  try {
+    const data = await _luLoadChar(slot);
+    if (!data) return;
     renderLuModal();
   } catch(e){
     console.error(e);
@@ -565,6 +576,139 @@ function closeLuModal(){
   document.getElementById('lu-modal-overlay')?.remove();
 }
 
+// ── DM READ-ONLY REVIEW MODAL ─────────────────────────────────
+
+function renderLuDMModal(){
+  const existing = document.getElementById('lu-modal-overlay');
+  if (existing) existing.remove();
+  const w = _luWizard;
+  const overlay = document.createElement('div');
+  overlay.id = 'lu-modal-overlay';
+  overlay.innerHTML = `
+    <div class="lu-modal" role="dialog" aria-modal="true" aria-label="Level Up Review">
+      <div class="lu-header">
+        <div class="lu-title-row">
+          <span class="lu-title-icon">⬆</span>
+          <div>
+            <div class="lu-title">Level Up Review</div>
+            <div class="lu-subtitle">${escHtml(luGetField(w.charData,'name')||'Character')} — ${escHtml(w.className||'Unknown Class')}</div>
+          </div>
+          <button class="lu-close-btn" onclick="closeLuModal()" aria-label="Close">✕</button>
+        </div>
+        <div class="lu-info-box" style="margin-top:8px;font-size:0.78rem;">
+          📋 Review what the player will gain, then send the offer. The player makes their own choices.
+        </div>
+      </div>
+      <div class="lu-body">${luDMReviewBody()}</div>
+      <div class="lu-footer">
+        <div></div>
+        <button class="lu-btn lu-btn-primary" onclick="luSendLevelUp()">📨 Send to Player ⬆</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function luDMReviewBody(){
+  const w = _luWizard;
+  const hd     = LU_HIT_DIE[w.className] || 8;
+  const avg    = Math.ceil(hd / 2) + 1;
+  const profOld = LU_PROF_BONUS[w.currentLevel] || 2;
+  const profNew = LU_PROF_BONUS[w.newLevel] || 2;
+  const features = luGetFeatures(w.className, w.newLevel, w.subclassChoice);
+  const slots  = luGetSlots(w.className, w.newLevel);
+
+  const profChange = profNew > profOld
+    ? `<span class="lu-badge lu-badge-green" style="margin-left:8px;">now +${profNew}</span>` : '';
+
+  const slotsHtml = slots ? (() => {
+    const rows = slots.map((count, i) => {
+      if (!count) return '';
+      return `<tr>
+        <td class="lu-slot-level">${i+1}${['st','nd','rd','th','th','th','th','th','th'][i]}</td>
+        <td class="lu-slot-count">${'◆'.repeat(count)}<span class="lu-slot-num">${count}</span></td>
+      </tr>`;
+    }).filter(Boolean).join('');
+    return `<div class="lu-dm-section">
+      <div class="lu-dm-section-title">Spell Slots at Level ${w.newLevel}</div>
+      <table class="lu-spell-table"><thead><tr><th>Level</th><th>Slots</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+  })() : '';
+
+  return `
+    <div class="lu-level-display" style="margin-bottom:16px;">
+      <div class="lu-level-box lu-level-old">
+        <div class="lu-level-num">${w.currentLevel}</div>
+        <div class="lu-level-label">Current Level</div>
+      </div>
+      <div class="lu-level-arrow">→</div>
+      <div class="lu-level-box lu-level-new">
+        <div class="lu-level-num">${w.newLevel}</div>
+        <div class="lu-level-label">New Level</div>
+      </div>
+    </div>
+
+    <div class="lu-dm-section">
+      <div class="lu-dm-section-title">Stats</div>
+      <div class="lu-confirm-details">
+        <div class="lu-detail-row">
+          <span class="lu-detail-label">Hit Die</span>
+          <span class="lu-detail-val">d${hd} — average +${avg}, max +${hd} (+ CON mod)</span>
+        </div>
+        <div class="lu-detail-row">
+          <span class="lu-detail-label">Proficiency Bonus</span>
+          <span class="lu-detail-val">+${profOld} → +${profNew}${profChange}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lu-dm-section">
+      <div class="lu-dm-section-title">New Features</div>
+      <ul class="lu-features-list">
+        ${features.map(f => `<li class="lu-feature-item">
+          <span class="lu-feature-bullet">⚡</span><span>${escHtml(f)}</span>
+        </li>`).join('')}
+      </ul>
+    </div>
+
+    ${slotsHtml}
+
+    ${luIsAsiLevel(w.className, w.newLevel) ? `
+    <div class="lu-dm-section">
+      <div class="lu-dm-section-title">ASI / Feat</div>
+      <div class="lu-info-box">⭐ Player will choose: +2 to one stat, +1 to two stats, or a feat.</div>
+    </div>` : ''}
+
+    ${luIsSubclassLevel(w.className, w.newLevel) ? `
+    <div class="lu-dm-section">
+      <div class="lu-dm-section-title">Subclass Selection</div>
+      <div class="lu-info-box">🎭 Player will choose their ${escHtml(w.className)} subclass archetype.</div>
+    </div>` : ''}
+  `;
+}
+
+async function luSendLevelUp(){
+  const w = _luWizard;
+  const btn = document.querySelector('#lu-modal-overlay .lu-btn-primary');
+  if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    await db.collection('campaigns').doc(currentCampaignId)
+      .collection('characters').doc(w.slot)
+      .update({
+        pendingLevelUp: {
+          newLevel: w.newLevel,
+          offeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }
+      });
+    closeLuModal();
+    showToast(`📨 Level up sent to ${luGetField(w.charData,'name')||'the player'}!`);
+  } catch(e){
+    console.error('Level up send error:', e);
+    showToast('Error sending level up — check console.');
+    if (btn){ btn.disabled = false; btn.textContent = '📨 Send to Player ⬆'; }
+  }
+}
+
 // ── APPLY TO FIRESTORE ───────────────────────────────────────
 
 async function luApplyLevelUp(){
@@ -638,8 +782,9 @@ async function luApplyLevelUp(){
 
     await db.collection('campaigns').doc(currentCampaignId)
       .collection('characters').doc(w.slot)
-      .update(updates);
+      .update({ ...updates, pendingLevelUp: firebase.firestore.FieldValue.delete() });
 
+    document.getElementById('lu-offer-banner')?.remove();
     closeLuModal();
     showToast(`🎉 ${luGetField(w.charData,'name')||'Character'} is now level ${w.newLevel}!`);
 
@@ -815,6 +960,33 @@ async function luApplyLevelUp(){
     /* SHARED */
     .lu-info-box { background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.25); border-radius:6px; padding:10px 12px; color:var(--parchment,#f5e6c8); font-size:.875rem; line-height:1.5; }
     .lu-warning { background:rgba(200,100,50,.15); border:1px solid rgba(200,100,50,.3); border-radius:6px; padding:10px 12px; color:#e8b090; font-size:.875rem; margin-bottom:12px; }
+
+    /* DM REVIEW MODAL */
+    .lu-dm-section { margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid rgba(201,168,76,.15); }
+    .lu-dm-section:last-child { border-bottom:none; margin-bottom:0; }
+    .lu-dm-section-title { font-family:'Cinzel',serif; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--gold,#c9a84c); margin-bottom:10px; }
+
+    /* LEVEL-UP OFFER BANNER (player side) */
+    #lu-offer-banner { margin-bottom:16px; }
+    .lu-offer-banner {
+      background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.05));
+      border:2px solid var(--gold,#c9a84c); border-radius:8px;
+      padding:14px 18px; display:flex; align-items:center; gap:12px;
+      font-family:'Cinzel',serif; font-size:.8rem; color:var(--gold-light,#e8c96c);
+      animation:luPulse 2s ease-in-out infinite;
+    }
+    @keyframes luPulse {
+      0%,100% { box-shadow:0 0 8px rgba(201,168,76,.3); }
+      50%      { box-shadow:0 0 22px rgba(201,168,76,.55); }
+    }
+    .lu-offer-banner .lu-offer-text { flex:1; }
+    .lu-offer-banner .lu-offer-btn {
+      background:linear-gradient(135deg,var(--gold,#c9a84c),#a8853e);
+      color:#1a1209; border:none; border-radius:6px; padding:7px 16px;
+      font-family:'Cinzel',serif; font-size:.75rem; font-weight:600;
+      cursor:pointer; white-space:nowrap; flex-shrink:0; letter-spacing:.04em;
+    }
+    .lu-offer-banner .lu-offer-btn:hover { filter:brightness(1.1); }
   `;
   document.head.appendChild(style);
 })();

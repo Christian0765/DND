@@ -2002,6 +2002,21 @@ firebase.auth().onAuthStateChanged(async user => {
       _myCharSlot = players[user.uid].slot;
     }
 
+    // Watch my character doc for pendingLevelUp (players only, not DM)
+    if (_myCharSlot && !_isDM) {
+      db.collection('campaigns').doc(campaignId)
+        .collection('characters').doc(_myCharSlot)
+        .onSnapshot(snap => {
+          if (!snap.exists) return;
+          const charData = snap.data();
+          if (charData.pendingLevelUp && !document.getElementById('lu-modal-overlay')) {
+            showLevelUpOfferBanner(_myCharSlot, charData.pendingLevelUp);
+          } else if (!charData.pendingLevelUp) {
+            document.getElementById('lu-offer-banner')?.remove();
+          }
+        });
+    }
+
     // Load my character & pending
     await loadMyCharacter();
     if (_isDM) {
@@ -2054,6 +2069,19 @@ firebase.auth().onAuthStateChanged(async user => {
 });
 
 // ─── MY CHARACTER (players) / PARTY OVERVIEW (DM) ─────────────
+function showLevelUpOfferBanner(slot, pendingData) {
+  document.getElementById('lu-offer-banner')?.remove();
+  const banner = document.createElement('div');
+  banner.id = 'lu-offer-banner';
+  banner.innerHTML = `<div class="lu-offer-banner">
+    <span style="font-size:1.4rem;">⬆</span>
+    <span class="lu-offer-text">Your DM has granted you a level up!</span>
+    <button class="lu-offer-btn" onclick="openLevelUpWizardPlayer('${escHtml(slot)}')">Choose your upgrades →</button>
+  </div>`;
+  const target = document.getElementById('party-section') || document.body;
+  target.insertBefore(banner, target.firstChild);
+}
+
 async function loadMyCharacter() {
   const container = document.getElementById('my-char-content');
   const createBtn = document.getElementById('create-char-btn');
@@ -4659,7 +4687,7 @@ async function loadPlayersTab() {
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
               ${hasChar && (_isDM || uid === _currentUser.uid) ? `<a href="${escHtml(sheetUrl)}" class="dm-btn" style="padding:4px 10px;font-size:0.65rem;text-decoration:none;">View Sheet →</a>` : ''}
-              ${hasChar && (_isDM || uid === _currentUser.uid) ? `<button class="dm-btn" onclick="openLevelUpWizard('${safeSlot}')" style="padding:4px 10px;font-size:0.65rem;">⬆ Level Up</button>` : ''}
+              ${hasChar && _isDM ? `<button class="dm-btn" onclick="openLevelUpWizard('${safeSlot}')" style="padding:4px 10px;font-size:0.65rem;">⬆ Level Up</button>` : ''}
               ${hasChar && _isDM ? `<button class="dm-btn" onclick="showDMInventory('${safeSlot}','${escHtml(charName)}')" style="padding:4px 10px;font-size:0.65rem;">🎒 Bag</button>` : ''}
               ${_isDM ? `<button class="dm-btn danger" onclick="removePlayer('${safeUid}','${safeSlot}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>` : ''}
             </div>
