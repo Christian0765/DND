@@ -2781,6 +2781,8 @@ async function loadGeneralNPCs() {
   try {
     const snap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').orderBy('createdAt').get();
     const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published !== false);
+    _gnpcCache = {};
+    docs.forEach(doc => { _gnpcCache[doc.id] = doc.data(); });
     if (docs.length === 0) {
       list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;padding:4px 0;">No public NPCs yet.</div>';
     } else {
@@ -2796,6 +2798,7 @@ function renderGNPCCard(id, d) {
   const type = d.npcType || 'simple';
   const isPublished = d.published !== false;
   const delBtn = _isDM ? `<button class="gnpc-del" onclick="deleteGeneralNPC('${escHtml(id)}',event)" title="Delete">✕</button>` : '';
+  const editBtn = _isDM ? `<button class="gnpc-del" onclick="editGeneralNPC('${escHtml(id)}')" title="Edit" style="right:auto;left:6px;background:rgba(154,112,0,0.15);border-color:var(--gold);color:var(--gold);">✏️</button>` : '';
   const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleGNPCPublished('${escHtml(id)}',${isPublished})" style="position:absolute;bottom:6px;right:6px;z-index:2;">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
   const unpubClass = _isDM && !isPublished ? ' unpublished' : '';
 
@@ -2809,6 +2812,7 @@ function renderGNPCCard(id, d) {
       d.cr  ? `<div class="goon-stat"><span class="goon-stat-val">${escHtml(String(d.cr))}</span><span class="goon-stat-label">CR</span></div>` : '',
     ].filter(Boolean).join('');
     return `<div class="goon-card${unpubClass}" style="position:relative;">
+      ${editBtn}
       ${delBtn}
       ${pubBtn}
       <div class="goon-name">⚔️ ${escHtml(d.name||'Unknown')}</div>
@@ -2827,6 +2831,7 @@ function renderGNPCCard(id, d) {
       `<div class="gnpc-full-stat"><span class="gnpc-full-stat-val">${escHtml(String(d[a]||'—'))}</span><span class="gnpc-full-stat-lbl">${a.toUpperCase()}</span></div>`
     ).join('');
     return `<div class="gnpc-full-card${unpubClass}" onclick="toggleGNPCFull('${escHtml(id)}')" style="position:relative;">
+      ${editBtn}
       ${delBtn}
       ${pubBtn}
       <div class="gnpc-full-header">
@@ -2856,6 +2861,7 @@ function renderGNPCCard(id, d) {
     : `<div class="gnpc-portrait" style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:#ecdcb5;">👤</div>`;
   const statsHtml = (d.hp || d.ac) ? `<div class="gnpc-stats">${d.hp?`<div class="gnpc-stat"><span class="gnpc-stat-val hp">${escHtml(String(d.hp))}</span><span class="gnpc-stat-label">HP</span></div>`:''}${d.ac?`<div class="gnpc-stat"><span class="gnpc-stat-val">${escHtml(String(d.ac))}</span><span class="gnpc-stat-label">AC</span></div>`:''}</div>` : '';
   return `<div class="gnpc-card${unpubClass}" style="position:relative;">
+    ${editBtn}
     ${delBtn}
     ${pubBtn}
     ${portrait}
@@ -2884,7 +2890,15 @@ function selectGNPCType(type, btn) {
 
 function toggleGeneralNPCForm() {
   const form = document.getElementById('gnpc-form');
-  form.style.display = form.style.display === 'none' ? '' : 'none';
+  const closing = form.style.display !== 'none';
+  form.style.display = closing ? 'none' : '';
+  if (closing && _gnpcEditId) {
+    _gnpcEditId = null;
+    ['Save NPC','Save Full Sheet NPC','Save Goon'].forEach((txt, i) => {
+      const btn = document.querySelector('#gnpc-form-' + ['simple','full','goon'][i] + ' .lands-save-btn');
+      if (btn) btn.textContent = txt;
+    });
+  }
 }
 
 function handleGNPCPortraitDrop(event) {
@@ -2911,9 +2925,106 @@ function handleGNPCPortraitFile(file) {
   reader.readAsDataURL(file);
 }
 
+let _gnpcEditId = null;
+let _gnpcCache = {};
+let _landEntryEditIds = {};
+let _landEntryCache = {};
+
+function editGeneralNPC(id) {
+  const d = _gnpcCache[id];
+  if (!d) return;
+  _gnpcEditId = id;
+  const type = d.npcType || 'simple';
+  _gnpcType = type;
+
+  // Show form and select correct type tab
+  document.getElementById('gnpc-form').style.display = '';
+  document.querySelectorAll('.gnpc-type-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['simple','full','goon'][i] === type);
+  });
+  ['simple','full','goon'].forEach(t => {
+    document.getElementById('gnpc-form-' + t).style.display = t === type ? '' : 'none';
+  });
+
+  // Fill fields
+  const roles = (d.roles && d.roles.length) ? d.roles.slice() : (d.role ? [d.role] : []);
+  if (type === 'simple') {
+    document.getElementById('gn-name').value  = d.name  || '';
+    document.getElementById('gn-race').value  = d.race  || '';
+    document.getElementById('gn-align').value = d.align || '';
+    document.getElementById('gn-hp').value    = d.hp    || '';
+    document.getElementById('gn-ac').value    = d.ac    || '';
+    document.getElementById('gn-desc').value  = d.desc  || '';
+    _npcRoleSelections['gn'] = roles; renderNPCRoleChips('gn');
+    document.querySelector('#gnpc-form-simple .lands-save-btn').textContent = 'Update NPC';
+  } else if (type === 'full') {
+    document.getElementById('gf-name').value   = d.name   || '';
+    document.getElementById('gf-race').value   = d.race   || '';
+    document.getElementById('gf-class').value  = d.class  || '';
+    document.getElementById('gf-align').value  = d.align  || '';
+    document.getElementById('gf-bg').value     = d.bg     || '';
+    document.getElementById('gf-hp').value     = d.hp     || '';
+    document.getElementById('gf-ac').value     = d.ac     || '';
+    document.getElementById('gf-speed').value  = d.speed  || '';
+    document.getElementById('gf-str').value    = d.str    || '';
+    document.getElementById('gf-dex').value    = d.dex    || '';
+    document.getElementById('gf-con').value    = d.con    || '';
+    document.getElementById('gf-int').value    = d.int    || '';
+    document.getElementById('gf-wis').value    = d.wis    || '';
+    document.getElementById('gf-cha').value    = d.cha    || '';
+    document.getElementById('gf-traits').value = d.traits || '';
+    document.getElementById('gf-desc').value   = d.desc   || '';
+    _npcRoleSelections['gf'] = roles; renderNPCRoleChips('gf');
+    document.querySelector('#gnpc-form-full .lands-save-btn').textContent = 'Update NPC';
+  } else {
+    document.getElementById('gg-name').value  = d.name  || '';
+    document.getElementById('gg-hp').value    = d.hp    || '';
+    document.getElementById('gg-ac').value    = d.ac    || '';
+    document.getElementById('gg-speed').value = d.speed || '';
+    document.getElementById('gg-atk').value   = d.atk   || '';
+    document.getElementById('gg-dmg').value   = d.dmg   || '';
+    document.getElementById('gg-dtype').value = d.dtype || '';
+    document.getElementById('gg-cr').value    = d.cr    || '';
+    document.getElementById('gg-pp').value    = d.pp    || '';
+    document.getElementById('gg-notes').value = d.notes || '';
+    _npcRoleSelections['gg'] = roles; renderNPCRoleChips('gg');
+    document.querySelector('#gnpc-form-goon .lands-save-btn').textContent = 'Update Goon';
+  }
+  document.getElementById('gnpc-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function editLandNPC(landId, npcId) {
+  const d = _landEntryCache[landId + '-npcs-' + npcId];
+  if (!d) return;
+  _landEntryEditIds[landId + '-npcs'] = npcId;
+
+  const form = document.getElementById('lform-' + landId + '-npcs');
+  if (form) form.style.display = '';
+
+  const prefix = 'li-' + landId + '-npcs';
+  const nameEl  = document.getElementById(prefix + '-name');
+  const raceEl  = document.getElementById(prefix + '-race');
+  const alignEl = document.getElementById(prefix + '-align');
+  const locEl   = document.getElementById(prefix + '-loc');
+  const notesEl = document.getElementById(prefix + '-notes');
+  if (nameEl)  nameEl.value  = d.name  || '';
+  if (raceEl)  raceEl.value  = d.race  || '';
+  if (alignEl) alignEl.value = d.align || '';
+  if (locEl)   locEl.value   = d.loc   || '';
+  if (notesEl) notesEl.value = d.notes || '';
+
+  const roles = (d.roles && d.roles.length) ? d.roles.slice() : (d.role ? [d.role] : []);
+  _npcRoleSelections[prefix] = roles;
+  renderNPCRoleChips(prefix);
+
+  const saveBtn = form?.querySelector('.lands-save-btn');
+  if (saveBtn) saveBtn.textContent = 'Update NPC';
+  form?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 async function saveGeneralNPC(type) {
   const btn = event.target;
-  let data = { npcType: type, published: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  let data = { npcType: type };
   let nameId, resetIds;
 
   if (type === 'simple') {
@@ -2964,7 +3075,15 @@ async function saveGeneralNPC(type) {
   if (!data.name) { alert('Name is required.'); return; }
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
-    await db.collection('campaigns').doc(campaignId).collection('general_npcs').add(data);
+    const coll = db.collection('campaigns').doc(campaignId).collection('general_npcs');
+    if (_gnpcEditId) {
+      await coll.doc(_gnpcEditId).update(data);
+      _gnpcEditId = null;
+    } else {
+      data.published = true;
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await coll.add(data);
+    }
     _npcSearchCache = null;
     resetIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     clearNPCRoleField(type === 'simple' ? 'gn' : type === 'full' ? 'gf' : 'gg');
@@ -3218,10 +3337,15 @@ async function loadLandEntries(landId, type) {
         const d = doc.data();
         const isPublished = d.published !== false;
         let sub = '';
-        if (type === 'npcs') { const roles = (d.roles&&d.roles.length) ? d.roles.join(', ') : (d.role||''); sub = (_isDM ? [roles, d.race, d.align, d.loc, d.notes] : [roles, d.race, d.align, d.loc]).filter(Boolean).map(escHtml).join(' · '); }
+        if (type === 'npcs') {
+          _landEntryCache[landId + '-npcs-' + doc.id] = d;
+          const roles = (d.roles&&d.roles.length) ? d.roles.join(', ') : (d.role||'');
+          sub = (_isDM ? [roles, d.race, d.align, d.loc, d.notes] : [roles, d.race, d.align, d.loc]).filter(Boolean).map(escHtml).join(' · ');
+        }
         if (type === 'maps') sub = (_isDM ? [d.loc, d.notes] : [d.loc]).filter(Boolean).map(escHtml).join(' · ');
         const mapImg = (type === 'maps' && d.image) ? `<img src="${escHtml(d.image)}" style="display:block;max-width:100%;max-height:130px;object-fit:contain;border-radius:2px;margin-top:6px;border:1px solid var(--border);">` : '';
         const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','${type}','${escHtml(doc.id)}',this)">✕</button>` : '';
+        const editLandBtn = (_isDM && type === 'npcs') ? `<button class="lands-del-btn" onclick="editLandNPC('${escHtml(landId)}','${escHtml(doc.id)}')" style="background:rgba(154,112,0,0.1);border-color:var(--gold);color:var(--gold);">✏️</button>` : '';
         const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="toggleLandEntryPublished('${escHtml(landId)}','${type}','${escHtml(doc.id)}',${isPublished})">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
         return `<div class="lands-entry${_isDM && !isPublished ? ' unpublished' : ''}">
           <div class="lands-entry-body">
@@ -3230,6 +3354,7 @@ async function loadLandEntries(landId, type) {
             ${mapImg}
           </div>
           ${pubBtn}
+          ${editLandBtn}
           ${delBtn}
         </div>`;
       }).join('');
@@ -3396,7 +3521,7 @@ async function saveLandEntry(landId, type) {
   if (!name) { alert('Name is required.'); return; }
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
-    const data = { name, published: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const data = { name };
     if (type === 'shops') {
       data.keeper = document.getElementById('li-' + landId + '-shops-keeper')?.value.trim() || '';
       data.loc   = document.getElementById('li-' + landId + '-shops-loc').value.trim();
@@ -3413,7 +3538,18 @@ async function saveLandEntry(landId, type) {
       data.notes = document.getElementById('li-' + landId + '-maps-notes').value.trim();
       if (_mapImgData[landId]) data.image = _mapImgData[landId];
     }
-    await db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type).add(data);
+    const lcoll = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection(type);
+    const editKey = landId + '-' + type;
+    if (_landEntryEditIds[editKey]) {
+      await lcoll.doc(_landEntryEditIds[editKey]).update(data);
+      delete _landEntryEditIds[editKey];
+      const saveBtn = document.querySelector('#lform-' + landId + '-' + type + ' .lands-save-btn');
+      if (saveBtn) saveBtn.textContent = type === 'shops' ? 'Save Shop' : type === 'npcs' ? 'Save NPC' : 'Save Location';
+    } else {
+      data.published = true;
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await lcoll.add(data);
+    }
     _npcSearchCache = null;
     if (type === 'npcs') clearNPCRoleField('li-' + landId + '-npcs');
     // reset form
