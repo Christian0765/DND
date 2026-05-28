@@ -2699,6 +2699,7 @@ async function buildNPCSearchCache() {
   try {
     const gSnap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').get();
     gSnap.forEach(d => {
+      _gnpcCache[d.id] = d.data();
       _npcSearchCache.push({ id: d.id, landId: '__general', land: 'General', ...d.data() });
     });
     const lSnap = await db.collection('campaigns').doc(campaignId).collection('lands').get();
@@ -2707,6 +2708,7 @@ async function buildNPCSearchCache() {
       const nSnap = await db.collection('campaigns').doc(campaignId)
         .collection('lands').doc(lDoc.id).collection('npcs').get();
       nSnap.forEach(d => {
+        _landEntryCache[lDoc.id + '-npcs-' + d.id] = d.data();
         _npcSearchCache.push({ id: d.id, landId: lDoc.id, land: landName, ...d.data() });
       });
     }));
@@ -2752,7 +2754,29 @@ async function runNPCSearch() {
         </div>
       </div>
       <span style="font-size:0.65rem;color:var(--border-light);font-family:'Cinzel',serif;flex-shrink:0;">${escHtml(n.land || '')}</span>
+      ${_isDM ? `<button onclick="editNPCFromSearch('${escHtml(n.landId)}','${escHtml(n.id)}')" title="Edit NPC" style="font-size:0.7rem;padding:3px 7px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;flex-shrink:0;">✏️</button>` : ''}
     </div>`).join('');
+}
+
+function editNPCFromSearch(landId, npcId) {
+  if (landId === '__general') {
+    // Open the General card if collapsed
+    const body = document.getElementById('general-land-body');
+    if (body && !body.classList.contains('open')) toggleGeneralLand();
+    editGeneralNPC(npcId);
+  } else {
+    // Expand land card if collapsed
+    const lbody = document.getElementById('lbody-' + landId);
+    if (lbody && !lbody.classList.contains('open')) toggleLandExpand(landId);
+    // Switch to NPC tab
+    ['shops','npcs','maps'].forEach(t => {
+      const el = document.getElementById('ltab-' + landId + '-' + t);
+      if (el) el.classList.toggle('active', t === 'npcs');
+    });
+    const tabBar = document.querySelector('#lcard-' + landId + ' .land-tab-bar');
+    if (tabBar) tabBar.querySelectorAll('.land-tab-btn').forEach((b, i) => b.classList.toggle('active', i === 1));
+    editLandNPC(landId, npcId);
+  }
 }
 
 function clearNPCSearch() {
