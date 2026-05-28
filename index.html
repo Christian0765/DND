@@ -6311,10 +6311,24 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3500);
 }
 
-// Allow levelup-wizard.js to trigger a party refresh after level-up
+// Allow levelup-wizard-core.js to trigger a party refresh after level-up
 window.loadPartyRoster = loadPlayersTab;
 </script>
+<script src="levelup-data-core.js"></script>
+<script src="levelup-barbarian.js"></script>
+<script src="levelup-bard.js"></script>
+<script src="levelup-cleric.js"></script>
+<script src="levelup-druid.js"></script>
+<script src="levelup-fighter.js"></script>
+<script src="levelup-monk.js"></script>
+<script src="levelup-paladin.js"></script>
+<script src="levelup-ranger.js"></script>
+<script src="levelup-rogue.js"></script>
+<script src="levelup-sorcerer.js"></script>
+<script src="levelup-warlock.js"></script>
 <script src="levelup-wizard.js"></script>
+<script src="levelup-artificer.js"></script>
+<script src="levelup-wizard-core.js"></script>
 
 <!-- FLOATING COMBAT BUTTON (players only, when combat active) -->
 <button class="combat-float-btn" id="combat-float-btn" onclick="goToCombat()" style="display:none;">⚔ Go to Combat</button>
