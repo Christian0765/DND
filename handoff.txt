@@ -1,6 +1,6 @@
 ================================================================================
   D&D CAMPAIGN TRACKER — HANDOFF DOCUMENT
-  Last Updated: 2026-05-21
+  Last Updated: 2026-05-28
 ================================================================================
 
 IMPORTANT: Update this file after every major feature or session.
@@ -30,131 +30,388 @@ Firebase Config (in firebase-config.js — safe to be public for web apps):
   measurementId:     G-JDPJSTXR73
 
 Firebase Services in Use:
-  - Firestore Database (real-time sync)
-  - Firebase Auth (Google Sign-In)
+  - Firestore Database (real-time onSnapshot listeners throughout)
+  - Firebase Auth (Google Sign-In only — no email/password)
 
-NOTE: Firebase Storage is NOT configured. Banner images use localStorage only.
+NOTE: Firebase Storage is NOT used. All images (avatars, banners, NPC portraits,
+      maps) are stored as base64 JPEG data URLs directly in Firestore documents.
+      Canvas API compresses avatars to 128x128 before storing (~10-15 KB each).
 
 --------------------------------------------------------------------------------
 FIRESTORE RULES
 --------------------------------------------------------------------------------
 Rules file: /firestore.rules in the repo.
 IMPORTANT: GitHub Pages does NOT auto-deploy Firestore rules.
-You must manually paste the rules into Firebase Console each time they change:
-  Console → Firestore Database → Rules tab → Paste → Publish
+Paste rules manually into Firebase Console each time they change:
+  Console -> Firestore Database -> Rules tab -> Paste -> Publish
 
 Current rules summary:
-  characters/{charId}  — signed-in users can read; DM or owning player can write
-  users/{uid}          — DM can read all; each user reads/writes their own doc
-  campaign/{doc}       — anyone can read; only DM can write
-  purchases/{id}       — any signed-in user can read/write
-  combat/{doc}         — anyone can read; only DM can write
+  users/{uid}
+    read:   any authenticated user
+    write:  own uid only
+
+  campaigns/{campaignId}
+    read:   any authenticated user
+    create: any authenticated user
+    delete: dmUid or memberUid
+    update: dmUid, any memberUid, or user self-joining (memberUids array check)
+
+  campaigns/{campaignId}/{document=**}  (all subcollections)
+    read:   any authenticated user
+    write:  dmUid or any memberUid of that campaign
 
 --------------------------------------------------------------------------------
 AUTH & ACCESS
 --------------------------------------------------------------------------------
-Google Sign-In:   Enabled in Firebase Console → Authentication → Sign-in method
-DM Passcode:      Stored in localStorage key 'dm-passcode' (default: dm1234)
-                  NEVER commit the passcode to Firestore or the repo.
-DM Google link:   When DM enters passcode while signed in with Google, their
-                  users/{uid}.charId is set to 'dm' automatically.
+Sign-In:   Google OAuth only (popup). Handled by Firebase Auth.
+           Home page (home.html) shows the sign-in button.
+           After sign-in, users are redirected to dashboard.html.
+           The ?next= URL param preserves the intended destination through the
+           sign-in redirect (e.g. ?next=dashboard.html?join=ABCD12).
 
-Player assignment flow:
-  1. Player visits site → signs in with Google
-  2. Their name appears in DM panel → Manage Players section
-  3. DM assigns them to Player 1/2/3/4 via dropdown
-  4. Player now sees "Your Sheet →" link and can access their sheet
+Role system:
+  DM     — user whose UID matches campaigns/{id}.dmUid on the campaign doc.
+           All DM-only UI is toggled by the _isDM boolean set at page load.
+  Player — any other authenticated user who is in campaigns/{id}.memberUids.
+
+There is no server-side role enforcement in the app JS; Firestore rules handle
+write protection. A player could read DM data from the browser console.
 
 --------------------------------------------------------------------------------
 FILE STRUCTURE
 --------------------------------------------------------------------------------
-index.html        — Party overview, DM panel (broadcast, dice, manage players)
-sheet-1.html      — Player 1 character sheet (Dracula — Dragonborn Fighter)
-sheet-2.html      — Player 2 character sheet (blank)
-sheet-3.html      — Player 3 character sheet (blank)
-sheet-4.html      — Player 4 character sheet (blank)
-sheet-template.html — Downloadable blank template for new players
-combat.html       — Combat tracker (HP, initiative, conditions, drag-to-reorder)
-auth.js           — Shared Google Auth module (sign-in, sheet gate, buyItem, group purchases)
-broadcast.js      — Shared DM broadcast panel (all pages listen to campaign/broadcast)
-firebase-config.js — Firebase project config (public, safe to commit)
-firestore.rules   — Firestore security rules (must be manually deployed to Console)
-handoff.txt       — This file
+home.html           Landing / sign-in page (Google OAuth only)
+dashboard.html      Campaign hub: view campaigns, manage friends, create/join
+index.html          Main campaign page: encyclopedia, combat, items, dice, DM tools
+firebase-config.js  Firebase project config (safe to commit — public web config)
+auth.js             Legacy shared auth module (imported by older sheet pages)
+broadcast.js        Legacy shared broadcast module (imported by older sheet pages)
+firestore.rules     Firestore security rules (must be manually deployed to Console)
+handoff.txt         This file
+
+Legacy / support pages (not actively developed):
+  sheet-1.html through sheet-4.html  Individual character sheet pages
+  combat.html                         Standalone legacy combat tracker
+  example-sheet.html                  AI-assistant sheet template
+  seed-dracula.html                   Dev utility for seeding test data
 
 --------------------------------------------------------------------------------
-FIRESTORE DATA STRUCTURE (current — single campaign, hardcoded)
+ARCHITECTURE OVERVIEW
 --------------------------------------------------------------------------------
-characters/
-  player1, player2, player3, player4
-    f-name, f-class, f-race, f-bg, f-align, f-player, f-prof
-    f-ac, f-init, f-speed, f-curhp, f-maxhp, f-hd, f-pp, f-gold, f-carry
-    f-str/mod, f-dex/mod, f-con/mod, f-int/mod, f-wis/mod, f-cha/mod
-    f-traits, f-ideals, f-bonds, f-flaws, f-notes, f-gold2
-    f-weapons, f-features, f-equipment, f-backstory, f-profs
+Tech Stack:
+  - Vanilla HTML5 / CSS3 / ES2020 JavaScript — no build system, no framework
+  - Firebase Firestore (NoSQL, real-time onSnapshot listeners)
+  - Firebase Auth (Google Sign-In)
+  - GitHub Pages (static hosting, auto-deploys from main branch on push)
+  - Google Fonts: Cinzel (headings/labels), Crimson Text (body/forms)
 
-users/
-  {google-uid}
-    name, email, charId (player1-4 or 'dm'), lastSeen
+All JS lives in single <script> blocks within each HTML file. There are no
+separate JS modules, no imports, no TypeScript, no npm.
 
-campaign/
-  settings:   campaignName, dmNotes
-  broadcast:  active, type, title, text/imageUrl/shopItems/results, updatedAt
+CSS custom properties (--gold, --gold-light, --parchment, --parchment-dark,
+--red, --green, --bg, --border, --border-light) define the dark parchment theme.
 
-combat/
-  state:  round, combatants [{id, name, init, hp, maxHp, ac, type, charId, conditions}]
+Dynamic UI is built with template literals injected via innerHTML. escHtml()
+is called on all user-supplied strings throughout to prevent XSS.
 
-purchases/
-  {auto-id}:  itemName, itemPrice, contributions {charId: amount}, status, createdAt
+Images are stored as base64 data URLs in Firestore. Canvas API compresses
+images before storing (128x128 JPEG for avatars, larger for banners/maps).
+No Firebase Storage bucket is used.
 
 --------------------------------------------------------------------------------
-BROADCAST TYPES (campaign/broadcast.type)
+FIRESTORE DATA STRUCTURE
 --------------------------------------------------------------------------------
-  text        — title + text message
-  image       — title + imageUrl
-  shop        — title + shopItems (plain text, one per line: "Name: Xgp - Desc")
-                Players see Buy buttons; deducts from f-gold, adds to f-equipment
-  combat      — triggers "Combat has begun" panel with link to combat.html
-  dice        — shows spinning dice corner widget (no main panel)
-  initiative  — dramatic staggered reveal of all player initiative rolls
+
+users/{uid}
+  displayName, photoURL, email, lastSeen (Timestamp)
+  gamertag          -- custom in-app display name (optional)
+  customAvatar      -- base64 JPEG 128x128 (optional)
+  friends[]         -- array of friend UIDs
+  sentRequests[]    -- UIDs this user has sent friend requests to
+  processedRequests[] -- UIDs where accept/decline has been actioned
+  campaignIds[]     -- campaigns this user has joined
+  pendingJoinCampaignId, pendingJoinSlot, pendingJoinName, pendingJoinAt
+                    -- set when requesting to join a campaign
+  campaignInvites[] -- {fromUid, campaignId, inviteCode} invites received
+  dismissedInvites[] -- {fromUid, campaignId} dismissed invitations
+
+campaigns/{campaignId}
+  name, description, theme, tone
+  dmUid             -- UID of the campaign DM
+  status            -- 'active' | 'draft'
+  inviteCode        -- 6-char uppercase join code
+  playerSlots       -- max number of players (2-6)
+  startingLevel, xpProgression
+  sessionFrequency, sessionSchedule
+  privacy           -- 'invite' | 'open'
+  houseRuleNotes
+  banner            -- base64 image data URL
+  modules           -- {quests, shop, bulletin, reputation, sessions, maps, npc,
+                        loot, dmNotes} boolean toggles
+  layoutPreset      -- dashboard layout preference
+  players           -- {uid: {slot, name, joinedAt}} map of accepted players
+  memberUids[]      -- flat array for Firestore rule checks
+  npcRoles[]        -- shared list of NPC roles for this campaign
+  dmNotes           -- DM-only secret notes (string)
+  diceMode          -- 'inperson' | 'virtual'
+  diceRoll          -- {roller, isDM, die, quantity, results[], total, rolledAt}
+                       most recent public roll (broadcast to all clients)
+  announcement      -- {active, type, title, text/imageUrl/npcId/shopId/combat,
+                        updatedAt} current active in-game event
+  sessionNotes[]    -- {id, text, createdAt} posted session announcements
+  createdAt, updatedAt
+
+campaigns/{campaignId}/characters/{slot}
+  f-* fields        -- all character sheet fields (f-name, f-class, f-race, etc.)
+  inventory[]       -- {id, name, category, rarity, cost, weight, qty, desc}
+  approvedAt        -- Timestamp (absent = not yet approved)
+  pendingData       -- temporary storage during approval flow
+
+campaigns/{campaignId}/pendingCharacters/{uid}
+  Temporary document written by player when submitting a character.
+  Contains same f-* and inventory fields as characters/{slot}.
+  Deleted by DM when approving or rejecting.
+
+campaigns/{campaignId}/general_npcs/{npcId}
+  npcType           -- 'simple' | 'full' | 'goon'
+  name, race, align, roles[], role, hp, ac, loc, notes, desc
+  portrait          -- base64 image data URL
+  published         -- boolean (false = DM-only draft)
+  (full sheet): str/dex/con/int/wis/cha + mods, bg, traits, weapons, features
+  (goon): cr, atkBonus, dmgDice
+
+campaigns/{campaignId}/lands/{landId}
+  name, desc, published, createdAt
+
+campaigns/{campaignId}/lands/{landId}/npcs/{npcId}
+  Same structure as general_npcs
+
+campaigns/{campaignId}/lands/{landId}/shops/{shopId}
+  name, keeper (NPC id), type, loc, notes, published, items[]
+  items[]: {name, category, rarity, cost, weight, qty, desc, live}
+
+campaigns/{campaignId}/lands/{landId}/maps/{mapId}
+  name, loc, notes, published, image (base64)
+
+campaigns/{campaignId}/factions/{factionId}
+  name, desc, symbol (emoji), published, createdAt
+  leaderId, leaderLandId, leaderName, leaderRevealed
+  memberRoles[]     -- custom role tags (e.g. "Initiate", "Elder")
+  members[]         -- {id, landId, name, role}
+  places[]          -- {id, landId, name, type ('shop'|'map')}
+
+campaigns/{campaignId}/items/{itemId}
+  name, category, rarity, cost, weight, desc
+  Categories: Weapons, Armor, Resources, Magical, Healing, Food, Misc
+  Rarities: Common, Uncommon, Rare, Very Rare, Legendary
+
+campaigns/{campaignId}/combat/state
+  Single document. Fields:
+  mode              -- 'setup' | 'active' | 'ended'
+  round             -- current round number
+  currentTurnIndex  -- index into combatants array
+  winCondition      -- 'victory' | 'timed'
+  maxRounds         -- (timed mode only)
+  combatants[]      -- {id, name, type ('player'|'enemy'), hp, maxHp, ac,
+                        conditions[], slot, showHp}
+  setupPlayers[]    -- player selections during setup
+  setupEnemies[]    -- enemy definitions during setup
 
 --------------------------------------------------------------------------------
-KNOWN LIMITATIONS (current version)
+KEY FEATURES
 --------------------------------------------------------------------------------
-- Single campaign only — all paths hardcoded, no campaignId
-- Exactly 4 player slots — no dynamic player count
-- Character fields are hardcoded — no custom sheet builder yet
-- No mobile-optimized combat view for players
-- No monster library / encounter builder
-- No turn timer or "Next Turn" button
-- Banner image stored in localStorage (not cloud)
-- Firestore rules must be manually deployed via Console (no CLI deploy)
+
+DASHBOARD (dashboard.html)
+  - Multi-campaign system: create and join unlimited campaigns
+  - Campaign creation: Quick Start (5 fields) or Advanced Setup (accordion with
+    rule system, world modules, layout preset, permissions)
+  - Join via 6-char invite code or friend invitation
+  - Friend system: add by email, accept/decline requests, view online status
+    (online = lastSeen within 5 minutes)
+  - Settings dropdown (top-left): gamertag, avatar upload, Sign Out
+  - Campaign cards show role (DM/Player), player count, unread session notes
+
+ACCOUNT PROFILE (dashboard.html + index.html)
+  - Gamertag: custom 3-20 char name (alphanumeric + underscore)
+    shown everywhere in place of Google display name
+  - Custom avatar: upload any image, compressed to 128x128 JPEG on canvas
+  - Settings dropdown in dashboard header (click name/avatar to open)
+  - Profile panel in campaign nav (profile button in index.html)
+  - Stored in users/{uid} -- gamertag, customAvatar fields
+  - Loaded via onSnapshot so always in sync with Firestore
+
+ENCYCLOPEDIA (index.html -- Lands & Locations section)
+  Tab structure: Lands | Factions (section-level tabs)
+  Universal search across NPCs, shops, and map locations with type + land filters
+
+  Lands tab:
+    - General land card (not a real location -- holds general NPCs, shops, maps)
+      tabs: Shops | NPCs | Maps | Factions
+    - Each named land card: name, desc, pub/draft toggle, delete, expand chevron
+    - Land card tabs: Shops | NPCs | Maps | Factions
+
+  NPCs:
+    - Three NPC types: Simple, Full Sheet, Goon
+    - Portrait upload (base64, canvas-compressed)
+    - Roles system: DM defines roles per campaign (npcRoles[]), assigns to NPCs
+    - Draft/Live toggle per NPC
+
+  Shops:
+    - Per-land shops with name, keeper NPC, type, location
+    - Item inventory with quantity, cost, live/hidden toggle per item
+    - Inline item creation (adds to campaign catalog automatically)
+    - Players can buy: deducts gold from character, adds item to inventory
+
+  Maps:
+    - Named locations within a land, optional uploaded image
+    - DM-only notes (hidden from players)
+
+  Factions tab:
+    - Factions tied to campaign (not per-land)
+    - Leader (NPC), reveal toggle (DM sees name; players see "Unknown")
+    - Custom member roles (e.g. "Initiate", "Elder")
+    - Member NPCs with role assignment
+    - Associated places (shops or map locations)
+    - Faction cards appear inside each land's Factions tab if the faction
+      has members, places, or a leader connected to that land
+
+ITEMS CATALOG (index.html)
+  - Campaign-wide item library: 7 categories, 5 rarities
+  - DM creates items; players can filter/search
+  - "Sync from Character Inventories" bulk-imports unique items from characters
+  - Player inventory panel: personal items with qty/cost, filter by category
+
+ANNOUNCEMENTS (index.html)
+  - Session Announcements tab: DM posts dated notes visible to all players.
+    Unread dot on nav button tracked via localStorage.
+  - In-game Events (DM panel): 5 broadcast modes pushed to all players:
+      Text    -- narration/dialogue
+      Image   -- image with caption
+      NPC     -- renders NPC card from encyclopedia
+      Shop    -- renders shop with buy buttons
+      Combat  -- launches combat tracker
+
+DICE ROLLER (index.html)
+  - DM sets mode: In-Person (roller hidden) or Virtual (all players see nav button)
+  - Die selector: d4, d6, d8, d10, d12, d20, d100
+  - Quantity (1-10) and secret roll toggle (DM only)
+  - Public rolls write to campaigns/{id}.diceRoll -> onSnapshot broadcasts
+    animated overlay to all connected screens (~1.6s ticker then reveal)
+  - Secret rolls are local only (no Firestore write)
+  - Animation toggle (localStorage) falls back to a toast notification
+  - Session roll log: last 10 rolls in the dice panel
+
+COMBAT TRACKER (index.html)
+  - Embedded in the in-game Events panel (Combat broadcast mode)
+  - Setup wizard (3 steps):
+      1. Select players (checkboxes showing HP/AC)
+      2. Add enemies (name, max HP, AC)
+      3. Win condition: Until Victory or Timed (N rounds)
+  - Active combat:
+      - Round counter (+/-)
+      - Combatant cards with HP bars (green/gold/red) + drag-to-reorder
+      - HP adjust (+/-) and direct input
+      - 12 D&D 5e conditions per combatant (toggle on/off)
+      - Mid-battle add enemy
+      - Show/hide enemy HP toggle (DM reveals to players)
+      - Auto win/defeat/timeout detection
+  - Combat state syncs via Firestore onSnapshot -- all clients see same state
+  - Combat float button on nav shows "Your Turn" highlight for current player
+
+CHARACTER SYSTEM (index.html)
+  - Player submits character via manual form or HTML file upload
+  - AI-assisted flow: download example-sheet.html template, fill with AI,
+    upload back -- app parses f-* element IDs via DOMParser
+  - Import report modal: fields filled, missing required, inventory items accepted
+  - Approval queue: DM previews full sheet, approves or rejects
+  - On approval: pending data promoted to characters/{slot}, inventory items
+    batch-written to items catalog
+  - DM can live-edit HP, AC, Gold, PP from party roster
+
+FRIENDS SYSTEM (dashboard.html)
+  - Add friend by email address (looks up users collection by email field)
+  - Bidirectional acceptance: accepting writes to BOTH users' docs
+    (removes currentUser from requester's sentRequests, adds to both friends[])
+  - Online status: green dot if lastSeen within 5 minutes
+  - Processed requests tracked in processedRequests[] to prevent accepted
+    friends from reappearing in the pending requests list
 
 --------------------------------------------------------------------------------
-PRODUCT ROADMAP (prompt queue — see plan file for full prompts)
+KNOWN LIMITATIONS
 --------------------------------------------------------------------------------
-Prompt 1  — Multi-Campaign Foundation (campaign creation, invite codes, dynamic slots)
-Prompt 2  — Custom Sheet Builder (DM defines fields, single sheet.html replaces 1-4)
-Prompt 3  — Mobile-First Player UX (big HP buttons, quick actions, player combat view)
-Prompt 4  — Monster Library & Encounter Builder
-Prompt 5  — Table Tools Polish (turn timer, next turn, loot split, adv/dis dice)
-Prompt 6  — Session Management & Archive
-Prompt 7  — Public Spectator Page
-
-Future:   Virtual Battle Map → AI Opponent → Rulebook Presets → Steam/Electron
+  - No Firebase Storage: all images in Firestore as base64 (1MB doc limit)
+  - No pagination: all lands, NPCs, items, etc. fetched in full each time
+  - Single document for combat state: concurrent DM edits from two windows
+    could overwrite each other (acceptable for single-DM use)
+  - auth.js / broadcast.js are legacy modules included in old sheet pages only;
+    the main app (index.html) has all functionality inlined
+  - Firestore rules must be manually deployed via Firebase Console (no CLI)
+  - No spell slot / per-rest resource tracking on character sheets
+  - No session history / combat log (each session starts fresh)
+  - No in-app messaging between players
 
 --------------------------------------------------------------------------------
 RECENT CHANGES
 --------------------------------------------------------------------------------
-2026-05-21
-  - Added Firebase Auth (Google Sign-In) across all pages
-  - auth.js: sign-in bar, sheet overlay gate, buyItem(), group purchases
-  - broadcast.js: Buy buttons on shop items, group purchase progress bar
-  - combat.html: charId on combatants, character weapons/features expansion,
-    conditions summary bar, broadcast.js included
-  - index.html: Manage Players section in DM panel, dice system (Real/Digital
-    toggle, d4-d100 buttons, Roll Initiative for All Players)
-  - broadcast.js: dice corner widget, initiative reveal, "Open Combat →" button
-  - firestore.rules: auth-based security (replaces open read/write)
-  - sheets 2/3/4: upgraded from Firebase SDK 9.22.0 to 10.12.0
+2026-05-28
+  Profile system (dashboard.html + index.html):
+    - Settings dropdown in dashboard header (click name/avatar to open)
+    - Gamertag: custom 3-20 char username, stored in users/{uid}.gamertag
+    - Custom avatar: uploaded and canvas-compressed to 128x128 JPEG
+    - loadUserProfile() uses onSnapshot for real-time persistence (fixes
+      gamertag disappearing on page refresh)
+    - saveProfile uses set({merge:true}) — no more update() race condition
+
+  Friend request bug fix (dashboard.html):
+    - acceptFriendRequest now writes to BOTH users' docs:
+      own friends += fromUid AND fromUid's sentRequests -= currentUser.uid
+      Prevents accepted friends from reappearing as pending requests
+      on every page refresh
+
+  Encyclopedia — Factions tab in land cards (index.html):
+    - Each land card now has Factions tab alongside Shops/NPCs/Maps
+    - loadLandFactions(landId) filters _factionsData for factions connected
+      to that land (via members[], places[], or leaderLandId)
+
+  Encyclopedia — General land card restructured (index.html):
+    - General land card now has full tab bar: Shops | NPCs | Maps | Factions
+    - Shops and Maps in General land use loadLandEntries('__general', type)
+    - Consistent UI with regular land cards
+
+  Factions section tab (index.html):
+    - Factions tab at the encyclopedia section level alongside Lands
+    - Full faction management: member roles, members, leader reveal, places
+    - Faction data cached in _factionsData, loaded lazily on first tab click
+
+  Universal encyclopedia search (index.html):
+    - Searches across NPCs, Shops, and Map locations (not just NPCs)
+    - Type filter: All / NPCs / Shops / Locations
+    - navigateToLandEntry() scrolls to the correct land card + tab
+
+  Virtual dice roller (index.html):
+    - DM sets mode (In-Person / Virtual) in DM panel
+    - d4-d100, quantity 1-10, secret roll toggle, animation toggle
+    - Public rolls broadcast via Firestore to all screens with animated overlay
+    - Session roll log (last 10 rolls)
+
+  Character slot collision fix (index.html):
+    - acceptPlayerJoin() finds next FREE slot instead of trusting stale
+      pendingJoinSlot stored at join time
+    - Prevents two players from being assigned the same slot
+
+  Party section visibility fix (index.html):
+    - Non-DM players now always see the party overview section regardless
+      of character assignment state
+
+2026-05-21 (prior session)
+  - Complete rebuild: multi-campaign system, dashboard.html hub
+  - Firebase Auth Google Sign-In across all pages
+  - Encyclopedia: lands, NPCs (3 types), shops, maps, factions
+  - Items catalog + player inventory
+  - Session announcements + in-game event broadcasts
+  - Character submission, approval flow, sheet import
+  - Combat tracker (embedded, Firestore-synced)
+  - Campaign creation wizard (Quick Start + Advanced Setup)
+  - Friend system with online status
 
 --------------------------------------------------------------------------------
