@@ -2384,10 +2384,16 @@ async function loadPendingJoins() {
 
 async function acceptPlayerJoin(uid, slot, btn) {
   if (btn) btn.disabled = true;
-  const players = (_campaignData && _campaignData.players) || {};
-  const slotNum = Object.keys(players).length + 1;
-  const finalSlot = slot || `player${slotNum}`;
   try {
+    // Fetch fresh campaign state to find the next truly available slot,
+    // ignoring the stale pendingJoinSlot stored at join time (two players
+    // joining before either is accepted would both store 'player1').
+    const freshDoc = await db.collection('campaigns').doc(campaignId).get();
+    const currentPlayers = freshDoc.data().players || {};
+    const usedSlots = new Set(Object.values(currentPlayers).map(p => p.slot));
+    let slotNum = 1;
+    while (usedSlots.has(`player${slotNum}`)) slotNum++;
+    const finalSlot = `player${slotNum}`;
     await db.collection('campaigns').doc(campaignId).update({
       [`players.${uid}`]: { slot: finalSlot, joinedAt: firebase.firestore.Timestamp.now() },
       memberUids: firebase.firestore.FieldValue.arrayUnion(uid)
