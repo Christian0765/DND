@@ -582,27 +582,38 @@ function renderLuDMModal(){
   const existing = document.getElementById('lu-modal-overlay');
   if (existing) existing.remove();
   const w = _luWizard;
+  const charName = escHtml(luGetField(w.charData,'name') || 'Character');
   const overlay = document.createElement('div');
   overlay.id = 'lu-modal-overlay';
   overlay.innerHTML = `
-    <div class="lu-modal" role="dialog" aria-modal="true" aria-label="Level Up Review">
-      <div class="lu-header">
-        <div class="lu-title-row">
-          <span class="lu-title-icon">⬆</span>
-          <div>
-            <div class="lu-title">Level Up Review</div>
-            <div class="lu-subtitle">${escHtml(luGetField(w.charData,'name')||'Character')} — ${escHtml(w.className||'Unknown Class')}</div>
-          </div>
-          <button class="lu-close-btn" onclick="closeLuModal()" aria-label="Close">✕</button>
+    <div class="lu-dm-modal" role="dialog" aria-modal="true" aria-label="Level Up Review">
+      <div class="lu-dm-header">
+        <div class="lu-dm-eyebrow">DM Review</div>
+        <div class="lu-dm-title">Level Up Review</div>
+        <div class="lu-dm-subtitle">${charName} — ${escHtml(w.className||'Unknown')}</div>
+        <button class="lu-dm-close" onclick="closeLuModal()" aria-label="Close">✕</button>
+      </div>
+      <div class="lu-dm-level-banner">
+        <div class="lu-dm-level-block">
+          <div class="lu-dm-level-num dm-old">${w.currentLevel}</div>
+          <div class="lu-dm-level-label dm-old">Current</div>
         </div>
-        <div class="lu-info-box" style="margin-top:8px;font-size:0.78rem;">
-          📋 Review what the player will gain, then send the offer. The player makes their own choices.
+        <div class="lu-dm-level-arrow">→</div>
+        <div class="lu-dm-level-block">
+          <div class="lu-dm-level-num dm-new">${w.newLevel}</div>
+          <div class="lu-dm-level-label dm-new">New Level</div>
         </div>
       </div>
-      <div class="lu-body">${luDMReviewBody()}</div>
-      <div class="lu-footer">
-        <div></div>
-        <button class="lu-btn lu-btn-primary" onclick="luSendLevelUp()">📨 Send to Player ⬆</button>
+      <div class="lu-dm-body">${luDMReviewBody()}</div>
+      <div class="lu-dm-footer">
+        <div class="lu-dm-footer-note">Player receives this offer and makes their own choices.</div>
+        <button class="lu-dm-send-btn" id="lu-dm-send-btn" onclick="luSendLevelUp()">
+          <span class="lu-dm-send-icon">📜</span>
+          <span class="lu-dm-send-text">
+            <span class="lu-dm-send-label">Send to Player</span>
+            <span class="lu-dm-send-sub">${charName} will be notified</span>
+          </span>
+        </button>
       </div>
     </div>
   `;
@@ -611,86 +622,130 @@ function renderLuDMModal(){
 
 function luDMReviewBody(){
   const w = _luWizard;
-  const hd     = LU_HIT_DIE[w.className] || 8;
-  const avg    = Math.ceil(hd / 2) + 1;
+  const hd      = LU_HIT_DIE[w.className] || 8;
+  const avg     = Math.ceil(hd / 2) + 1;
   const profOld = LU_PROF_BONUS[w.currentLevel] || 2;
   const profNew = LU_PROF_BONUS[w.newLevel] || 2;
   const features = luGetFeatures(w.className, w.newLevel, w.subclassChoice);
-  const slots  = luGetSlots(w.className, w.newLevel);
+  const slots   = luGetSlots(w.className, w.newLevel);
 
-  const profChange = profNew > profOld
-    ? `<span class="lu-badge lu-badge-green" style="margin-left:8px;">now +${profNew}</span>` : '';
+  // Icon mapper for feature names
+  function featureIcon(name){
+    const n = name.toLowerCase();
+    if (/attack|strike|weapon/.test(n))                                                 return '⚔️';
+    if (/defense|armor|ward|shield|protection|abjur/.test(n))                           return '🛡️';
+    if (/spell|magic|cantrip|ritual|evoc|conjur|illus|enchant|necro|divin|transmut/.test(n)) return '✨';
+    if (/rage|berserker|frenzy/.test(n))                                                return '💢';
+    if (/archetype|tradition|subclass|college|path|circle|oath|patron|origin|conclave/.test(n)) return '🎭';
+    if (/healing|lay on|smite/.test(n))                                                 return '💛';
+    if (/movement|speed|dash/.test(n))                                                  return '💨';
+    if (/sneak|cunning/.test(n))                                                        return '🗡️';
+    if (/ki|stance|martial/.test(n))                                                    return '🥋';
+    if (/recovery|surge|second wind|rest/.test(n))                                      return '🌙';
+    if (/bardic|inspiration|song/.test(n))                                              return '🎵';
+    return '📜';
+  }
+
+  // Split "Name (description)" → { name, desc }
+  function parseFeature(f){
+    const m = f.match(/^([^(]+?)\s*\((.+)\)$/s);
+    if (m) return { name: m[1].trim(), desc: m[2].trim() };
+    return { name: f, desc: '' };
+  }
+
+  const realFeatures = features.filter(f =>
+    f !== 'No new class features at this level.' && f !== 'No new features at this level.'
+  );
+
+  const featuresHtml = realFeatures.length
+    ? realFeatures.map(f => {
+        const { name, desc } = parseFeature(f);
+        return `<div class="lu-dm-feature-item">
+          <div class="lu-dm-feature-icon">${featureIcon(name)}</div>
+          <div>
+            <div class="lu-dm-feature-name">${escHtml(name)}</div>
+            ${desc ? `<div class="lu-dm-feature-desc">${escHtml(desc)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="font-family:'Crimson Text',serif;font-style:italic;color:#4a3820;font-size:13px;">No new class features at this level.</div>`;
+
+  const profSubText = profNew > profOld ? `now +${profNew}` : 'no change this level';
 
   const slotsHtml = slots ? (() => {
+    const ordinals = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
     const rows = slots.map((count, i) => {
       if (!count) return '';
       return `<tr>
-        <td class="lu-slot-level">${i+1}${['st','nd','rd','th','th','th','th','th','th'][i]}</td>
-        <td class="lu-slot-count">${'◆'.repeat(count)}<span class="lu-slot-num">${count}</span></td>
+        <td>${ordinals[i] || (i+1)+'th'}</td>
+        <td><span class="lu-dm-slot-diamonds">${'◆'.repeat(Math.min(count,5))}${count>5?'+':''}</span><span class="lu-dm-slot-num">${count}</span></td>
       </tr>`;
     }).filter(Boolean).join('');
     return `<div class="lu-dm-section">
-      <div class="lu-dm-section-title">Spell Slots at Level ${w.newLevel}</div>
-      <table class="lu-spell-table"><thead><tr><th>Level</th><th>Slots</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="lu-dm-section-label">Spell Slots at Level ${w.newLevel}</div>
+      <table class="lu-dm-spell-table">
+        <thead><tr><th>Slot Level</th><th>Slots</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>`;
   })() : '';
 
+  const asiHtml = luIsAsiLevel(w.className, w.newLevel) ? `
+    <div class="lu-dm-section">
+      <div class="lu-dm-section-label">ASI / Feat</div>
+      <div class="lu-dm-asi-block">
+        <div class="lu-dm-asi-icon">⭐</div>
+        <div>
+          <div class="lu-dm-asi-title">Player will choose</div>
+          <div class="lu-dm-asi-sub">+2 to one stat, +1 to two stats, or a feat</div>
+        </div>
+      </div>
+    </div>` : '';
+
+  const subclassHtml = luIsSubclassLevel(w.className, w.newLevel) ? `
+    <div class="lu-dm-section">
+      <div class="lu-dm-section-label">Subclass Selection</div>
+      <div class="lu-dm-asi-block">
+        <div class="lu-dm-asi-icon">🎭</div>
+        <div>
+          <div class="lu-dm-asi-title">Player will choose their archetype</div>
+          <div class="lu-dm-asi-sub">${escHtml(w.className)} subclass selection at this level</div>
+        </div>
+      </div>
+    </div>` : '';
+
   return `
-    <div class="lu-level-display" style="margin-bottom:16px;">
-      <div class="lu-level-box lu-level-old">
-        <div class="lu-level-num">${w.currentLevel}</div>
-        <div class="lu-level-label">Current Level</div>
-      </div>
-      <div class="lu-level-arrow">→</div>
-      <div class="lu-level-box lu-level-new">
-        <div class="lu-level-num">${w.newLevel}</div>
-        <div class="lu-level-label">New Level</div>
-      </div>
-    </div>
-
     <div class="lu-dm-section">
-      <div class="lu-dm-section-title">Stats</div>
-      <div class="lu-confirm-details">
-        <div class="lu-detail-row">
-          <span class="lu-detail-label">Hit Die</span>
-          <span class="lu-detail-val">d${hd} — average +${avg}, max +${hd} (+ CON mod)</span>
+      <div class="lu-dm-section-label">Stats</div>
+      <div class="lu-dm-stats-grid">
+        <div class="lu-dm-stat-card">
+          <div class="lu-dm-stat-name">Hit Die</div>
+          <div class="lu-dm-stat-value">d${hd}</div>
+          <div class="lu-dm-stat-sub">avg +${avg}, max +${hd} (+CON mod)</div>
         </div>
-        <div class="lu-detail-row">
-          <span class="lu-detail-label">Proficiency Bonus</span>
-          <span class="lu-detail-val">+${profOld} → +${profNew}${profChange}</span>
+        <div class="lu-dm-stat-card">
+          <div class="lu-dm-stat-name">Proficiency Bonus</div>
+          <div class="lu-dm-stat-value"><span class="dm-muted">+${profOld}</span> → <span class="dm-new-val">+${profNew}</span></div>
+          <div class="lu-dm-stat-sub">${escHtml(profSubText)}</div>
         </div>
       </div>
     </div>
 
     <div class="lu-dm-section">
-      <div class="lu-dm-section-title">New Features</div>
-      <ul class="lu-features-list">
-        ${features.map(f => `<li class="lu-feature-item">
-          <span class="lu-feature-bullet">⚡</span><span>${escHtml(f)}</span>
-        </li>`).join('')}
-      </ul>
+      <div class="lu-dm-section-label">New Features</div>
+      <div class="lu-dm-features-list">${featuresHtml}</div>
     </div>
 
     ${slotsHtml}
-
-    ${luIsAsiLevel(w.className, w.newLevel) ? `
-    <div class="lu-dm-section">
-      <div class="lu-dm-section-title">ASI / Feat</div>
-      <div class="lu-info-box">⭐ Player will choose: +2 to one stat, +1 to two stats, or a feat.</div>
-    </div>` : ''}
-
-    ${luIsSubclassLevel(w.className, w.newLevel) ? `
-    <div class="lu-dm-section">
-      <div class="lu-dm-section-title">Subclass Selection</div>
-      <div class="lu-info-box">🎭 Player will choose their ${escHtml(w.className)} subclass archetype.</div>
-    </div>` : ''}
+    ${asiHtml}
+    ${subclassHtml}
   `;
 }
 
 async function luSendLevelUp(){
   const w = _luWizard;
-  const btn = document.querySelector('#lu-modal-overlay .lu-btn-primary');
-  if (btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+  const btn = document.getElementById('lu-dm-send-btn');
+  if (btn){ btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
   try {
     await db.collection('campaigns').doc(currentCampaignId)
       .collection('characters').doc(w.slot)
@@ -705,7 +760,7 @@ async function luSendLevelUp(){
   } catch(e){
     console.error('Level up send error:', e);
     showToast('Error sending level up — check console.');
-    if (btn){ btn.disabled = false; btn.textContent = '📨 Send to Player ⬆'; }
+    if (btn){ btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; }
   }
 }
 
@@ -961,10 +1016,147 @@ async function luApplyLevelUp(){
     .lu-info-box { background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.25); border-radius:6px; padding:10px 12px; color:var(--parchment,#f5e6c8); font-size:.875rem; line-height:1.5; }
     .lu-warning { background:rgba(200,100,50,.15); border:1px solid rgba(200,100,50,.3); border-radius:6px; padding:10px 12px; color:#e8b090; font-size:.875rem; margin-bottom:12px; }
 
-    /* DM REVIEW MODAL */
-    .lu-dm-section { margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid rgba(201,168,76,.15); }
-    .lu-dm-section:last-child { border-bottom:none; margin-bottom:0; }
-    .lu-dm-section-title { font-family:'Cinzel',serif; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--gold,#c9a84c); margin-bottom:10px; }
+    /* ─── DM REVIEW MODAL ─────────────────────────────────────────── */
+    .lu-dm-modal {
+      background:#0f0c07; border:1px solid #6b4f1a; border-radius:4px; overflow:hidden;
+      box-shadow:0 0 0 1px #2a1f0a, 0 30px 80px rgba(0,0,0,.9), inset 0 1px 0 rgba(201,168,76,.15);
+      width:100%; max-width:520px; max-height:90vh;
+      display:flex; flex-direction:column;
+      font-family:'Crimson Text',Georgia,serif;
+    }
+    .lu-dm-header {
+      background:linear-gradient(180deg,#1a1108 0%,#0f0c07 100%);
+      border-bottom:1px solid #3a2c0e; padding:22px 24px 18px; position:relative; flex-shrink:0;
+    }
+    .lu-dm-eyebrow {
+      font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; text-transform:uppercase;
+      color:#8b6914; margin-bottom:6px; display:flex; align-items:center; gap:8px;
+    }
+    .lu-dm-eyebrow::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,#3a2c0e,transparent); }
+    .lu-dm-title {
+      font-family:'Cinzel',serif; font-size:22px; font-weight:900; color:#f0d98a;
+      letter-spacing:1px; line-height:1; text-shadow:0 0 40px rgba(201,168,76,.3);
+    }
+    .lu-dm-subtitle { font-family:'Crimson Text',serif; font-style:italic; color:#7a6030; font-size:14px; margin-top:4px; }
+    .lu-dm-close {
+      position:absolute; top:20px; right:20px; background:none; border:none;
+      color:#4a3a1a; font-size:18px; cursor:pointer; transition:color .15s;
+    }
+    .lu-dm-close:hover { color:#c9a84c; }
+
+    /* Level banner */
+    .lu-dm-level-banner {
+      background:linear-gradient(135deg,#1a0a00 0%,#0a0800 50%,#0d0500 100%);
+      border-bottom:1px solid #3a2c0e; padding:28px 24px;
+      display:flex; align-items:center; justify-content:center; gap:0;
+      position:relative; overflow:hidden; flex-shrink:0;
+    }
+    .lu-dm-level-banner::before {
+      content:'LEVEL UP'; position:absolute;
+      font-family:'Cinzel',serif; font-size:80px; font-weight:900;
+      color:rgba(201,168,76,.04); letter-spacing:8px; pointer-events:none; white-space:nowrap;
+    }
+    .lu-dm-level-block { text-align:center; padding:0 24px; }
+    .lu-dm-level-num { font-family:'Cinzel',serif; font-size:72px; font-weight:900; line-height:1; }
+    .lu-dm-level-num.dm-old { color:#3a2c0e; }
+    .lu-dm-level-num.dm-new {
+      color:#f0d98a;
+      text-shadow:0 0 30px rgba(240,217,138,.4),0 0 80px rgba(201,168,76,.2);
+      animation:luDmGlow 3s ease-in-out infinite;
+    }
+    @keyframes luDmGlow {
+      0%,100% { text-shadow:0 0 30px rgba(240,217,138,.4),0 0 80px rgba(201,168,76,.2); }
+      50%      { text-shadow:0 0 60px rgba(240,217,138,.7),0 0 120px rgba(201,168,76,.4); }
+    }
+    .lu-dm-level-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-top:4px; }
+    .lu-dm-level-label.dm-old { color:#3a2c0e; }
+    .lu-dm-level-label.dm-new { color:#8b6914; }
+    .lu-dm-level-arrow { font-size:28px; color:#c9a84c; opacity:.5; padding:0 8px; margin-bottom:20px; }
+
+    /* Body */
+    .lu-dm-body { overflow-y:auto; flex:1; }
+    .lu-dm-body::-webkit-scrollbar { width:4px; }
+    .lu-dm-body::-webkit-scrollbar-track { background:transparent; }
+    .lu-dm-body::-webkit-scrollbar-thumb { background:#2a1f0a; border-radius:2px; }
+
+    .lu-dm-section { border-bottom:1px solid #1a1408; padding:20px 24px; }
+    .lu-dm-section:last-child { border-bottom:none; }
+    .lu-dm-section-label {
+      font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; text-transform:uppercase;
+      color:#c9a84c; margin-bottom:14px; display:flex; align-items:center; gap:10px;
+    }
+    .lu-dm-section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,#3a2c0e 0%,transparent 100%); }
+
+    /* Stats grid */
+    .lu-dm-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .lu-dm-stat-card {
+      background:#13100a; border:1px solid #2a2010; border-radius:3px;
+      padding:14px 16px; position:relative; overflow:hidden;
+    }
+    .lu-dm-stat-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,#c9a84c 0%,transparent 70%);
+    }
+    .lu-dm-stat-name { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:#5a4520; margin-bottom:6px; }
+    .lu-dm-stat-value { font-family:'Cinzel',serif; font-size:16px; font-weight:700; color:#d4af37; }
+    .lu-dm-stat-value .dm-muted { color:#3a2c0e; }
+    .lu-dm-stat-value .dm-new-val { color:#f0d98a; }
+    .lu-dm-stat-sub { font-family:'Crimson Text',serif; font-size:12px; color:#4a3820; margin-top:3px; font-style:italic; }
+
+    /* Features */
+    .lu-dm-features-list { display:flex; flex-direction:column; gap:0; }
+    .lu-dm-feature-item { display:flex; align-items:flex-start; gap:14px; padding:12px 0; border-bottom:1px solid #1a1408; }
+    .lu-dm-feature-item:last-child { border-bottom:none; }
+    .lu-dm-feature-icon {
+      width:34px; height:34px; background:#13100a; border:1px solid #3a2c0e; border-radius:3px;
+      display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;
+    }
+    .lu-dm-feature-name { font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#d4af37; line-height:1.2; margin-bottom:3px; }
+    .lu-dm-feature-desc { font-family:'Crimson Text',serif; font-size:13px; color:#6a5030; line-height:1.4; font-style:italic; }
+
+    /* ASI / Subclass block */
+    .lu-dm-asi-block { background:linear-gradient(135deg,#1a1000,#0f0c07); border:1px solid #3a2c0e; border-radius:3px; padding:16px; display:flex; align-items:center; gap:14px; }
+    .lu-dm-asi-icon { font-size:28px; filter:drop-shadow(0 0 8px rgba(201,168,76,.5)); flex-shrink:0; }
+    .lu-dm-asi-title { font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#f0d98a; margin-bottom:3px; }
+    .lu-dm-asi-sub { font-family:'Crimson Text',serif; font-size:13px; color:#7a6030; font-style:italic; }
+
+    /* Spell slots */
+    .lu-dm-spell-table { width:100%; border-collapse:collapse; }
+    .lu-dm-spell-table th {
+      font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase;
+      color:#5a4520; text-align:left; padding:6px 0; border-bottom:1px solid #2a2010;
+    }
+    .lu-dm-spell-table td { padding:8px 0; color:#c9a84c; border-bottom:1px solid #1a1408; font-family:'Cinzel',serif; font-size:13px; }
+    .lu-dm-spell-table tr:last-child td { border-bottom:none; }
+    .lu-dm-slot-diamonds { letter-spacing:2px; color:#d4af37; }
+    .lu-dm-slot-num { font-size:11px; color:#5a4520; margin-left:6px; }
+
+    /* Footer */
+    .lu-dm-footer {
+      padding:20px 24px; background:#080601; border-top:1px solid #1e1708;
+      display:flex; align-items:center; justify-content:space-between; gap:16px; flex-shrink:0;
+    }
+    .lu-dm-footer-note { font-family:'Crimson Text',serif; font-style:italic; color:#3a2c0e; font-size:13px; line-height:1.4; }
+    .lu-dm-send-btn {
+      background:linear-gradient(135deg,#d4af37 0%,#c9a84c 40%,#a8853e 100%);
+      border:none; color:#0a0800; font-family:'Cinzel',serif; cursor:pointer;
+      border-radius:3px; position:relative; overflow:hidden; transition:all .2s;
+      box-shadow:0 4px 20px rgba(201,168,76,.35),inset 0 1px 0 rgba(255,255,255,.2);
+      display:flex; align-items:center; gap:12px; padding:12px 22px; flex-shrink:0;
+    }
+    .lu-dm-send-btn::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 60%); pointer-events:none;
+    }
+    .lu-dm-send-btn:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(201,168,76,.55),inset 0 1px 0 rgba(255,255,255,.25); filter:brightness(1.08); }
+    .lu-dm-send-btn:active { transform:translateY(0); }
+    .lu-dm-send-icon { font-size:18px; }
+    .lu-dm-send-text { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+    .lu-dm-send-label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; line-height:1; }
+    .lu-dm-send-sub {
+      font-family:'Crimson Text',serif; font-style:italic; font-size:11px;
+      color:rgba(0,0,0,.45); font-weight:400; letter-spacing:0; text-transform:none;
+    }
 
     /* LEVEL-UP OFFER BANNER (player side) */
     #lu-offer-banner { margin-bottom:16px; }
