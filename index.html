@@ -1298,7 +1298,7 @@
         </div>
       </div>
       <div id="pp-google-info" style="font-size:0.68rem;color:var(--border-light);margin-top:10px;padding-top:8px;border-top:1px solid rgba(122,90,40,0.2);"></div>
-      <button class="dm-btn" onclick="saveProfileFromPanel()" style="margin-top:12px;font-size:0.6rem;">Save Profile</button>
+      <button class="dm-btn" onclick="saveProfileFromPanel(this)" style="margin-top:12px;font-size:0.6rem;">Save Profile</button>
     </div>
 
     <!-- Notifications placeholder -->
@@ -1915,13 +1915,12 @@ function compressProfileAvatar(file, cb) {
   img.src = url;
 }
 
-async function saveProfileFromPanel() {
+async function saveProfileFromPanel(btn) {
   const gt = document.getElementById('pp-gamertag').value.trim();
   if (gt && !/^[a-zA-Z0-9_]{3,20}$/.test(gt)) {
     alert('Gamertag must be 3–20 characters: letters, numbers, and underscores only.');
     return;
   }
-  const btn = event.target;
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
     const update = {};

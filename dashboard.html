@@ -828,7 +828,7 @@
         Google account: <span id="sd-google-name" style="color:var(--parchment-dark);"></span>
         &nbsp;·&nbsp; <span id="sd-google-email" style="color:var(--parchment-dark);"></span>
       </div>
-      <button class="btn-base btn-primary" onclick="saveProfile()" style="margin-top:12px;font-size:0.6rem;">Save Profile</button>
+      <button class="btn-base btn-primary" onclick="saveProfile(this)" style="margin-top:12px;font-size:0.6rem;">Save Profile</button>
     </div>
 
     <!-- Notifications (placeholder) -->
@@ -1325,13 +1325,12 @@
       img.src = url;
     }
 
-    async function saveProfile() {
+    async function saveProfile(btn) {
       const gt = document.getElementById('sd-gamertag').value.trim();
       if (gt && !/^[a-zA-Z0-9_]{3,20}$/.test(gt)) {
         alert('Gamertag must be 3–20 characters: letters, numbers, and underscores only.');
         return;
       }
-      const btn = event.target;
       btn.textContent = 'Saving…'; btn.disabled = true;
       try {
         const update = {};
