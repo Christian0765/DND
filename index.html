@@ -2725,7 +2725,7 @@ function populateNPCLandDropdown(landDocs) {
 }
 
 async function runNPCSearch() {
-  if (!_npcSearchCache) await buildNPCSearchCache();
+  await buildNPCSearchCache();
   const text = (document.getElementById('npc-search-text')?.value || '').trim().toLowerCase();
   const role = document.getElementById('npc-search-role')?.value || '';
   const land = document.getElementById('npc-search-land')?.value || '';
