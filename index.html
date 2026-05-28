@@ -1321,11 +1321,41 @@
       <span style="font-size:1.4rem;">🌍</span>
       <div style="flex:1;min-width:0;">
         <div class="land-card-name">General</div>
-        <div class="land-card-desc">Publicly known NPCs — visible to all players</div>
+        <div class="land-card-desc">World NPCs, shops, and locations not tied to a specific land</div>
       </div>
       <span class="land-chevron" id="gen-chevron">▶</span>
     </div>
     <div class="land-body" id="general-land-body">
+      <div class="land-tab-bar">
+        <button class="land-tab-btn" onclick="showGeneralTab('shops',this)">🏪 Shops</button>
+        <button class="land-tab-btn active" onclick="showGeneralTab('npcs',this)">🧙 NPCs</button>
+        <button class="land-tab-btn" onclick="showGeneralTab('maps',this)">🗺 Maps</button>
+        <button class="land-tab-btn" onclick="showGeneralTab('factions',this)">⚔️ Factions</button>
+      </div>
+
+      <!-- Shops tab -->
+      <div class="land-tab-content" id="gtab-shops">
+        <div id="llist-__general-shops"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div></div>
+        <button class="lands-add-trigger" id="add-general-shop-btn" onclick="toggleLandEntryForm('__general','shops')" style="display:none;">+ Add Shop</button>
+        <div class="lands-add-form" id="lform-__general-shops" style="display:none;">
+          <div class="lands-field"><label>Shop Name *</label><input id="li-__general-shops-name" type="text" placeholder="e.g. The Rusty Flagon"></div>
+          <div class="lands-field"><label>Shopkeeper</label>
+            <select id="li-__general-shops-keeper" style="font-family:'Crimson Text',serif;font-size:0.85rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;width:100%;outline:none;">
+              <option value="">— None —</option>
+              <option value="" disabled>Loading…</option>
+            </select>
+          </div>
+          <div class="lands-row">
+            <div class="lands-field"><label>District</label><input id="li-__general-shops-loc" type="text" placeholder="e.g. Market Quarter"></div>
+            <div class="lands-field"><label>Type</label><input id="li-__general-shops-type" type="text" placeholder="Weapons, Potions…"></div>
+          </div>
+          <div class="lands-field"><label>DM Notes</label><textarea id="li-__general-shops-notes" placeholder="Secret stock, rumors…"></textarea></div>
+          <button class="lands-save-btn" onclick="saveLandEntry('__general','shops')">Save Shop</button>
+        </div>
+      </div>
+
+      <!-- NPCs tab (active by default) -->
+      <div class="land-tab-content active" id="gtab-npcs">
       <div id="general-npcs-list" style="margin-bottom:12px;">
         <div style="font-style:italic;color:var(--border-light);font-size:0.8rem;">Loading…</div>
       </div>
@@ -1457,8 +1487,35 @@
           <button class="lands-save-btn" onclick="saveGeneralNPC('goon')">Save Goon</button>
         </div>
       </div>
-    </div>
-  </div>
+      </div><!-- end gtab-npcs -->
+
+      <!-- Maps tab -->
+      <div class="land-tab-content" id="gtab-maps">
+        <div id="llist-__general-maps"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div></div>
+        <button class="lands-add-trigger" id="add-general-map-btn" onclick="toggleLandEntryForm('__general','maps')" style="display:none;">+ Add World Location</button>
+        <div class="lands-add-form" id="lform-__general-maps" style="display:none;">
+          <div class="lands-field"><label>Location Name *</label><input id="li-__general-maps-name" type="text" placeholder="e.g. The Ancient Forest"></div>
+          <div class="lands-field"><label>Region / Area</label><input id="li-__general-maps-loc" type="text" placeholder="e.g. Northern Wastes"></div>
+          <div class="lands-field"><label>DM Notes</label><textarea id="li-__general-maps-notes" placeholder="Hazards, secrets, loot…"></textarea></div>
+          <div class="lands-field">
+            <label>Map Image (optional)</label>
+            <div class="upload-area" id="li-__general-maps-upload" style="padding:10px;" ondragover="event.preventDefault()" ondrop="handleLandMapDrop(event,'__general')">
+              <input type="file" accept="image/*" onchange="handleLandMapFile(event.target.files[0],'__general')">
+              <div class="upload-icon" style="font-size:1rem;">🗺</div>
+              <div class="upload-label" id="li-__general-maps-uplabel">Click or drop image</div>
+              <img id="li-__general-maps-preview" style="display:none;max-width:100%;max-height:110px;margin-top:6px;border-radius:2px;object-fit:contain;">
+            </div>
+          </div>
+          <button class="lands-save-btn" onclick="saveLandEntry('__general','maps')">Save Location</button>
+        </div>
+      </div><!-- end gtab-maps -->
+
+      <!-- Factions tab -->
+      <div class="land-tab-content" id="gtab-factions">
+        <div id="llist-__general-factions"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">Loading…</div></div>
+      </div><!-- end gtab-factions -->
+    </div><!-- end land-body -->
+  </div><!-- end general-land-card -->
 
   <!-- CREATED LANDS LIST -->
   <div id="lands-list" style="margin-top:16px;">
@@ -2867,21 +2924,26 @@ async function runEncSearch() {
 
 function editNPCFromSearch(landId, npcId) {
   if (landId === '__general') {
-    // Open the General card if collapsed
     const body = document.getElementById('general-land-body');
     if (body && !body.classList.contains('open')) toggleGeneralLand();
+    ['shops','npcs','maps','factions'].forEach(t => {
+      const el = document.getElementById('gtab-' + t);
+      if (el) el.classList.toggle('active', t === 'npcs');
+    });
+    const tabBar = document.querySelector('#general-land-card .land-tab-bar');
+    if (tabBar) tabBar.querySelectorAll('.land-tab-btn').forEach(b => b.classList.toggle('active', b.textContent.includes('NPCs')));
     editGeneralNPC(npcId);
   } else {
     // Expand land card if collapsed
     const lbody = document.getElementById('lbody-' + landId);
     if (lbody && !lbody.classList.contains('open')) toggleLandExpand(landId);
     // Switch to NPC tab
-    ['shops','npcs','maps'].forEach(t => {
+    ['shops','npcs','maps','factions'].forEach(t => {
       const el = document.getElementById('ltab-' + landId + '-' + t);
       if (el) el.classList.toggle('active', t === 'npcs');
     });
     const tabBar = document.querySelector('#lcard-' + landId + ' .land-tab-bar');
-    if (tabBar) tabBar.querySelectorAll('.land-tab-btn').forEach((b, i) => b.classList.toggle('active', i === 1));
+    if (tabBar) tabBar.querySelectorAll('.land-tab-btn').forEach(b => b.classList.toggle('active', b.textContent.includes('NPCs')));
     editLandNPC(landId, npcId);
   }
 }
@@ -2906,6 +2968,17 @@ function navigateToLandEntry(landId, type, entryId) {
   if (landId === '__general') {
     const body = document.getElementById('general-land-body');
     if (body && !body.classList.contains('open')) toggleGeneralLand();
+    const genTab = (type === 'shops' || type === 'maps') ? type : 'npcs';
+    ['shops','npcs','maps','factions'].forEach(t => {
+      const el = document.getElementById('gtab-' + t);
+      if (el) el.classList.toggle('active', t === genTab);
+    });
+    const tabBar = document.querySelector('#general-land-card .land-tab-bar');
+    if (tabBar) tabBar.querySelectorAll('.land-tab-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + genTab + "'"));
+    });
+    if (genTab === 'shops') loadLandEntries('__general', 'shops');
+    else if (genTab === 'maps') loadLandEntries('__general', 'maps');
     return;
   }
   const lbody = document.getElementById('lbody-' + landId);
@@ -2929,6 +3002,75 @@ function toggleGeneralLand() {
   const isOpen = body.classList.contains('open');
   body.classList.toggle('open', !isOpen);
   chevron.classList.toggle('open', !isOpen);
+  if (!isOpen) loadGeneralNPCs();
+}
+
+function showGeneralTab(tab, btn) {
+  ['shops','npcs','maps','factions'].forEach(t => {
+    const el = document.getElementById('gtab-' + t);
+    if (el) el.classList.toggle('active', t === tab);
+  });
+  btn.closest('.land-tab-bar').querySelectorAll('.land-tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'shops') {
+    if (_isDM) { const b = document.getElementById('add-general-shop-btn'); if (b) b.style.display = ''; }
+    loadLandEntries('__general', 'shops');
+  } else if (tab === 'npcs') {
+    loadGeneralNPCs();
+  } else if (tab === 'maps') {
+    if (_isDM) { const b = document.getElementById('add-general-map-btn'); if (b) b.style.display = ''; }
+    loadLandEntries('__general', 'maps');
+  } else if (tab === 'factions') {
+    loadLandFactions('__general');
+  }
+}
+
+async function loadLandFactions(landId) {
+  const listId = landId === '__general' ? 'llist-__general-factions' : 'llist-' + landId + '-factions';
+  const list = document.getElementById(listId);
+  if (!list) return;
+  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div>';
+  try {
+    if (!Object.keys(_factionsData).length) {
+      const snap = await db.collection('campaigns').doc(campaignId).collection('factions').get();
+      snap.docs.forEach(d => { _factionsData[d.id] = d.data(); });
+    }
+    const relevant = Object.entries(_factionsData).filter(([, d]) => {
+      if (!_isDM && d.published === false) return false;
+      return (d.members||[]).some(m => m.landId === landId) ||
+             (d.places||[]).some(p => p.landId === landId) ||
+             d.leaderLandId === landId;
+    });
+    if (!relevant.length) {
+      list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">No faction connections here.</div>';
+      return;
+    }
+    list.innerHTML = relevant.map(([fid, d]) => {
+      const members = (d.members||[]).filter(m => m.landId === landId);
+      const places  = (d.places||[]).filter(p => p.landId === landId);
+      const isLeaderHere = d.leaderLandId === landId;
+      const leaderHtml = isLeaderHere && (d.leaderRevealed || _isDM)
+        ? `<div style="font-size:0.72rem;color:var(--border-light);margin-bottom:6px;">👑 <span style="color:var(--parchment);">${escHtml(d.leaderName||'Unknown')}</span>${!d.leaderRevealed && _isDM ? ' <span style="font-style:italic;">(hidden)</span>' : ''}</div>` : '';
+      const membersHtml = members.map(m => {
+        const badge = m.role ? `<span class="faction-role-chip" style="font-size:0.52rem;padding:1px 6px;">${escHtml(m.role)}</span>` : '';
+        return `<div class="faction-member-row">${badge}<span style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--parchment);">${escHtml(m.name)}</span></div>`;
+      }).join('');
+      const placesHtml = places.map(p =>
+        `<div class="faction-member-row"><span>${p.type === 'shop' ? '🏪' : '🗺'}</span><span style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--parchment);">${escHtml(p.name)}</span></div>`
+      ).join('');
+      return `<div style="padding:10px 0;border-bottom:1px solid rgba(122,90,40,0.2);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:1.1rem;">${escHtml(d.symbol||'⚔️')}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:600;color:var(--gold-light);">${escHtml(d.name||'Unnamed')}</span>
+          <button onclick="showEncTab('factions');setTimeout(()=>{const el=document.getElementById('fcard-${fid}');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},300)"
+                  style="margin-left:auto;font-family:'Cinzel',serif;font-size:0.52rem;padding:2px 8px;border:1px solid var(--border);border-radius:2px;background:none;color:var(--border-light);cursor:pointer;">View →</button>
+        </div>
+        ${leaderHtml}${membersHtml}${placesHtml}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`;
+  }
 }
 
 async function loadGeneralNPCs() {
@@ -3316,6 +3458,7 @@ function renderLandCard(id, d) {
         <button class="land-tab-btn active" onclick="showLandTab('${escHtml(id)}','shops',this)">🏪 Shops</button>
         <button class="land-tab-btn" onclick="showLandTab('${escHtml(id)}','npcs',this)">🧙 NPCs</button>
         <button class="land-tab-btn" onclick="showLandTab('${escHtml(id)}','maps',this)">🗺 Maps</button>
+        <button class="land-tab-btn" onclick="showLandTab('${escHtml(id)}','factions',this)">⚔️ Factions</button>
       </div>
       <div class="land-tab-content active" id="ltab-${escHtml(id)}-shops">
         <div id="llist-${escHtml(id)}-shops"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;">Loading…</div></div>
@@ -3370,6 +3513,9 @@ function renderLandCard(id, d) {
           <button class="lands-save-btn" onclick="saveLandEntry('${escHtml(id)}','maps')">Save Location</button>
         </div>` : ''}
       </div>
+      <div class="land-tab-content" id="ltab-${escHtml(id)}-factions">
+        <div id="llist-${escHtml(id)}-factions"><div style="font-style:italic;color:var(--border-light);font-size:0.78rem;padding:4px 0;">Loading…</div></div>
+      </div>
     </div>
   </div>`;
 }
@@ -3389,11 +3535,13 @@ function toggleLandExpand(id) {
 }
 
 function showLandTab(id, tab, btn) {
-  ['shops','npcs','maps'].forEach(t => {
-    document.getElementById('ltab-' + id + '-' + t).classList.toggle('active', t === tab);
+  ['shops','npcs','maps','factions'].forEach(t => {
+    const el = document.getElementById('ltab-' + id + '-' + t);
+    if (el) el.classList.toggle('active', t === tab);
   });
   btn.closest('.land-tab-bar').querySelectorAll('.land-tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  if (tab === 'factions') loadLandFactions(id);
 }
 
 async function loadLandEntries(landId, type) {
