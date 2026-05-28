@@ -645,6 +645,14 @@
   .land-tab-btn.active { color:var(--gold-light);border-bottom-color:var(--gold); }
   .land-tab-content { display:none; }
   .land-tab-content.active { display:block; }
+  .faction-section { margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(122,90,40,0.2); }
+  .faction-section:last-child { border-bottom:none;margin-bottom:0;padding-bottom:0; }
+  .faction-section-title { font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--border-light);margin-bottom:8px; }
+  .faction-role-chip { display:inline-flex;align-items:center;gap:4px;background:rgba(154,112,0,0.15);border:1px solid var(--gold);border-radius:10px;padding:2px 8px;font-family:'Cinzel',serif;font-size:0.58rem;color:var(--gold-light);margin:2px; }
+  .faction-member-row { display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(122,90,40,0.12);flex-wrap:wrap; }
+  .faction-member-row:last-child { border-bottom:none; }
+  .faction-unknown { color:var(--border-light);font-style:italic; }
+  .enc-section-tab-bar { display:flex;gap:0;border-bottom:1px solid var(--border); }
   .lands-entry { display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.4);border-radius:2px;padding:10px 12px;margin-bottom:7px; }
   .lands-entry-body { flex:1;min-width:0; }
   .lands-entry-name { font-family:'Cinzel',serif;font-size:0.78rem;color:var(--parchment-dark);font-weight:600;margin-bottom:2px; }
@@ -1266,10 +1274,16 @@
 
 <!-- LANDS SECTION -->
 <div id="lands-section" style="display:none;max-width:820px;margin:0 auto 32px;">
-  <!-- header row -->
+  <!-- top-level tab bar: Lands | Factions -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-    <div class="section-title" style="margin:0;border:none;padding:0;">Lands &amp; Locations</div>
-    <button class="lands-new-btn" id="new-land-btn" onclick="openNewLandForm()" style="display:none;">+ New Land</button>
+    <div class="enc-section-tab-bar">
+      <button class="land-tab-btn active" id="enc-tab-lands" onclick="showEncTab('lands')">🏰 Lands</button>
+      <button class="land-tab-btn" id="enc-tab-factions" onclick="showEncTab('factions')">⚔️ Factions</button>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="lands-new-btn" id="new-land-btn" onclick="openNewLandForm()" style="display:none;">+ New Land</button>
+      <button class="lands-new-btn" id="new-faction-btn" onclick="openNewFactionForm()" style="display:none;">+ New Faction</button>
+    </div>
   </div>
 
   <!-- ENCYCLOPEDIA SEARCH BAR -->
@@ -1299,6 +1313,8 @@
     <div id="enc-search-results" style="display:none;margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.3);border-radius:2px;"></div>
   </div>
 
+  <!-- LANDS CONTENT -->
+  <div id="enc-lands-content">
   <!-- GENERAL LAND: public NPC sheets -->
   <div class="land-card" id="general-land-card">
     <div class="land-card-header" onclick="toggleGeneralLand()">
@@ -1454,6 +1470,23 @@
     <div class="lands-field"><label>Land / City Name *</label><input id="nl-name" type="text" placeholder="e.g. Waterdeep, The Underdark…"></div>
     <div class="lands-field"><label>Brief Description</label><textarea id="nl-desc" placeholder="What's notable about this place…" style="min-height:50px;"></textarea></div>
     <button class="lands-save-btn" onclick="saveLand()">Create Land</button>
+  </div>
+  </div><!-- end #enc-lands-content -->
+
+  <!-- FACTIONS CONTENT -->
+  <div id="enc-factions-content" style="display:none;">
+    <div id="factions-list">
+      <div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">Loading factions…</div>
+    </div>
+    <div class="lands-add-form" id="new-faction-form" style="display:none;margin-top:16px;">
+      <div class="lands-field"><label>Faction Name *</label><input id="nf-name" type="text" placeholder="e.g. The Shadow Syndicate"></div>
+      <div class="lands-row">
+        <div class="lands-field" style="flex:0 0 90px;"><label>Symbol</label><input id="nf-symbol" type="text" placeholder="🐍" maxlength="4"></div>
+        <div class="lands-field"><label>Brief Description</label><input id="nf-desc" type="text" placeholder="What is this faction?"></div>
+      </div>
+      <button class="lands-save-btn" onclick="saveFaction()">Create Faction</button>
+      <button class="lands-del-btn" style="margin-left:8px;" onclick="document.getElementById('new-faction-form').style.display='none'">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -2546,6 +2579,8 @@ let _landsOpen = false;
 let _landsDataLoaded = false;
 let _gnpcPortrait = null;
 let _mapImgData = {};   // keyed by landId
+let _factionsLoaded = false;
+let _factionsData = {};  // keyed by factionId
 
 function toggleLandsSection() {
   const section = document.getElementById('lands-section');
@@ -2865,16 +2900,26 @@ function clearEncSearch() {
 }
 
 function navigateToLandEntry(landId, type, entryId) {
+  // Switch to Lands tab if currently on Factions tab
+  const landsContent = document.getElementById('enc-lands-content');
+  if (landsContent && landsContent.style.display === 'none') showEncTab('lands');
+  if (landId === '__general') {
+    const body = document.getElementById('general-land-body');
+    if (body && !body.classList.contains('open')) toggleGeneralLand();
+    return;
+  }
   const lbody = document.getElementById('lbody-' + landId);
   if (lbody && !lbody.classList.contains('open')) toggleLandExpand(landId);
   const tabBtn = document.querySelector(`#lcard-${CSS.escape(landId)} .land-tab-btn[onclick*="'${type}'"]`);
   if (tabBtn) tabBtn.click();
-  if (type === 'shops') {
-    setTimeout(() => {
+  setTimeout(() => {
+    if (type === 'shops') {
       const el = document.getElementById('shop-' + entryId);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 250);
-  }
+    }
+    const card = document.getElementById('lcard-' + landId);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 250);
 }
 
 // ── General Land ─────────────────────────────────────────────
@@ -3887,6 +3932,340 @@ async function toggleLandEntryPublished(landId, type, entryId, currentlyPublishe
       const body = document.getElementById('shopbody-' + entryId);
       if (body && body.classList.contains('open')) body.classList.add('open');
     }
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+// ── Factions ─────────────────────────────────────────────────────────────────
+
+function showEncTab(tab) {
+  const isLands = tab === 'lands';
+  document.getElementById('enc-lands-content').style.display    = isLands ? '' : 'none';
+  document.getElementById('enc-factions-content').style.display = isLands ? 'none' : '';
+  document.getElementById('new-land-btn').style.display    = (_isDM && isLands)  ? '' : 'none';
+  document.getElementById('new-faction-btn').style.display = (_isDM && !isLands) ? '' : 'none';
+  document.getElementById('enc-tab-lands').classList.toggle('active', isLands);
+  document.getElementById('enc-tab-factions').classList.toggle('active', !isLands);
+  if (!isLands && !_factionsLoaded) {
+    _factionsLoaded = true;
+    loadFactions();
+  }
+}
+
+function openNewFactionForm() {
+  const form = document.getElementById('new-faction-form');
+  if (form) form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+async function loadFactions() {
+  const list = document.getElementById('factions-list');
+  if (!list) return;
+  list.innerHTML = '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">Loading…</div>';
+  try {
+    const snap = await db.collection('campaigns').doc(campaignId).collection('factions').orderBy('createdAt').get();
+    const docs = _isDM ? snap.docs : snap.docs.filter(d => d.data().published !== false);
+    _factionsData = {};
+    docs.forEach(d => { _factionsData[d.id] = d.data(); });
+    if (!docs.length) {
+      list.innerHTML = _isDM
+        ? '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No factions yet — create one above.</div>'
+        : '<div style="font-style:italic;color:var(--border-light);font-size:0.8rem;text-align:center;padding:12px 0;">No factions yet.</div>';
+    } else {
+      list.innerHTML = docs.map(doc => renderFactionCard(doc.id, doc.data())).join('');
+    }
+    if (_isDM) document.getElementById('new-faction-btn').style.display = '';
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);font-size:0.78rem;">${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderFactionCard(id, d) {
+  const eid = escHtml(id);
+  const isPublished = d.published !== false;
+  const symbol = escHtml(d.symbol || '⚔️');
+  const members = d.members || [];
+  const places  = d.places  || [];
+  const memberRoles = d.memberRoles || [];
+
+  const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleFactionPublished('${eid}',${isPublished})">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
+  const delBtn = _isDM ? `<button class="lands-del-btn" onclick="event.stopPropagation();deleteFaction('${eid}',this)" title="Delete faction" style="font-size:0.7rem;padding:4px 6px;">✕</button>` : '';
+
+  // Leader
+  const showLeader = d.leaderRevealed || _isDM;
+  const leaderHtml = showLeader && d.leaderName
+    ? `<span style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--parchment);font-weight:600;">${escHtml(d.leaderName)}</span>${!d.leaderRevealed && _isDM ? ' <span style="font-size:0.65rem;color:var(--border-light);">(hidden from players)</span>' : ''}`
+    : `<span class="faction-unknown">??? (Unknown)</span>`;
+
+  const leaderRevealChk = _isDM ? `
+    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.58rem;color:var(--border-light);">
+      <input type="checkbox" id="frev-${eid}" ${d.leaderRevealed ? 'checked' : ''} onchange="toggleFactionLeaderReveal('${eid}',this.checked)" style="accent-color:var(--gold);">
+      Revealed to players
+    </label>` : '';
+
+  const leaderSelectHtml = _isDM ? `
+    <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+      <select id="fleader-sel-${eid}" style="flex:1;min-width:160px;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;">
+        <option value="">— Select NPC —</option>
+        ${(_encSearchCache || []).filter(n => n.type === 'npc').sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(n =>
+          `<option value="${escHtml(n.id)}|${escHtml(n.landId)}|${escHtml(n.name)}"${d.leaderId===n.id?' selected':''}>${escHtml(n.name)} (${escHtml(n.land)})</option>`
+        ).join('')}
+      </select>
+      <button class="lands-save-btn" style="margin:0;padding:5px 12px;" onclick="setFactionLeader('${eid}')">Set Leader</button>
+    </div>` : '';
+
+  // Member roles (DM only)
+  const memberRoleChips = memberRoles.map(r =>
+    `<span class="faction-role-chip">${escHtml(r)}${_isDM ? `<button onclick="removeFactionMemberRole('${eid}','${escHtml(r)}')" style="background:none;border:none;cursor:pointer;color:var(--border-light);font-size:0.7rem;padding:0;line-height:1;">×</button>` : ''}</span>`
+  ).join('');
+  const memberRoleAddHtml = _isDM ? `
+    <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+      <input id="frole-inp-${eid}" type="text" placeholder="New role name…" style="flex:1;min-width:120px;font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;outline:none;"
+        onkeydown="if(event.key==='Enter')addFactionMemberRole('${eid}',this.value)">
+      <button class="lands-save-btn" style="margin:0;padding:5px 12px;" onclick="addFactionMemberRole('${eid}',document.getElementById('frole-inp-${eid}').value)">Add Role</button>
+    </div>` : '';
+
+  // Members list
+  const memberRowsHtml = members.map((m, mi) =>
+    `<div class="faction-member-row">
+      <span style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--parchment);flex:1;">${escHtml(m.name||'?')}</span>
+      ${m.role ? `<span class="faction-role-chip" style="margin:0;">${escHtml(m.role)}</span>` : ''}
+      <span style="font-size:0.65rem;color:var(--border-light);font-family:'Cinzel',serif;">${escHtml(m.land||m.landId||'')}</span>
+      <button onclick="navigateToLandEntry('${escHtml(m.landId)}','npcs','${escHtml(m.id)}')" title="Go to NPC" style="font-size:0.7rem;padding:3px 7px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;flex-shrink:0;">→</button>
+      ${_isDM ? `<button onclick="removeFactionMember('${eid}','${escHtml(m.id)}')" class="lands-del-btn" title="Remove member">✕</button>` : ''}
+    </div>`
+  ).join('') || `<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">No members yet.</div>`;
+
+  const memberAddHtml = _isDM ? `
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="lands-field" style="flex:2;min-width:150px;margin:0;"><label>NPC</label>
+        <select id="fmem-npc-${eid}" style="width:100%;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;">
+          <option value="">— Select NPC —</option>
+          ${(_encSearchCache || []).filter(n => n.type === 'npc').sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(n =>
+            `<option value="${escHtml(n.id)}|${escHtml(n.landId)}|${escHtml(n.name)}|${escHtml(n.land)}">${escHtml(n.name)} (${escHtml(n.land)})</option>`
+          ).join('')}
+        </select>
+      </div>
+      <div class="lands-field" style="flex:1;min-width:110px;margin:0;"><label>Role</label>
+        <select id="fmem-role-${eid}" style="width:100%;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;">
+          <option value="">— No role —</option>
+          ${memberRoles.map(r => `<option value="${escHtml(r)}">${escHtml(r)}</option>`).join('')}
+        </select>
+      </div>
+      <button class="lands-save-btn" style="margin:0;padding:5px 12px;" onclick="addFactionMember('${eid}')">Add</button>
+    </div>` : '';
+
+  // Places list
+  const placeIcon = { shop: '🏪', map: '🗺' };
+  const placeRowsHtml = places.map((p, pi) =>
+    `<div class="faction-member-row">
+      <span style="font-size:0.9rem;flex-shrink:0;">${placeIcon[p.type] || '📍'}</span>
+      <span style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--parchment);flex:1;">${escHtml(p.name||'?')}</span>
+      <span style="font-size:0.65rem;color:var(--border-light);font-family:'Cinzel',serif;">${escHtml(p.land||p.landId||'')}</span>
+      <button onclick="navigateToLandEntry('${escHtml(p.landId)}','${p.type==='shop'?'shops':'maps'}','${escHtml(p.id)}')" title="Go to location" style="font-size:0.7rem;padding:3px 7px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;flex-shrink:0;">→</button>
+      ${_isDM ? `<button onclick="removeFactionPlace('${eid}','${escHtml(p.id)}')" class="lands-del-btn" title="Remove place">✕</button>` : ''}
+    </div>`
+  ).join('') || `<div style="font-style:italic;color:var(--border-light);font-size:0.75rem;padding:4px 0;">No locations yet.</div>`;
+
+  const placeAddHtml = _isDM ? `
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="lands-field" style="flex:1;min-width:180px;margin:0;"><label>Shop or Location</label>
+        <select id="fplace-sel-${eid}" style="width:100%;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;">
+          <option value="">— Select —</option>
+          ${(_encSearchCache || []).filter(n => n.type === 'shop' || n.type === 'map').sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(n =>
+            `<option value="${escHtml(n.id)}|${escHtml(n.landId)}|${escHtml(n.name)}|${n.type}|${escHtml(n.land)}">${n.type==='shop'?'🏪':'🗺'} ${escHtml(n.name)} (${escHtml(n.land)})</option>`
+          ).join('')}
+        </select>
+      </div>
+      <button class="lands-save-btn" style="margin:0;padding:5px 12px;" onclick="addFactionPlace('${eid}')">Add</button>
+    </div>` : '';
+
+  return `<div class="land-card${_isDM && !isPublished ? ' unpublished' : ''}" id="fcard-${eid}">
+    <div class="land-card-header" onclick="toggleFactionExpand('${eid}')">
+      <span style="font-size:1.4rem;flex-shrink:0;">${symbol}</span>
+      <div style="flex:1;min-width:0;">
+        <div class="land-card-name">${escHtml(d.name||'Unnamed Faction')}</div>
+        ${d.desc ? `<div class="land-card-desc">${escHtml(d.desc)}</div>` : ''}
+      </div>
+      <span style="font-size:0.6rem;color:var(--border-light);font-family:'Cinzel',serif;margin-right:4px;">${members.length} member${members.length===1?'':'s'}</span>
+      ${pubBtn}
+      <span class="land-chevron" id="fchev-${eid}">▶</span>
+      ${delBtn}
+    </div>
+    <div class="land-body" id="fbody-${eid}">
+      <div class="faction-section">
+        <div class="faction-section-title">Leader</div>
+        ${leaderHtml}
+        ${leaderRevealChk}
+        ${leaderSelectHtml}
+      </div>
+      ${_isDM ? `<div class="faction-section">
+        <div class="faction-section-title">Member Roles</div>
+        <div id="frolelist-${eid}">${memberRoleChips || '<span style="font-size:0.7rem;color:var(--border-light);font-style:italic;">No roles defined</span>'}</div>
+        ${memberRoleAddHtml}
+      </div>` : ''}
+      <div class="faction-section">
+        <div class="faction-section-title">Members (${members.length})</div>
+        <div id="fmemlist-${eid}">${memberRowsHtml}</div>
+        ${memberAddHtml}
+      </div>
+      <div class="faction-section">
+        <div class="faction-section-title">Known Locations (${places.length})</div>
+        <div id="fplacelist-${eid}">${placeRowsHtml}</div>
+        ${placeAddHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleFactionExpand(id) {
+  const body = document.getElementById('fbody-' + id);
+  const chev = document.getElementById('fchev-' + id);
+  if (body) body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
+
+async function saveFaction() {
+  const btn = event.target;
+  const name = document.getElementById('nf-name')?.value.trim();
+  if (!name) { alert('Faction name is required.'); return; }
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').add({
+      name,
+      desc:   document.getElementById('nf-desc')?.value.trim() || '',
+      symbol: document.getElementById('nf-symbol')?.value.trim() || '⚔️',
+      published: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      leaderId: null, leaderLandId: null, leaderName: '', leaderRevealed: false,
+      memberRoles: [], members: [], places: [],
+    });
+    document.getElementById('nf-name').value = '';
+    document.getElementById('nf-desc').value = '';
+    document.getElementById('nf-symbol').value = '';
+    document.getElementById('new-faction-form').style.display = 'none';
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+  btn.textContent = 'Create Faction'; btn.disabled = false;
+}
+
+async function deleteFaction(id, btn) {
+  if (!confirm('Delete this faction?')) return;
+  btn.disabled = true;
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).delete();
+    const card = document.getElementById('fcard-' + id);
+    if (card) card.remove();
+    delete _factionsData[id];
+  } catch(e) { alert('Delete failed: ' + e.message); btn.disabled = false; }
+}
+
+async function toggleFactionPublished(id, currentlyPublished) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({ published: !currentlyPublished });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function toggleFactionLeaderReveal(id, revealed) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({ leaderRevealed: revealed });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function setFactionLeader(id) {
+  const sel = document.getElementById('fleader-sel-' + id);
+  if (!sel || !sel.value) { alert('Select an NPC first.'); return; }
+  const [npcId, landId, name] = sel.value.split('|');
+  const revealEl = document.getElementById('frev-' + id);
+  const revealed = revealEl ? revealEl.checked : false;
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({
+      leaderId: npcId, leaderLandId: landId, leaderName: name, leaderRevealed: revealed
+    });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function addFactionMemberRole(id, rawValue) {
+  const role = (rawValue || '').trim();
+  if (!role) return;
+  const inp = document.getElementById('frole-inp-' + id);
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({
+      memberRoles: firebase.firestore.FieldValue.arrayUnion(role)
+    });
+    if (inp) inp.value = '';
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function removeFactionMemberRole(id, role) {
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({
+      memberRoles: firebase.firestore.FieldValue.arrayRemove(role)
+    });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function addFactionMember(id) {
+  const sel = document.getElementById('fmem-npc-' + id);
+  const roleSel = document.getElementById('fmem-role-' + id);
+  if (!sel || !sel.value) { alert('Select an NPC first.'); return; }
+  const parts = sel.value.split('|');
+  const member = { id: parts[0], landId: parts[1], name: parts[2], land: parts[3], role: roleSel?.value || '' };
+  const d = _factionsData[id];
+  if (d && (d.members || []).some(m => m.id === member.id)) { alert('NPC is already a member.'); return; }
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({
+      members: firebase.firestore.FieldValue.arrayUnion(member)
+    });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function removeFactionMember(id, npcId) {
+  const d = _factionsData[id];
+  if (!d) return;
+  const newMembers = (d.members || []).filter(m => m.id !== npcId);
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({ members: newMembers });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function addFactionPlace(id) {
+  const sel = document.getElementById('fplace-sel-' + id);
+  if (!sel || !sel.value) { alert('Select a place first.'); return; }
+  const parts = sel.value.split('|');
+  const place = { id: parts[0], landId: parts[1], name: parts[2], type: parts[3], land: parts[4] };
+  const d = _factionsData[id];
+  if (d && (d.places || []).some(p => p.id === place.id)) { alert('Location already added.'); return; }
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({
+      places: firebase.firestore.FieldValue.arrayUnion(place)
+    });
+    _factionsLoaded = false;
+    await loadFactions();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function removeFactionPlace(id, placeId) {
+  const d = _factionsData[id];
+  if (!d) return;
+  const newPlaces = (d.places || []).filter(p => p.id !== placeId);
+  try {
+    await db.collection('campaigns').doc(campaignId).collection('factions').doc(id).update({ places: newPlaces });
+    _factionsLoaded = false;
+    await loadFactions();
   } catch(e) { alert('Failed: ' + e.message); }
 }
 
