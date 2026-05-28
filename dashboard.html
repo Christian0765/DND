@@ -1254,14 +1254,17 @@
     // ── User Profile ──────────────────────────────────────────
     let _userDoc = {};
     let _pendingAvatar = null;
+    let _unsubscribeProfile = null;
 
-    async function loadUserProfile() {
-      try {
-        const doc = await db.collection('users').doc(currentUser.uid).get();
-        if (doc.exists) _userDoc = doc.data();
-        // If doc doesn't exist yet, keep _userDoc as-is (heartbeat will create it shortly)
-      } catch(e) { /* keep existing _userDoc on error */ }
-      renderDashboardHeader();
+    function loadUserProfile() {
+      if (_unsubscribeProfile) _unsubscribeProfile();
+      _unsubscribeProfile = db.collection('users').doc(currentUser.uid).onSnapshot(
+        doc => {
+          if (doc.exists) _userDoc = doc.data();
+          renderDashboardHeader();
+        },
+        () => {}
+      );
     }
 
     function renderDashboardHeader() {
