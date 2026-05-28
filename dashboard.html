@@ -127,6 +127,62 @@
       box-shadow: 0 0 0 2px #1a0e04;
     }
 
+    /* SETTINGS DROPDOWN */
+    .settings-dropdown {
+      max-width: 420px;
+      margin: -20px auto 28px;
+      background: linear-gradient(160deg,#1a0e04,#0d0802);
+      border: 1px solid var(--border);
+      box-shadow: 0 0 0 2px #080604, 0 8px 30px rgba(0,0,0,0.8);
+      border-radius: 3px;
+      animation: fadeIn 0.15s ease;
+    }
+    .settings-section {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(122,90,40,0.25);
+    }
+    .settings-section:last-child { border-bottom: none; }
+    .settings-section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.52rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--border-light);
+      margin-bottom: 10px;
+    }
+    .settings-avatar-row { display:flex; gap:14px; align-items:flex-start; }
+    .settings-avatar-preview {
+      width: 64px; height: 64px; border-radius: 50%;
+      border: 2px solid var(--gold);
+      background: var(--parchment);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 700; color: var(--red);
+      cursor: pointer; flex-shrink: 0; overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .settings-avatar-preview:hover { border-color: var(--gold-light); }
+    .settings-field { margin-bottom: 8px; }
+    .settings-field label {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: 0.48rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--border-light);
+      margin-bottom: 4px;
+    }
+    .settings-field input {
+      width: 100%; box-sizing: border-box;
+      font-family: 'Crimson Text', serif; font-size: 0.9rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border); border-radius: 2px;
+      color: var(--parchment-dark); padding: 6px 8px; outline: none;
+    }
+    .settings-field input:focus { border-color: var(--gold); }
+    .settings-hint { font-size: 0.62rem; color: var(--border-light); margin-top: 3px; }
+    .header-clickable { cursor: pointer; user-select: none; }
+    .header-clickable:hover .user-name { color: var(--gold); }
+
     /* TABS */
     .tabs-container {
       max-width: 1200px;
@@ -742,15 +798,54 @@
 <body>
   <!-- HEADER -->
   <div class="dashboard-header">
-    <div class="header-left">
+    <div class="header-left header-clickable" onclick="toggleSettingsDropdown()">
       <div class="user-avatar" id="user-avatar">👤</div>
       <div class="user-info">
         <div class="user-name" id="user-name">Loading...</div>
         <div class="user-email" id="user-email"></div>
       </div>
+      <span id="settings-chevron" style="font-size:0.7rem;color:var(--border-light);margin-left:8px;transition:transform 0.2s;">▼</span>
     </div>
-    <div class="header-right">
-      <button onclick="signOut()" class="btn-base btn-secondary">🚪 Sign Out</button>
+  </div>
+
+  <!-- SETTINGS DROPDOWN -->
+  <div id="settings-dropdown" class="settings-dropdown" style="display:none;">
+    <!-- Profile Section -->
+    <div class="settings-section">
+      <div class="settings-section-title">👤 Profile</div>
+      <div class="settings-avatar-row">
+        <div class="settings-avatar-preview" id="sd-avatar-preview" title="Click to change photo" onclick="document.getElementById('sd-avatar-input').click()">👤</div>
+        <input type="file" id="sd-avatar-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(this.files[0])">
+        <div style="flex:1;">
+          <div class="settings-field">
+            <label>Gamertag</label>
+            <input id="sd-gamertag" type="text" maxlength="20" placeholder="Choose your in-game name…">
+          </div>
+          <div class="settings-hint">Letters, numbers, underscores. 3–20 chars. Leave blank to use your Google name.</div>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--border-light);margin-top:10px;padding-top:8px;border-top:1px solid rgba(122,90,40,0.2);">
+        Google account: <span id="sd-google-name" style="color:var(--parchment-dark);"></span>
+        &nbsp;·&nbsp; <span id="sd-google-email" style="color:var(--parchment-dark);"></span>
+      </div>
+      <button class="btn-base btn-primary" onclick="saveProfile()" style="margin-top:12px;font-size:0.6rem;">Save Profile</button>
+    </div>
+
+    <!-- Notifications (placeholder) -->
+    <div class="settings-section">
+      <div class="settings-section-title">🔔 Notifications</div>
+      <div style="font-style:italic;color:var(--border-light);font-size:0.75rem;">Coming soon.</div>
+    </div>
+
+    <!-- Appearance (placeholder) -->
+    <div class="settings-section">
+      <div class="settings-section-title">🎨 Appearance</div>
+      <div style="font-style:italic;color:var(--border-light);font-size:0.75rem;">Coming soon.</div>
+    </div>
+
+    <!-- Sign Out -->
+    <div class="settings-section">
+      <button onclick="signOut()" class="btn-base btn-secondary" style="width:100%;justify-content:center;">🚪 Sign Out</button>
     </div>
   </div>
 
@@ -1156,15 +1251,105 @@
       initDashboard();
     });
 
-    function initDashboard() {
-      // Set user info
-      const displayName = currentUser.displayName || 'User';
-      const email = currentUser.email || '';
-      const avatar = (displayName.charAt(0) || '👤').toUpperCase();
+    // ── User Profile ──────────────────────────────────────────
+    let _userDoc = {};
+    let _pendingAvatar = null;
 
-      document.getElementById('user-name').textContent = displayName;
-      document.getElementById('user-email').textContent = email;
-      document.getElementById('user-avatar').textContent = avatar;
+    async function loadUserProfile() {
+      try {
+        const doc = await db.collection('users').doc(currentUser.uid).get();
+        _userDoc = doc.exists ? doc.data() : {};
+      } catch(e) { _userDoc = {}; }
+      renderDashboardHeader();
+    }
+
+    function renderDashboardHeader() {
+      const name = _userDoc.gamertag || currentUser.displayName || 'User';
+      const src  = _userDoc.customAvatar || null;
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('user-email').textContent = currentUser.email || '';
+      const el = document.getElementById('user-avatar');
+      if (src) {
+        el.innerHTML = `<img src="${escHtml(src)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        el.innerHTML = '';
+        el.textContent = name.charAt(0).toUpperCase();
+      }
+    }
+
+    function toggleSettingsDropdown() {
+      const el = document.getElementById('settings-dropdown');
+      const chev = document.getElementById('settings-chevron');
+      const open = el.style.display !== 'none';
+      el.style.display = open ? 'none' : '';
+      chev.style.transform = open ? '' : 'rotate(180deg)';
+      if (!open) populateSettingsDropdown();
+    }
+
+    function populateSettingsDropdown() {
+      document.getElementById('sd-gamertag').value = _userDoc.gamertag || '';
+      document.getElementById('sd-google-name').textContent = currentUser.displayName || '';
+      document.getElementById('sd-google-email').textContent = currentUser.email || '';
+      _pendingAvatar = null;
+      renderSettingsAvatar();
+    }
+
+    function renderSettingsAvatar() {
+      const el = document.getElementById('sd-avatar-preview');
+      const src = _pendingAvatar || _userDoc.customAvatar;
+      const name = _userDoc.gamertag || currentUser.displayName || '?';
+      if (src) {
+        el.innerHTML = `<img src="${escHtml(src)}" style="width:100%;height:100%;object-fit:cover;">`;
+      } else {
+        el.innerHTML = '';
+        el.textContent = name.charAt(0).toUpperCase();
+      }
+    }
+
+    function handleAvatarUpload(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      compressAvatar(file, b64 => { _pendingAvatar = b64; renderSettingsAvatar(); });
+    }
+
+    function compressAvatar(file, cb) {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const s = Math.min(img.width, img.height);
+        c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
+        URL.revokeObjectURL(url);
+        cb(c.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = url;
+    }
+
+    async function saveProfile() {
+      const gt = document.getElementById('sd-gamertag').value.trim();
+      if (gt && !/^[a-zA-Z0-9_]{3,20}$/.test(gt)) {
+        alert('Gamertag must be 3–20 characters: letters, numbers, and underscores only.');
+        return;
+      }
+      const btn = event.target;
+      btn.textContent = 'Saving…'; btn.disabled = true;
+      try {
+        const update = {};
+        if (gt) { update.gamertag = gt; } else { update.gamertag = firebase.firestore.FieldValue.delete(); }
+        if (_pendingAvatar) update.customAvatar = _pendingAvatar;
+        await db.collection('users').doc(currentUser.uid).update(update);
+        if (gt) _userDoc.gamertag = gt; else delete _userDoc.gamertag;
+        if (_pendingAvatar) { _userDoc.customAvatar = _pendingAvatar; _pendingAvatar = null; }
+        renderDashboardHeader();
+        toggleSettingsDropdown();
+      } catch(e) {
+        alert('Failed to save: ' + e.message);
+      }
+      btn.textContent = 'Save Profile'; btn.disabled = false;
+    }
+
+    function initDashboard() {
+      loadUserProfile();
 
       // Ensure user document exists and mark as online
       const heartbeat = () => db.collection('users').doc(currentUser.uid).set({
@@ -1365,8 +1550,8 @@
             const f = d.data();
             return `
               <div class="cc-req-card">
-                <div class="cc-req-avatar">${(f.displayName || '?').charAt(0).toUpperCase()}</div>
-                <div class="cc-req-name">${escHtml(f.displayName || f.email || 'Someone')}</div>
+                <div class="cc-req-avatar">${((f.gamertag || f.displayName || '?').charAt(0)).toUpperCase()}</div>
+                <div class="cc-req-name">${escHtml(f.gamertag || f.displayName || f.email || 'Someone')}</div>
                 <button class="cc-req-accept" onclick="acceptFriendRequest('${d.id}',this)">Accept</button>
                 <button class="cc-req-decline" onclick="declineFriendRequest('${d.id}',this)">Decline</button>
               </div>`;
@@ -1427,16 +1612,19 @@
               </div>`;
           }
           const f = d.data();
-          const avatar = (f.displayName?.charAt(0) || '?').toUpperCase();
+          const friendName = f.gamertag || f.displayName || f.name || 'Unknown';
+          const avatar = f.customAvatar
+            ? `<img src="${escHtml(f.customAvatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+            : friendName.charAt(0).toUpperCase();
           const lastSeen = f.lastSeen?.toMillis?.() || 0;
           const isOnline = (now - lastSeen) < ONLINE_MS;
           return `
             <div class="friend-card">
               <div class="friend-info">
-                <div class="friend-avatar">${avatar}</div>
+                <div class="friend-avatar" style="overflow:hidden;">${avatar}</div>
                 <div class="friend-details">
                   <div class="friend-name" style="display:flex;align-items:center;gap:7px;">
-                    ${escHtml(f.displayName || f.name || 'Unknown')}
+                    ${escHtml(friendName)}
                     <span class="online-dot ${isOnline ? 'online' : 'offline'}" title="${isOnline ? 'Online' : 'Offline'}"></span>
                   </div>
                   <div class="friend-campaign">${isOnline ? '<span style="color:var(--green);font-size:0.75rem;">● Online</span>' : '<span style="color:var(--border-light);font-size:0.75rem;">○ Offline</span>'}</div>

@@ -910,6 +910,9 @@
   <button class="nav-btn" id="items-tab-btn" onclick="toggleItemsTab()">🗡️ Items</button>
   <button class="nav-btn" id="dice-btn" onclick="toggleDicePanel()" style="display:none;">🎲 Roll</button>
   <button class="nav-btn" id="combat-nav-tab" onclick="goToCombat()" style="display:none;">⚔ Combat</button>
+  <button class="nav-btn" id="profile-nav-btn" onclick="toggleProfilePanel()" title="Settings" style="padding:5px 10px;">
+    <span id="nav-avatar-display" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;overflow:hidden;border:1px solid var(--border);font-family:'Cinzel',serif;font-size:0.7rem;font-weight:700;color:var(--parchment);background:rgba(255,255,255,0.05);">👤</span>
+  </button>
 </div>
 
 <!-- SESSION ANNOUNCEMENTS TAB -->
@@ -1270,6 +1273,46 @@
     <div id="dice-mode-desc" style="font-size:0.68rem;color:var(--border-light);line-height:1.5;"></div>
   </div>
 
+</div>
+
+<!-- PROFILE / SETTINGS PANEL -->
+<div id="profile-panel" style="display:none;max-width:820px;margin:0 auto 32px;">
+  <div style="background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);box-shadow:0 0 0 3px #080604,0 8px 30px rgba(0,0,0,0.8);border-radius:3px;padding:24px 28px;">
+    <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold-light);border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:18px;">⚙️ Settings</div>
+
+    <!-- Profile section -->
+    <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(122,90,40,0.25);">
+      <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--border-light);margin-bottom:12px;">👤 Profile</div>
+      <div style="display:flex;gap:16px;align-items:flex-start;">
+        <div id="pp-avatar-preview" onclick="document.getElementById('pp-avatar-input').click()"
+             style="width:64px;height:64px;border-radius:50%;border:2px solid var(--gold);background:var(--parchment);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--red);cursor:pointer;flex-shrink:0;overflow:hidden;transition:border-color 0.15s;"
+             onmouseover="this.style.borderColor='var(--gold-light)'" onmouseout="this.style.borderColor='var(--gold)'">👤</div>
+        <input type="file" id="pp-avatar-input" accept="image/*" style="display:none" onchange="handleProfileAvatarUpload(this.files[0])">
+        <div style="flex:1;">
+          <div style="margin-bottom:8px;">
+            <label style="display:block;font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);margin-bottom:4px;">Gamertag</label>
+            <input id="pp-gamertag" type="text" maxlength="20" placeholder="Choose your in-game name…"
+                   style="width:100%;box-sizing:border-box;font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:6px 8px;outline:none;">
+          </div>
+          <div style="font-size:0.62rem;color:var(--border-light);">Letters, numbers, underscores · 3–20 chars · Leave blank to use your Google name</div>
+        </div>
+      </div>
+      <div id="pp-google-info" style="font-size:0.68rem;color:var(--border-light);margin-top:10px;padding-top:8px;border-top:1px solid rgba(122,90,40,0.2);"></div>
+      <button class="dm-btn" onclick="saveProfileFromPanel()" style="margin-top:12px;font-size:0.6rem;">Save Profile</button>
+    </div>
+
+    <!-- Notifications placeholder -->
+    <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(122,90,40,0.25);">
+      <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--border-light);margin-bottom:8px;">🔔 Notifications</div>
+      <div style="font-style:italic;color:var(--border-light);font-size:0.75rem;">Coming soon.</div>
+    </div>
+
+    <!-- Appearance placeholder -->
+    <div>
+      <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--border-light);margin-bottom:8px;">🎨 Appearance</div>
+      <div style="font-style:italic;color:var(--border-light);font-size:0.75rem;">Coming soon.</div>
+    </div>
+  </div>
 </div>
 
 <!-- LANDS SECTION -->
@@ -1783,6 +1826,8 @@ const db = firebase.firestore();
 let _currentUser = null;
 let _isDM = false;
 let _campaignData = null;
+let _userGamertag = '';
+let _userCustomAvatar = '';
 let _myCharSlot = null;   // e.g. 'player1'
 let _myCharApproved = false;
 
@@ -1798,6 +1843,101 @@ let _shownDiceRollAt = Date.now();
 let _diceHistory     = [];
 let _diceAnimTimer   = null;
 
+// ── Profile / Settings ────────────────────────────────────────
+let _pendingProfileAvatar = null;
+
+function renderNavAvatar() {
+  const el = document.getElementById('nav-avatar-display');
+  if (!el) return;
+  if (_userCustomAvatar) {
+    el.innerHTML = `<img src="${escHtml(_userCustomAvatar)}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    const name = _userGamertag || _currentUser?.displayName || '?';
+    el.innerHTML = '';
+    el.textContent = name.charAt(0).toUpperCase();
+  }
+}
+
+function toggleProfilePanel() {
+  const panel = document.getElementById('profile-panel');
+  const isOpen = panel.style.display !== 'none';
+  // close other panels
+  ['dm-panel','announce-panel','announcements-tab','items-tab','dice-panel'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const ls = document.getElementById('lands-section');
+  if (ls) { ls.style.display = 'none'; _landsOpen = false; }
+  panel.style.display = isOpen ? 'none' : '';
+  if (!isOpen) populateProfilePanel();
+}
+
+function populateProfilePanel() {
+  document.getElementById('pp-gamertag').value = _userGamertag || '';
+  _pendingProfileAvatar = null;
+  renderProfilePanelAvatar();
+  const info = document.getElementById('pp-google-info');
+  if (info) {
+    const gname = _currentUser?.displayName || '';
+    const gemail = _currentUser?.email || '';
+    info.textContent = `Google account: ${gname}${gname && gemail ? ' · ' : ''}${gemail}`;
+  }
+}
+
+function renderProfilePanelAvatar() {
+  const el = document.getElementById('pp-avatar-preview');
+  if (!el) return;
+  const src = _pendingProfileAvatar || _userCustomAvatar;
+  const name = _userGamertag || _currentUser?.displayName || '?';
+  if (src) {
+    el.innerHTML = `<img src="${escHtml(src)}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    el.innerHTML = '';
+    el.textContent = name.charAt(0).toUpperCase();
+  }
+}
+
+function handleProfileAvatarUpload(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  compressProfileAvatar(file, b64 => { _pendingProfileAvatar = b64; renderProfilePanelAvatar(); });
+}
+
+function compressProfileAvatar(file, cb) {
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const s = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
+    URL.revokeObjectURL(url);
+    cb(c.toDataURL('image/jpeg', 0.75));
+  };
+  img.src = url;
+}
+
+async function saveProfileFromPanel() {
+  const gt = document.getElementById('pp-gamertag').value.trim();
+  if (gt && !/^[a-zA-Z0-9_]{3,20}$/.test(gt)) {
+    alert('Gamertag must be 3–20 characters: letters, numbers, and underscores only.');
+    return;
+  }
+  const btn = event.target;
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    const update = {};
+    if (gt) { update.gamertag = gt; } else { update.gamertag = firebase.firestore.FieldValue.delete(); }
+    if (_pendingProfileAvatar) update.customAvatar = _pendingProfileAvatar;
+    await db.collection('users').doc(_currentUser.uid).update(update);
+    _userGamertag    = gt;
+    if (_pendingProfileAvatar) { _userCustomAvatar = _pendingProfileAvatar; _pendingProfileAvatar = null; }
+    renderNavAvatar();
+    toggleProfilePanel();
+  } catch(e) {
+    alert('Failed to save: ' + e.message);
+  }
+  btn.textContent = 'Save Profile'; btn.disabled = false;
+}
+
 // ─── AUTH GUARD ───────────────────────────────────────────────
 firebase.auth().onAuthStateChanged(async user => {
   if (!user) { window.location.href = 'home.html'; return; }
@@ -1809,7 +1949,15 @@ firebase.auth().onAuthStateChanged(async user => {
     photoURL: user.photoURL,
     email: (user.email || '').toLowerCase(),
     lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true }).catch(() => {});
+  }, { merge: true }).then(() =>
+    db.collection('users').doc(user.uid).get()
+  ).then(doc => {
+    if (doc.exists) {
+      _userGamertag    = doc.data().gamertag    || '';
+      _userCustomAvatar = doc.data().customAvatar || '';
+    }
+    renderNavAvatar();
+  }).catch(() => {});
 
   try {
     const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
@@ -2075,13 +2223,14 @@ async function loadPendingApprovals() {
       try {
         const userSnap = await db.collection('users').doc(uid).get();
         if (userSnap.exists) {
-          displayName = userSnap.data().displayName || userSnap.data().email || uid;
-          photoURL = userSnap.data().photoURL || '';
+          const ud = userSnap.data();
+          displayName = ud.gamertag || ud.displayName || ud.email || uid;
+          photoURL = ud.customAvatar || ud.photoURL || '';
         }
       } catch(e) {}
 
       const avatarHtml = photoURL
-        ? `<img class="pending-avatar" src="${escHtml(photoURL)}" onerror="this.outerHTML='<div class=\\'pending-avatar\\'>👤</div>'">`
+        ? `<img class="pending-avatar" src="${escHtml(photoURL)}" style="object-fit:cover;" onerror="this.outerHTML='<div class=\\'pending-avatar\\'>👤</div>'">`
         : `<div class="pending-avatar">👤</div>`;
 
       const safeUid = escHtml(uid);
@@ -2511,6 +2660,7 @@ function toggleDMPanel() {
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   document.getElementById('dice-panel').style.display = 'none';
+  document.getElementById('profile-panel').style.display = 'none';
   panel.style.display = isOpen ? 'none' : '';
 }
 
@@ -2647,6 +2797,7 @@ function toggleLandsSection() {
   document.getElementById('announce-panel').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('dice-panel').style.display = 'none';
+  document.getElementById('profile-panel').style.display = 'none';
   _landsOpen = !isOpen;
   section.style.display = _landsOpen ? '' : 'none';
   if (_landsOpen && !_landsDataLoaded) {
@@ -4460,7 +4611,8 @@ async function loadPlayersTab() {
       const maxhp = c['f-maxhp'] || '?';
       const pct = (curhp !== '—' && maxhp !== '?') ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0 : 0;
       const barColor = pct < 25 ? 'var(--red)' : pct < 50 ? 'var(--gold)' : '#5a9a3a';
-      const avatar = u.photoURL ? `<img class="dm-player-avatar" src="${escHtml(u.photoURL)}" onerror="this.style.display='none'">` : `<div class="dm-player-avatar">👤</div>`;
+      const avatarSrc = u.customAvatar || u.photoURL || '';
+      const avatar = avatarSrc ? `<img class="dm-player-avatar" src="${escHtml(avatarSrc)}" style="object-fit:cover;" onerror="this.style.display='none'">` : `<div class="dm-player-avatar">👤</div>`;
       const safeSlot = escHtml(info.slot);
       const safeUid = escHtml(uid);
 
@@ -4478,7 +4630,7 @@ async function loadPlayersTab() {
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:${hasChar?'10':'0'}px;">
             ${avatar}
             <div style="flex:1;min-width:0;">
-              <div class="dm-player-name">${escHtml(u.displayName||u.email||'Unknown')}</div>
+              <div class="dm-player-name">${escHtml(u.gamertag||u.displayName||u.email||'Unknown')}</div>
               <div class="dm-player-char">${hasChar ? `${charName}${charCls?' · '+charCls:''}` : '<em style="opacity:0.5;">No character yet</em>'}</div>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
@@ -4555,6 +4707,7 @@ function toggleAnnouncementsTab() {
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   document.getElementById('dice-panel').style.display = 'none';
+  document.getElementById('profile-panel').style.display = 'none';
   tab.style.display = isOpen ? 'none' : '';
   if (!isOpen) {
     const seenKey = 'dnd-seen-notes-' + campaignId;
@@ -4639,6 +4792,7 @@ function toggleAnnouncePanel() {
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   document.getElementById('dice-panel').style.display = 'none';
+  document.getElementById('profile-panel').style.display = 'none';
   panel.style.display = isOpen ? 'none' : '';
   if (isOpen) {
     combatUnsubscribe();
@@ -5476,6 +5630,7 @@ function toggleItemsTab() {
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
   document.getElementById('dice-panel').style.display = 'none';
+  document.getElementById('profile-panel').style.display = 'none';
   tab.style.display = isOpen ? 'none' : '';
   if (!isOpen && !_itemsLoaded) loadItems();
 }
@@ -5975,6 +6130,7 @@ function toggleDicePanel() {
   document.getElementById('announcements-tab').style.display = 'none';
   document.getElementById('items-tab').style.display = 'none';
   document.getElementById('lands-section').style.display = 'none'; _landsOpen = false;
+  document.getElementById('profile-panel').style.display = 'none';
   panel.style.display = isOpen ? 'none' : '';
   if (!isOpen) renderDiePicker();
 }
@@ -6011,7 +6167,7 @@ function rollDice() {
   const results = Array.from({length: qty}, () => Math.floor(Math.random() * sides) + 1);
   const total   = results.reduce((a,b) => a+b, 0);
   const secret  = _isDM && document.getElementById('dice-secret')?.checked;
-  const roller  = _currentUser?.displayName || _currentUser?.email || 'Unknown';
+  const roller  = _userGamertag || _currentUser?.displayName || _currentUser?.email || 'Unknown';
   const entry   = { roller, isDM: _isDM, qty, die: _selectedDie, results, total, secret };
   addToHistory(entry);
   if (secret) {
