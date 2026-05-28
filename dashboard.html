@@ -1688,10 +1688,18 @@
         const badge = document.getElementById('friends-tab-btn').querySelector('.tab-badge');
         if (badge) badge.remove();
       }
+      // Update own doc: accept the friendship
       db.collection('users').doc(currentUser.uid).set({
         friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
         processedRequests: firebase.firestore.FieldValue.arrayUnion(fromUid)
-      }, { merge: true }).then(() => loadFriends()).catch(e => console.error('Accept failed:', e));
+      }, { merge: true }).then(() => {
+        // Clean up requester's sentRequests so they don't keep reappearing on every load,
+        // and record the friendship on their side too (bidirectional).
+        return db.collection('users').doc(fromUid).update({
+          sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid),
+          friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+        }).catch(() => {});  // silent if security rules block the cross-user write
+      }).then(() => loadFriends()).catch(e => console.error('Accept failed:', e));
     }
 
     function declineFriendRequest(fromUid, btn) {
