@@ -726,6 +726,7 @@
   .shop-buy-btn { font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--parchment);background:var(--green);border:none;border-radius:2px;padding:3px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0; }
   .shop-buy-btn:hover { opacity:0.85; }
   .shop-buy-btn:disabled { opacity:0.4;cursor:not-allowed; }
+  .shop-item-edit-form { background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.3);border-radius:2px;padding:10px 12px;margin:4px 0 6px; }
   .pub-toggle { font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;border-radius:10px;cursor:pointer;border:1px solid;transition:background 0.15s,color 0.15s;flex-shrink:0;white-space:nowrap; }
   .pub-toggle.draft { background:rgba(180,60,60,0.12);color:var(--red);border-color:var(--red); }
   .pub-toggle.live { background:rgba(80,160,60,0.12);color:#5a9a3a;border-color:#5a9a3a; }
@@ -3290,21 +3291,63 @@ async function loadLandEntries(landId, type) {
         const delBtn = _isDM ? `<button class="lands-del-btn" onclick="deleteLandEntry('${escHtml(landId)}','shops','${sid}',this)" style="margin-left:auto;">✕</button>` : '';
         const pubBtn = _isDM ? `<button class="pub-toggle ${isPublished ? 'live' : 'draft'}" onclick="event.stopPropagation();toggleLandEntryPublished('${escHtml(landId)}','shops','${sid}',${isPublished})">${isPublished ? '● Live' : '○ Draft'}</button>` : '';
         const items = (d.items || []);
+        const selOpts = (val, opts) => opts.map(([v,l]) => `<option value="${v}"${val===v?' selected':''}>${l}</option>`).join('');
+        const cats = [['weapons','⚔️ Weapons'],['armor','🛡️ Armor'],['resources','🌿 Resources'],['magical','✨ Magical'],['healing','💊 Healing'],['food','🍖 Food'],['misc','📦 Misc']];
+        const rarities = [['common','Common'],['uncommon','Uncommon'],['rare','Rare'],['very_rare','Very Rare'],['legendary','Legendary']];
+        const inpStyle = `font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;width:100%;outline:none;`;
+        const selStyle = `font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;width:100%;outline:none;`;
         const buildShopItemRow = (it, i) => {
           const isLive = it.live !== false;
+          const eid = `${sid}-${i}`;
           const liveBtn = _isDM ? (isLive
             ? `<button class="shop-live-btn live" title="Hide from players" onclick="toggleShopItemLive('${escHtml(landId)}','${sid}',${i},true)">● Live</button>`
             : `<button class="shop-live-btn send" title="Reveal to players" onclick="toggleShopItemLive('${escHtml(landId)}','${sid}',${i},false)">▶ Send Live</button>`)
             : '';
-          return `<div class="shop-item-row${!isLive && _isDM ? ' shop-item-hidden' : ''}">
-            <span class="shop-item-name">${escHtml(it.name||'?')}</span>
-            ${it.cost ? `<span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);opacity:0.85;">${escHtml(String(it.cost))} gp</span>` : ''}
-            ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},-1)">−</button>` : ''}
-            <span class="shop-item-qty">×${escHtml(String(it.qty||1))}</span>
-            ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},1)">+</button>
-            ${liveBtn}
-            <button class="lands-del-btn" onclick="removeShopItem('${escHtml(landId)}','${sid}',${i})">✕</button>`
-            : (it.cost && _myCharSlot && _myCharApproved ? `<button class="shop-buy-btn" onclick="buyShopItem('${escHtml(landId)}','${sid}',${i},'${escHtml(String(it.cost))}',this)">Buy</button>` : '')}
+          const editForm = _isDM ? `
+            <div id="sedit-${eid}" class="shop-item-edit-form" style="display:none;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                <div class="lands-field" style="flex:3;min-width:130px;margin:0;"><label>Name *</label>
+                  <input id="sedit-name-${eid}" type="text" value="${escHtml(it.name||'')}" style="${inpStyle}">
+                </div>
+                <div class="lands-field" style="flex:1;min-width:50px;margin:0;"><label>Qty</label>
+                  <input id="sedit-qty-${eid}" type="number" min="1" value="${it.qty||1}" style="${inpStyle}">
+                </div>
+                <div class="lands-field" style="flex:1;min-width:60px;margin:0;"><label>Cost (gp)</label>
+                  <input id="sedit-cost-${eid}" type="number" min="0" value="${it.cost||0}" style="${inpStyle}">
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+                <div class="lands-field" style="margin:0;"><label>Category</label>
+                  <select id="sedit-cat-${eid}" style="${selStyle}">${selOpts(it.category||'misc', cats)}</select>
+                </div>
+                <div class="lands-field" style="margin:0;"><label>Rarity</label>
+                  <select id="sedit-rarity-${eid}" style="${selStyle}">${selOpts(it.rarity||'common', rarities)}</select>
+                </div>
+                <div class="lands-field" style="margin:0;"><label>Weight (lbs)</label>
+                  <input id="sedit-weight-${eid}" type="number" min="0" step="0.5" value="${it.weight||''}" placeholder="opt." style="${inpStyle}">
+                </div>
+              </div>
+              <div class="lands-field" style="margin:0 0 8px;"><label>Description</label>
+                <textarea id="sedit-desc-${eid}" rows="2" style="${inpStyle}resize:vertical;">${escHtml(it.description||'')}</textarea>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="lands-save-btn" style="margin:0;padding:5px 14px;" onclick="updateShopItem('${escHtml(landId)}','${sid}',${i})">Save Changes</button>
+                <button class="lands-del-btn" style="padding:5px 10px;" onclick="toggleShopItemEdit('${eid}')">Cancel</button>
+              </div>
+            </div>` : '';
+          return `<div>
+            <div class="shop-item-row${!isLive && _isDM ? ' shop-item-hidden' : ''}">
+              <span class="shop-item-name">${escHtml(it.name||'?')}</span>
+              ${it.cost ? `<span style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);opacity:0.85;">${escHtml(String(it.cost))} gp</span>` : ''}
+              ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},-1)">−</button>` : ''}
+              <span class="shop-item-qty">×${escHtml(String(it.qty||1))}</span>
+              ${_isDM ? `<button class="shop-qty-btn" onclick="adjustShopItem('${escHtml(landId)}','${sid}',${i},1)">+</button>
+              ${liveBtn}
+              <button class="shop-qty-btn" title="Edit item" onclick="toggleShopItemEdit('${eid}')">✏️</button>
+              <button class="lands-del-btn" onclick="removeShopItem('${escHtml(landId)}','${sid}',${i})">✕</button>`
+              : (it.cost && _myCharSlot && _myCharApproved ? `<button class="shop-buy-btn" onclick="buyShopItem('${escHtml(landId)}','${sid}',${i},'${escHtml(String(it.cost))}',this)">Buy</button>` : '')}
+            </div>
+            ${editForm}
           </div>`;
         };
         const liveItems   = items.filter(it => it.live !== false);
@@ -3529,6 +3572,41 @@ async function toggleShopItemLive(landId, shopId, idx, currentlyLive) {
     if (body) body.classList.add('open');
     if (chev) chev.classList.add('open');
   } catch(e) { alert('Failed: ' + e.message); }
+}
+
+function toggleShopItemEdit(eid) {
+  const el = document.getElementById('sedit-' + eid);
+  if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+async function updateShopItem(landId, shopId, idx) {
+  const eid = shopId + '-' + idx;
+  const name = document.getElementById('sedit-name-' + eid)?.value.trim();
+  if (!name) { alert('Item name required.'); return; }
+  const qty      = parseInt(document.getElementById('sedit-qty-'    + eid)?.value) || 1;
+  const cost     = parseFloat(document.getElementById('sedit-cost-'  + eid)?.value) || 0;
+  const category = document.getElementById('sedit-cat-'    + eid)?.value || 'misc';
+  const rarity   = document.getElementById('sedit-rarity-' + eid)?.value || 'common';
+  const weight   = parseFloat(document.getElementById('sedit-weight-' + eid)?.value) || 0;
+  const description = document.getElementById('sedit-desc-' + eid)?.value.trim() || '';
+  const btn = event.target;
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    const ref = db.collection('campaigns').doc(campaignId).collection('lands').doc(landId).collection('shops').doc(shopId);
+    const doc = await ref.get();
+    const items = [...(doc.data().items || [])];
+    items[idx] = { ...items[idx], name, qty, cost: cost || 0, category, rarity, weight: weight || 0, description };
+    if (!cost) delete items[idx].cost;
+    await ref.update({ items });
+    await loadLandEntries(landId, 'shops');
+    const body = document.getElementById('shopbody-' + shopId);
+    const chev = document.getElementById('shopchev-' + shopId);
+    if (body) body.classList.add('open');
+    if (chev) chev.classList.add('open');
+  } catch(e) {
+    alert('Failed: ' + e.message);
+    btn.textContent = 'Save Changes'; btn.disabled = false;
+  }
 }
 
 async function buyShopItem(landId, shopId, itemIdx, cost, btn) {
