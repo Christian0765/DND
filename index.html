@@ -1410,6 +1410,14 @@
   </div>
 </div>
 
+<!-- PARTY OVERVIEW (players — read-only view of all characters) -->
+<div class="section" id="party-section" style="display:none;">
+  <div class="section-title">The Party</div>
+  <div id="dm-players-list">
+    <div style="font-style:italic;color:var(--border-light);font-size:0.82rem;padding:6px 0;">Loading…</div>
+  </div>
+</div>
+
 <!-- PENDING APPROVALS BUTTON (DM only) -->
 <div class="section" id="pending-section" style="display:none;">
   <button id="pending-toggle-btn" onclick="togglePendingApprovals()" style="width:100%;display:flex;align-items:center;justify-content:space-between;font-family:'Cinzel',serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--parchment-dark);background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);border-radius:3px;padding:14px 20px;cursor:pointer;transition:border-color 0.15s;">
@@ -1868,6 +1876,13 @@ async function loadMyCharacter() {
   } catch(e) {
     container.innerHTML = `<div style="color:var(--red);font-size:0.82rem;">${escHtml(e.message)}</div>`;
     createBtn.style.display = '';
+  }
+
+  // Show party overview for all players (read-only)
+  const partySection = document.getElementById('party-section');
+  if (partySection) {
+    partySection.style.display = '';
+    loadPlayersTab();
   }
 }
 
@@ -3275,9 +3290,9 @@ async function loadPlayersTab() {
               <div class="dm-player-char">${hasChar ? `${charName}${charCls?' · '+charCls:''}` : '<em style="opacity:0.5;">No character yet</em>'}</div>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
-              ${hasChar ? `<a href="${escHtml(sheetUrl)}" class="dm-btn" style="padding:4px 10px;font-size:0.65rem;text-decoration:none;">View Sheet →</a>` : ''}
-              ${hasChar ? `<button class="dm-btn" onclick="showDMInventory('${safeSlot}','${escHtml(charName)}')" style="padding:4px 10px;font-size:0.65rem;">🎒 Bag</button>` : ''}
-              <button class="dm-btn danger" onclick="removePlayer('${safeUid}','${safeSlot}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>
+              ${hasChar && (_isDM || uid === _currentUser.uid) ? `<a href="${escHtml(sheetUrl)}" class="dm-btn" style="padding:4px 10px;font-size:0.65rem;text-decoration:none;">View Sheet →</a>` : ''}
+              ${hasChar && _isDM ? `<button class="dm-btn" onclick="showDMInventory('${safeSlot}','${escHtml(charName)}')" style="padding:4px 10px;font-size:0.65rem;">🎒 Bag</button>` : ''}
+              ${_isDM ? `<button class="dm-btn danger" onclick="removePlayer('${safeUid}','${safeSlot}',this)" style="padding:4px 10px;font-size:0.65rem;">Remove</button>` : ''}
             </div>
           </div>
           ${hasChar ? `
