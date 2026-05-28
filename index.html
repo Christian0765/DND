@@ -1720,6 +1720,7 @@
       <!-- COMBAT STATS -->
       <div class="form-section-title">Combat Stats</div>
       <div class="form-grid three">
+        <div class="form-field"><label>Level</label><input type="number" id="cf-level" min="1" max="20" placeholder="e.g. 5"></div>
         <div class="form-field"><label>Armor Class</label><input type="text" id="cf-ac" placeholder="e.g. 14"></div>
         <div class="form-field"><label>Initiative</label><input type="text" id="cf-init" placeholder="e.g. +1"></div>
         <div class="form-field"><label>Speed (ft)</label><input type="text" id="cf-speed" placeholder="e.g. 30"></div>
@@ -2295,6 +2296,18 @@ async function approveCharacter(uid, btn) {
     delete charData.submittedAt;
     delete charData.status;
 
+    // Ensure f-level is set; fall back to parsing trailing digits from f-class
+    if (!charData['f-level']) {
+      const match = (charData['f-class'] || '').match(/\s*(\d+)\s*$/);
+      charData['f-level'] = match ? match[1] : '1';
+    }
+    // Compute correct proficiency bonus for the imported level
+    const _PROF_BONUS = [0,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6];
+    const _importedLevel = Math.min(20, Math.max(1, parseInt(charData['f-level']) || 1));
+    const _profBonus = _PROF_BONUS[_importedLevel] || 2;
+    charData['f-proficiencybonus'] = String(_profBonus);
+    charData['f-pb'] = String(_profBonus);
+
     await db.collection('campaigns').doc(campaignId).collection('characters').doc(slot).set(charData, { merge: true });
 
     // Write structured inventory from sheet if provided
@@ -2405,6 +2418,7 @@ function closeCreateModal() {
 const CF_MAP = {
   'f-name':    'cf-name',
   'f-class':   'cf-class',
+  'f-level':   'cf-level',
   'f-race':    'cf-race',
   'f-bg':      'cf-bg',
   'f-align':   'cf-align',
@@ -2439,7 +2453,7 @@ const CF_MAP = {
 
 // ─── SHEET IMPORT: CONSTANTS ─────────────────────────────────
 const SHEET_REQUIRED_FIELDS  = ['f-name','f-class','f-race','f-bg','f-align'];
-const SHEET_IMPORTANT_FIELDS = ['f-ac','f-maxhp','f-curhp','f-str','f-dex','f-con','f-int','f-wis','f-cha'];
+const SHEET_IMPORTANT_FIELDS = ['f-level','f-ac','f-maxhp','f-curhp','f-str','f-dex','f-con','f-int','f-wis','f-cha'];
 const SHEET_LONG_FIELDS      = ['f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-profs','f-features','f-backstory','f-weapons','f-equipment'];
 const SHEET_MAX_FILE_BYTES   = 512 * 1024;
 const SHEET_VALID_CATEGORIES = new Set(['weapons','armor','resources','magical','healing','food','misc']);
@@ -2595,17 +2609,17 @@ async function submitCharacter() {
   }
   // Warn if the sheet looks too sparse (only name+class filled, nothing else)
   const FIELDS_MAP = {
-    'f-name':   'cf-name',   'f-class':  'cf-class',  'f-race':   'cf-race',
-    'f-bg':     'cf-bg',     'f-align':  'cf-align',  'f-player': 'cf-player',
-    'f-prof':   'cf-prof',   'f-ac':     'cf-ac',     'f-init':   'cf-init',
-    'f-speed':  'cf-speed',  'f-curhp':  'cf-curhp',  'f-maxhp':  'cf-maxhp',
-    'f-hd':     'cf-hd',     'f-pp':     'cf-pp',     'f-gold':   'cf-gold',
-    'f-str':    'cf-str',    'f-strmod': 'cf-strmod', 'f-dex':    'cf-dex',
-    'f-dexmod': 'cf-dexmod', 'f-con':    'cf-con',    'f-conmod': 'cf-conmod',
-    'f-int':    'cf-int',    'f-intmod': 'cf-intmod', 'f-wis':    'cf-wis',
-    'f-wismod': 'cf-wismod', 'f-cha':    'cf-cha',    'f-chamod': 'cf-chamod',
-    'f-traits': 'cf-traits', 'f-ideals': 'cf-ideals', 'f-bonds':  'cf-bonds',
-    'f-flaws':  'cf-flaws',  'f-notes':  'cf-notes',
+    'f-name':   'cf-name',   'f-class':  'cf-class',  'f-level':  'cf-level',
+    'f-race':   'cf-race',   'f-bg':     'cf-bg',     'f-align':  'cf-align',
+    'f-player': 'cf-player', 'f-prof':   'cf-prof',   'f-ac':     'cf-ac',
+    'f-init':   'cf-init',   'f-speed':  'cf-speed',  'f-curhp':  'cf-curhp',
+    'f-maxhp':  'cf-maxhp',  'f-hd':     'cf-hd',     'f-pp':     'cf-pp',
+    'f-gold':   'cf-gold',   'f-str':    'cf-str',    'f-strmod': 'cf-strmod',
+    'f-dex':    'cf-dex',    'f-dexmod': 'cf-dexmod', 'f-con':    'cf-con',
+    'f-conmod': 'cf-conmod', 'f-int':    'cf-int',    'f-intmod': 'cf-intmod',
+    'f-wis':    'cf-wis',    'f-wismod': 'cf-wismod', 'f-cha':    'cf-cha',
+    'f-chamod': 'cf-chamod', 'f-traits': 'cf-traits', 'f-ideals': 'cf-ideals',
+    'f-bonds':  'cf-bonds',  'f-flaws':  'cf-flaws',  'f-notes':  'cf-notes',
   };
   const filledCount = Object.values(FIELDS_MAP).filter(id => {
     const el = document.getElementById(id);
@@ -2628,6 +2642,11 @@ async function submitCharacter() {
     const el = document.getElementById(formId);
     data[fieldId] = el ? el.value.trim() : '';
   });
+  // Derive level from the class string if the Level field was left blank
+  if (!data['f-level']) {
+    const match = (data['f-class'] || '').match(/\s*(\d+)\s*$/);
+    data['f-level'] = match ? match[1] : '1';
+  }
   data.submittedBy = _currentUser.uid;
   data.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
   data.status = 'pending';
