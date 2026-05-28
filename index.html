@@ -1272,24 +1272,31 @@
     <button class="lands-new-btn" id="new-land-btn" onclick="openNewLandForm()" style="display:none;">+ New Land</button>
   </div>
 
-  <!-- NPC SEARCH BAR -->
-  <div id="npc-search-bar" style="margin-bottom:16px;">
+  <!-- ENCYCLOPEDIA SEARCH BAR -->
+  <div id="enc-search-bar" style="margin-bottom:16px;">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-      <input type="text" id="npc-search-text" placeholder="Search NPCs by name or role…"
-             oninput="runNPCSearch()"
+      <input type="text" id="enc-search-text" placeholder="Search encyclopedia…"
+             oninput="runEncSearch()"
              style="flex:2;min-width:140px;font-family:'Crimson Text',serif;font-size:0.85rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 10px;outline:none;">
-      <select id="npc-search-role" onchange="runNPCSearch()"
+      <select id="enc-search-type" onchange="onEncTypeChange()"
+              style="flex:1;min-width:110px;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 8px;outline:none;">
+        <option value="">All Types</option>
+        <option value="npc">🧙 NPCs</option>
+        <option value="shop">🏪 Shops</option>
+        <option value="map">🗺 Locations</option>
+      </select>
+      <select id="enc-search-role" onchange="runEncSearch()"
               style="flex:1;min-width:120px;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 8px;outline:none;">
         <option value="">Any Role</option>
       </select>
-      <select id="npc-search-land" onchange="runNPCSearch()"
+      <select id="enc-search-land" onchange="runEncSearch()"
               style="flex:1;min-width:120px;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:7px 8px;outline:none;">
         <option value="">Any Land</option>
         <option value="__general">General</option>
       </select>
-      <button onclick="clearNPCSearch()" style="font-family:'Cinzel',serif;font-size:0.6rem;padding:7px 12px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;">✕ Clear</button>
+      <button onclick="clearEncSearch()" style="font-family:'Cinzel',serif;font-size:0.6rem;padding:7px 12px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;">✕ Clear</button>
     </div>
-    <div id="npc-search-results" style="display:none;margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.3);border-radius:2px;"></div>
+    <div id="enc-search-results" style="display:none;margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(122,90,40,0.3);border-radius:2px;"></div>
   </div>
 
   <!-- GENERAL LAND: public NPC sheets -->
@@ -2555,7 +2562,7 @@ function toggleLandsSection() {
     loadNPCRoles();
     loadGeneralNPCs();
     loadLandsList();
-    buildNPCSearchCache();
+    buildEncSearchCache();
   }
 }
 
@@ -2611,7 +2618,7 @@ function renderNPCRoleField(prefix) {
 function refreshAllRoleSelects() {
   const opts = buildRolePickerOptions();
   document.querySelectorAll('.npc-role-select').forEach(sel => { sel.innerHTML = opts; });
-  const searchSel = document.getElementById('npc-search-role');
+  const searchSel = document.getElementById('enc-search-role');
   if (searchSel) {
     searchSel.innerHTML = '<option value="">Any Role</option>' +
       _npcRoles.map(r => `<option value="${escHtml(r)}">${escHtml(r)}</option>`).join('');
@@ -2701,70 +2708,126 @@ async function saveNewNPCRole(prefix, btn) {
 }
 
 // ── NPC Search ───────────────────────────────────────────────
-let _npcSearchCache = null;
+let _encSearchCache = null;
 
-async function buildNPCSearchCache() {
-  _npcSearchCache = [];
+async function buildEncSearchCache() {
+  _encSearchCache = [];
   try {
     const gSnap = await db.collection('campaigns').doc(campaignId).collection('general_npcs').get();
     gSnap.forEach(d => {
       _gnpcCache[d.id] = d.data();
-      _npcSearchCache.push({ id: d.id, landId: '__general', land: 'General', ...d.data() });
+      _encSearchCache.push({ id: d.id, type: 'npc', landId: '__general', land: 'General', ...d.data() });
     });
     const lSnap = await db.collection('campaigns').doc(campaignId).collection('lands').get();
     await Promise.all(lSnap.docs.map(async lDoc => {
       const landName = lDoc.data().name || lDoc.id;
-      const nSnap = await db.collection('campaigns').doc(campaignId)
-        .collection('lands').doc(lDoc.id).collection('npcs').get();
+      const base = db.collection('campaigns').doc(campaignId).collection('lands').doc(lDoc.id);
+      const [nSnap, sSnap, mSnap] = await Promise.all([
+        base.collection('npcs').get(),
+        base.collection('shops').get(),
+        base.collection('maps').get(),
+      ]);
       nSnap.forEach(d => {
         _landEntryCache[lDoc.id + '-npcs-' + d.id] = d.data();
-        _npcSearchCache.push({ id: d.id, landId: lDoc.id, land: landName, ...d.data() });
+        _encSearchCache.push({ id: d.id, type: 'npc', landId: lDoc.id, land: landName, ...d.data() });
+      });
+      sSnap.forEach(d => {
+        const raw = d.data();
+        _encSearchCache.push({ id: d.id, type: 'shop', landId: lDoc.id, land: landName,
+          name: raw.name, keeper: raw.keeper, shopType: raw.type, loc: raw.loc,
+          notes: raw.notes, published: raw.published });
+      });
+      mSnap.forEach(d => {
+        const raw = d.data();
+        _encSearchCache.push({ id: d.id, type: 'map', landId: lDoc.id, land: landName,
+          name: raw.name, loc: raw.loc, notes: raw.notes, published: raw.published });
       });
     }));
-    populateNPCLandDropdown(lSnap.docs);
-  } catch(e) { _npcSearchCache = null; }
+    populateEncLandDropdown(lSnap.docs);
+  } catch(e) { _encSearchCache = null; }
 }
 
-function populateNPCLandDropdown(landDocs) {
-  const sel = document.getElementById('npc-search-land');
+function populateEncLandDropdown(landDocs) {
+  const sel = document.getElementById('enc-search-land');
   if (!sel) return;
   sel.innerHTML = '<option value="">Any Land</option>' +
     '<option value="__general">General</option>' +
     landDocs.map(d => `<option value="${escHtml(d.id)}">${escHtml(d.data().name || d.id)}</option>`).join('');
 }
 
-async function runNPCSearch() {
-  await buildNPCSearchCache();
-  const text = (document.getElementById('npc-search-text')?.value || '').trim().toLowerCase();
-  const role = document.getElementById('npc-search-role')?.value || '';
-  const land = document.getElementById('npc-search-land')?.value || '';
-  const results = document.getElementById('npc-search-results');
+function onEncTypeChange() {
+  const type = document.getElementById('enc-search-type')?.value || '';
+  const roleEl = document.getElementById('enc-search-role');
+  if (roleEl) roleEl.style.display = (type === 'shop' || type === 'map') ? 'none' : '';
+  runEncSearch();
+}
+
+async function runEncSearch() {
+  await buildEncSearchCache();
+  const text       = (document.getElementById('enc-search-text')?.value || '').trim().toLowerCase();
+  const typeFilter = document.getElementById('enc-search-type')?.value || '';
+  const role       = document.getElementById('enc-search-role')?.value || '';
+  const land       = document.getElementById('enc-search-land')?.value || '';
+  const results    = document.getElementById('enc-search-results');
   if (!results) return;
-  if (!text && !role && !land) { results.style.display = 'none'; return; }
-  const matches = (_npcSearchCache || []).filter(n => {
-    const nRoles = n.roles && n.roles.length ? n.roles : (n.role ? [n.role] : []);
-    if (role && !nRoles.includes(role)) return false;
+  if (!text && !typeFilter && !role && !land) { results.style.display = 'none'; return; }
+  const matches = (_encSearchCache || []).filter(n => {
+    if (!_isDM && n.published === false) return false;
+    if (typeFilter && n.type !== typeFilter) return false;
     if (land && n.landId !== land) return false;
-    if (text && !`${n.name || ''} ${nRoles.join(' ')} ${n.race || ''}`.toLowerCase().includes(text)) return false;
+    if (role) {
+      if (n.type !== 'npc') return false;
+      const nRoles = n.roles && n.roles.length ? n.roles : (n.role ? [n.role] : []);
+      if (!nRoles.includes(role)) return false;
+    }
+    if (text) {
+      let haystack = '';
+      if (n.type === 'npc') {
+        const nRoles = n.roles && n.roles.length ? n.roles : (n.role ? [n.role] : []);
+        haystack = `${n.name||''} ${nRoles.join(' ')} ${n.race||''} ${n.align||''}`;
+      } else if (n.type === 'shop') {
+        haystack = `${n.name||''} ${n.keeper||''} ${n.shopType||''} ${n.loc||''}`;
+      } else {
+        haystack = `${n.name||''} ${n.loc||''}`;
+      }
+      if (!haystack.toLowerCase().includes(text)) return false;
+    }
     return true;
   });
   results.style.display = '';
-  if (matches.length === 0) {
-    results.innerHTML = `<div style="color:var(--border-light);font-size:0.78rem;font-style:italic;">No NPCs found.</div>`;
+  if (!matches.length) {
+    results.innerHTML = `<div style="color:var(--border-light);font-size:0.78rem;font-style:italic;">No results found.</div>`;
     return;
   }
-  results.innerHTML = matches.map(n => `
-    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(122,90,40,0.15);">
+  const icons  = { npc: '🧙', shop: '🏪', map: '🗺' };
+  const labels = { npc: 'NPC', shop: 'Shop', map: 'Location' };
+  results.innerHTML = matches.map(n => {
+    let sub = '';
+    if (n.type === 'npc') {
+      const nRoles = n.roles && n.roles.length ? n.roles : (n.role ? [n.role] : []);
+      sub = [nRoles.join(', '), n.race, n.align].filter(Boolean).map(escHtml).join(' · ');
+    } else if (n.type === 'shop') {
+      sub = [n.keeper ? `👤 ${n.keeper}` : null, n.loc, n.shopType].filter(Boolean).map(escHtml).join(' · ');
+    } else {
+      sub = escHtml(n.loc || '');
+    }
+    const actionBtn = _isDM
+      ? (n.type === 'npc'
+          ? `<button onclick="editNPCFromSearch('${escHtml(n.landId)}','${escHtml(n.id)}')" title="Edit NPC" style="font-size:0.7rem;padding:3px 7px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;flex-shrink:0;">✏️</button>`
+          : `<button onclick="navigateToLandEntry('${escHtml(n.landId)}','${n.type === 'shop' ? 'shops' : 'maps'}','${escHtml(n.id)}')" title="Go to entry" style="font-size:0.7rem;padding:3px 7px;border:1px solid var(--border);border-radius:2px;background:rgba(255,255,255,0.03);color:var(--border-light);cursor:pointer;flex-shrink:0;">→</button>`)
+      : '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(122,90,40,0.15);">
       <div style="flex:1;min-width:0;">
-        <span style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--parchment);font-weight:600;">${escHtml(n.name || '—')}</span>
-        ${(n.roles&&n.roles.length||n.role) ? `<span style="font-size:0.68rem;color:var(--gold);margin-left:6px;">${escHtml((n.roles&&n.roles.length?n.roles:[n.role]).join(', '))}</span>` : ''}
-        <div style="font-size:0.72rem;color:var(--border-light);margin-top:2px;">
-          ${[n.race, n.align].filter(Boolean).map(escHtml).join(' · ')}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:0.58rem;color:var(--border-light);font-family:'Cinzel',serif;flex-shrink:0;letter-spacing:0.06em;">${icons[n.type]} ${labels[n.type]}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--parchment);font-weight:600;">${escHtml(n.name || '—')}</span>
         </div>
+        ${sub ? `<div style="font-size:0.72rem;color:var(--border-light);margin-top:2px;">${sub}</div>` : ''}
       </div>
       <span style="font-size:0.65rem;color:var(--border-light);font-family:'Cinzel',serif;flex-shrink:0;">${escHtml(n.land || '')}</span>
-      ${_isDM ? `<button onclick="editNPCFromSearch('${escHtml(n.landId)}','${escHtml(n.id)}')" title="Edit NPC" style="font-size:0.7rem;padding:3px 7px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;flex-shrink:0;">✏️</button>` : ''}
-    </div>`).join('');
+      ${actionBtn}
+    </div>`;
+  }).join('');
 }
 
 function editNPCFromSearch(landId, npcId) {
@@ -2788,15 +2851,30 @@ function editNPCFromSearch(landId, npcId) {
   }
 }
 
-function clearNPCSearch() {
-  const txt = document.getElementById('npc-search-text');
-  const rol = document.getElementById('npc-search-role');
-  const lnd = document.getElementById('npc-search-land');
-  const res = document.getElementById('npc-search-results');
+function clearEncSearch() {
+  const txt = document.getElementById('enc-search-text');
+  const typ = document.getElementById('enc-search-type');
+  const rol = document.getElementById('enc-search-role');
+  const lnd = document.getElementById('enc-search-land');
+  const res = document.getElementById('enc-search-results');
   if (txt) txt.value = '';
-  if (rol) rol.value = '';
+  if (typ) typ.value = '';
+  if (rol) { rol.value = ''; rol.style.display = ''; }
   if (lnd) lnd.value = '';
   if (res) res.style.display = 'none';
+}
+
+function navigateToLandEntry(landId, type, entryId) {
+  const lbody = document.getElementById('lbody-' + landId);
+  if (lbody && !lbody.classList.contains('open')) toggleLandExpand(landId);
+  const tabBtn = document.querySelector(`#lcard-${CSS.escape(landId)} .land-tab-btn[onclick*="'${type}'"]`);
+  if (tabBtn) tabBtn.click();
+  if (type === 'shops') {
+    setTimeout(() => {
+      const el = document.getElementById('shop-' + entryId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 250);
+  }
 }
 
 // ── General Land ─────────────────────────────────────────────
@@ -3117,7 +3195,7 @@ async function saveGeneralNPC(type) {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await coll.add(data);
     }
-    _npcSearchCache = null;
+    _encSearchCache = null;
     resetIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     clearNPCRoleField(type === 'simple' ? 'gn' : type === 'full' ? 'gf' : 'gg');
     _gnpcPortrait = null;
@@ -3672,8 +3750,8 @@ function toggleLandEntryForm(landId, type) {
 async function populateShopkeeperDropdown(landId, currentKeeper) {
   const sel = document.getElementById('li-' + landId + '-shops-keeper');
   if (!sel) return;
-  if (!_npcSearchCache) await buildNPCSearchCache();
-  const keepers = (_npcSearchCache || [])
+  if (!_encSearchCache) await buildEncSearchCache();
+  const keepers = (_encSearchCache || [])
     .filter(n => {
       const nRoles = n.roles && n.roles.length ? n.roles : (n.role ? [n.role] : []);
       return nRoles.includes('Shopkeeper');
@@ -3724,7 +3802,7 @@ async function saveLandEntry(landId, type) {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await lcoll.add(data);
     }
-    _npcSearchCache = null;
+    _encSearchCache = null;
     if (type === 'npcs') clearNPCRoleField('li-' + landId + '-npcs');
     // reset form
     const form = document.getElementById('lform-' + landId + '-' + type);
