@@ -1876,13 +1876,13 @@ async function loadMyCharacter() {
   } catch(e) {
     container.innerHTML = `<div style="color:var(--red);font-size:0.82rem;">${escHtml(e.message)}</div>`;
     createBtn.style.display = '';
-  }
-
-  // Show party overview for all players (read-only)
-  const partySection = document.getElementById('party-section');
-  if (partySection) {
-    partySection.style.display = '';
-    loadPlayersTab();
+  } finally {
+    // Always show the party overview for players in the campaign (read-only)
+    const partySection = document.getElementById('party-section');
+    if (partySection) {
+      partySection.style.display = '';
+      loadPlayersTab();
+    }
   }
 }
 
