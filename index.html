@@ -1321,7 +1321,13 @@
         <!-- SIMPLE FORM -->
         <div class="lands-add-form" id="gnpc-form-simple">
           <div class="lands-field"><label>NPC Name *</label><input id="gn-name" type="text" placeholder="e.g. Lord Aldric"></div>
-          <div class="lands-field"><label>Role</label><input id="gn-role" type="text" placeholder="e.g. Guard, Merchant, Quest Giver"></div>
+          <div class="lands-field"><label>Role</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="gn-role-select" class="npc-role-select" onchange="handleRoleSelect('gn')" style="flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;"><option value="">— None —</option></select>
+              <input type="text" id="gn-role-new" placeholder="New role name" style="display:none;flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;outline:none;" onkeydown="if(event.key==='Enter')saveNewNPCRole('gn',document.getElementById('gn-role-save-btn'))">
+              <button id="gn-role-save-btn" onclick="saveNewNPCRole('gn',this)" style="display:none;font-family:'Cinzel',serif;font-size:0.6rem;padding:5px 10px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;">Add</button>
+            </div>
+          </div>
           <div class="lands-row">
             <div class="lands-field"><label>Race / Class</label><input id="gn-race" type="text" placeholder="e.g. Human Paladin"></div>
             <div class="lands-field"><label>Alignment</label><input id="gn-align" type="text" placeholder="e.g. Lawful Good"></div>
@@ -1346,7 +1352,13 @@
         <!-- FULL SHEET FORM -->
         <div class="lands-add-form" id="gnpc-form-full" style="display:none;">
           <div class="lands-field"><label>NPC Name *</label><input id="gf-name" type="text" placeholder="e.g. Queen Seraphine"></div>
-          <div class="lands-field"><label>Role</label><input id="gf-role" type="text" placeholder="e.g. Ruler, Villain, Ally"></div>
+          <div class="lands-field"><label>Role</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="gf-role-select" class="npc-role-select" onchange="handleRoleSelect('gf')" style="flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;"><option value="">— None —</option></select>
+              <input type="text" id="gf-role-new" placeholder="New role name" style="display:none;flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;outline:none;" onkeydown="if(event.key==='Enter')saveNewNPCRole('gf',document.getElementById('gf-role-save-btn'))">
+              <button id="gf-role-save-btn" onclick="saveNewNPCRole('gf',this)" style="display:none;font-family:'Cinzel',serif;font-size:0.6rem;padding:5px 10px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;">Add</button>
+            </div>
+          </div>
           <div class="lands-row">
             <div class="lands-field"><label>Race</label><input id="gf-race" type="text" placeholder="e.g. High Elf"></div>
             <div class="lands-field"><label>Class &amp; Level</label><input id="gf-class" type="text" placeholder="e.g. Wizard 12"></div>
@@ -1385,7 +1397,13 @@
         <!-- GOON FORM -->
         <div class="lands-add-form" id="gnpc-form-goon" style="display:none;">
           <div class="lands-field"><label>Goon Name *</label><input id="gg-name" type="text" placeholder="e.g. City Guard, Bandit"></div>
-          <div class="lands-field"><label>Role</label><input id="gg-role" type="text" placeholder="e.g. Guard, Minion, Boss"></div>
+          <div class="lands-field"><label>Role</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="gg-role-select" class="npc-role-select" onchange="handleRoleSelect('gg')" style="flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;"><option value="">— None —</option></select>
+              <input type="text" id="gg-role-new" placeholder="New role name" style="display:none;flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;outline:none;" onkeydown="if(event.key==='Enter')saveNewNPCRole('gg',document.getElementById('gg-role-save-btn'))">
+              <button id="gg-role-save-btn" onclick="saveNewNPCRole('gg',this)" style="display:none;font-family:'Cinzel',serif;font-size:0.6rem;padding:5px 10px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;">Add</button>
+            </div>
+          </div>
           <div class="lands-row">
             <div class="lands-field"><label>HP</label><input id="gg-hp" type="text" placeholder="e.g. 16"></div>
             <div class="lands-field"><label>AC</label><input id="gg-ac" type="text" placeholder="e.g. 13"></div>
@@ -2522,9 +2540,90 @@ function toggleLandsSection() {
   section.style.display = _landsOpen ? '' : 'none';
   if (_landsOpen && !_landsDataLoaded) {
     _landsDataLoaded = true;
+    loadNPCRoles();
     loadGeneralNPCs();
     loadLandsList();
     buildNPCSearchCache();
+  }
+}
+
+// ── NPC Roles ─────────────────────────────────────────────────
+let _npcRoles = [];
+
+async function loadNPCRoles() {
+  try {
+    const doc = await db.collection('campaigns').doc(campaignId).get();
+    _npcRoles = ((doc.data().npcRoles) || []).slice().sort();
+  } catch(e) { _npcRoles = []; }
+  refreshAllRoleSelects();
+}
+
+function buildRoleOptions(selected) {
+  return '<option value="">— None —</option>' +
+    _npcRoles.map(r => `<option value="${escHtml(r)}"${r === selected ? ' selected' : ''}>${escHtml(r)}</option>`).join('') +
+    (_isDM ? '<option value="__new">＋ Add new role…</option>' : '');
+}
+
+function renderNPCRoleField(prefix) {
+  const safePrefix = prefix.replace(/'/g, "\\'");
+  return `<div class="lands-field"><label>Role</label>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <select id="${prefix}-role-select" class="npc-role-select" onchange="handleRoleSelect('${safePrefix}')"
+              style="flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;">
+        ${buildRoleOptions()}
+      </select>
+      ${_isDM ? `<input type="text" id="${prefix}-role-new" placeholder="New role name"
+               style="display:none;flex:1;font-family:'Crimson Text',serif;font-size:0.82rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 8px;outline:none;"
+               onkeydown="if(event.key==='Enter')saveNewNPCRole('${safePrefix}',document.getElementById('${prefix}-role-save-btn'))">
+      <button id="${prefix}-role-save-btn" onclick="saveNewNPCRole('${safePrefix}',this)"
+              style="display:none;font-family:'Cinzel',serif;font-size:0.6rem;padding:5px 10px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;">Add</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function refreshAllRoleSelects() {
+  document.querySelectorAll('.npc-role-select').forEach(sel => {
+    const current = sel.value === '__new' ? '' : sel.value;
+    sel.innerHTML = buildRoleOptions(current);
+  });
+  const searchSel = document.getElementById('npc-search-role');
+  if (searchSel) {
+    searchSel.innerHTML = '<option value="">Any Role</option>' +
+      _npcRoles.map(r => `<option value="${escHtml(r)}">${escHtml(r)}</option>`).join('');
+  }
+}
+
+function handleRoleSelect(prefix) {
+  const sel = document.getElementById(prefix + '-role-select');
+  if (!sel || sel.value !== '__new') return;
+  sel.value = '';
+  const inp = document.getElementById(prefix + '-role-new');
+  const btn = document.getElementById(prefix + '-role-save-btn');
+  if (inp) { inp.style.display = ''; inp.focus(); }
+  if (btn) btn.style.display = '';
+}
+
+async function saveNewNPCRole(prefix, btn) {
+  const inp = document.getElementById(prefix + '-role-new');
+  const role = inp?.value.trim();
+  if (!role) return;
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    if (!_npcRoles.includes(role)) {
+      await db.collection('campaigns').doc(campaignId).update({
+        npcRoles: firebase.firestore.FieldValue.arrayUnion(role)
+      });
+      _npcRoles.push(role);
+      _npcRoles.sort();
+    }
+    refreshAllRoleSelects();
+    const sel = document.getElementById(prefix + '-role-select');
+    if (sel) sel.value = role;
+    if (inp) { inp.style.display = 'none'; inp.value = ''; }
+    if (btn) { btn.style.display = 'none'; btn.textContent = 'Add'; btn.disabled = false; }
+  } catch(e) {
+    alert('Failed to save role: ' + e.message);
+    if (btn) { btn.textContent = 'Add'; btn.disabled = false; }
   }
 }
 
@@ -2547,17 +2646,8 @@ async function buildNPCSearchCache() {
         _npcSearchCache.push({ id: d.id, landId: lDoc.id, land: landName, ...d.data() });
       });
     }));
-    populateNPCRoleDropdown();
     populateNPCLandDropdown(lSnap.docs);
   } catch(e) { _npcSearchCache = null; }
-}
-
-function populateNPCRoleDropdown() {
-  const roles = [...new Set((_npcSearchCache || []).map(n => n.role).filter(Boolean))].sort();
-  const sel = document.getElementById('npc-search-role');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Any Role</option>' +
-    roles.map(r => `<option value="${escHtml(r)}">${escHtml(r)}</option>`).join('');
 }
 
 function populateNPCLandDropdown(landDocs) {
@@ -2763,7 +2853,7 @@ async function saveGeneralNPC(type) {
 
   if (type === 'simple') {
     data.name  = document.getElementById('gn-name').value.trim();
-    data.role  = document.getElementById('gn-role').value.trim();
+    data.role  = document.getElementById('gn-role-select')?.value || '';
     data.race  = document.getElementById('gn-race').value.trim();
     data.align = document.getElementById('gn-align').value.trim();
     data.hp    = document.getElementById('gn-hp').value.trim();
@@ -2773,7 +2863,7 @@ async function saveGeneralNPC(type) {
     resetIds = ['gn-name','gn-role','gn-race','gn-align','gn-hp','gn-ac','gn-desc'];
   } else if (type === 'full') {
     data.name   = document.getElementById('gf-name').value.trim();
-    data.role   = document.getElementById('gf-role').value.trim();
+    data.role   = document.getElementById('gf-role-select')?.value || '';
     data.race   = document.getElementById('gf-race').value.trim();
     data.class  = document.getElementById('gf-class').value.trim();
     data.align  = document.getElementById('gf-align').value.trim();
@@ -2793,7 +2883,7 @@ async function saveGeneralNPC(type) {
     resetIds = ['gf-name','gf-role','gf-race','gf-class','gf-align','gf-bg','gf-hp','gf-ac','gf-speed','gf-str','gf-dex','gf-con','gf-int','gf-wis','gf-cha','gf-traits','gf-desc'];
   } else {
     data.name   = document.getElementById('gg-name').value.trim();
-    data.role   = document.getElementById('gg-role').value.trim();
+    data.role   = document.getElementById('gg-role-select')?.value || '';
     data.hp     = document.getElementById('gg-hp').value.trim();
     data.ac     = document.getElementById('gg-ac').value.trim();
     data.speed  = document.getElementById('gg-speed').value.trim();
@@ -2812,6 +2902,11 @@ async function saveGeneralNPC(type) {
     await db.collection('campaigns').doc(campaignId).collection('general_npcs').add(data);
     _npcSearchCache = null;
     resetIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    // Reset role select for the saved type
+    const rp = type === 'simple' ? 'gn' : type === 'full' ? 'gf' : 'gg';
+    const rSel = document.getElementById(rp + '-role-select'); if (rSel) rSel.value = '';
+    const rInp = document.getElementById(rp + '-role-new'); if (rInp) { rInp.style.display = 'none'; rInp.value = ''; }
+    const rBtn = document.getElementById(rp + '-role-save-btn'); if (rBtn) rBtn.style.display = 'none';
     _gnpcPortrait = null;
     ['gn-preview','gf-preview'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     document.getElementById('gnpc-form').style.display = 'none';
@@ -2904,7 +2999,7 @@ function renderLandCard(id, d) {
         ${_isDM ? `<button class="lands-add-trigger" onclick="toggleLandEntryForm('${escHtml(id)}','npcs')">+ Add NPC</button>
         <div class="lands-add-form" id="lform-${escHtml(id)}-npcs" style="display:none;">
           <div class="lands-field"><label>NPC Name *</label><input id="li-${escHtml(id)}-npcs-name" type="text" placeholder="e.g. Mira Thornwood"></div>
-          <div class="lands-field"><label>Role</label><input id="li-${escHtml(id)}-npcs-role" type="text" placeholder="e.g. Guard, Merchant, Quest Giver"></div>
+          ${renderNPCRoleField('li-' + escHtml(id) + '-npcs')}
           <div class="lands-row">
             <div class="lands-field"><label>Race / Class</label><input id="li-${escHtml(id)}-npcs-race" type="text" placeholder="Half-Elf Rogue"></div>
             <div class="lands-field"><label>Alignment</label><input id="li-${escHtml(id)}-npcs-align" type="text" placeholder="Neutral Evil"></div>
@@ -3245,7 +3340,7 @@ async function saveLandEntry(landId, type) {
       data.type  = document.getElementById('li-' + landId + '-shops-type').value.trim();
       data.notes = document.getElementById('li-' + landId + '-shops-notes').value.trim();
     } else if (type === 'npcs') {
-      data.role  = document.getElementById('li-' + landId + '-npcs-role')?.value.trim() || '';
+      data.role  = document.getElementById('li-' + landId + '-npcs-role-select')?.value || '';
       data.race  = document.getElementById('li-' + landId + '-npcs-race').value.trim();
       data.align = document.getElementById('li-' + landId + '-npcs-align').value.trim();
       data.loc   = document.getElementById('li-' + landId + '-npcs-loc').value.trim();
