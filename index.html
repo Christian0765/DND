@@ -1951,11 +1951,20 @@ async function approveCharacter(uid, btn) {
     if (!pendingDoc.exists) throw new Error('Pending entry not found');
     const data = pendingDoc.data();
 
-    // Find player's slot from campaign.players
+    // Find player's slot from campaign.players; auto-assign if missing
     const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
     const players = campaignDoc.data().players || {};
-    const slot = players[uid] ? players[uid].slot : null;
-    if (!slot) throw new Error('Player slot not found in campaign');
+    let slot = players[uid] ? players[uid].slot : null;
+    if (!slot) {
+      const usedSlots = new Set(Object.values(players).map(p => p.slot));
+      let slotNum = 1;
+      while (usedSlots.has(`player${slotNum}`)) slotNum++;
+      slot = `player${slotNum}`;
+      await db.collection('campaigns').doc(campaignId).update({
+        [`players.${uid}`]: { slot, joinedAt: firebase.firestore.Timestamp.now() },
+        memberUids: firebase.firestore.FieldValue.arrayUnion(uid)
+      });
+    }
 
     // Write to characters/{slot}
     const charData = Object.assign({}, data);
