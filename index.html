@@ -1921,20 +1921,25 @@ async function saveProfileFromPanel(btn) {
     alert('Gamertag must be 3–20 characters: letters, numbers, and underscores only.');
     return;
   }
-  btn.textContent = 'Saving…'; btn.disabled = true;
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
   try {
-    const update = {};
-    if (gt) { update.gamertag = gt; } else { update.gamertag = firebase.firestore.FieldValue.delete(); }
-    if (_pendingProfileAvatar) update.customAvatar = _pendingProfileAvatar;
-    await db.collection('users').doc(_currentUser.uid).update(update);
-    _userGamertag    = gt;
+    const data = {};
+    if (gt) { data.gamertag = gt; }
+    if (_pendingProfileAvatar) { data.customAvatar = _pendingProfileAvatar; }
+    await db.collection('users').doc(_currentUser.uid).set(data, { merge: true });
+    if (!gt && _userGamertag) {
+      await db.collection('users').doc(_currentUser.uid).update({
+        gamertag: firebase.firestore.FieldValue.delete()
+      });
+    }
+    _userGamertag = gt;
     if (_pendingProfileAvatar) { _userCustomAvatar = _pendingProfileAvatar; _pendingProfileAvatar = null; }
     renderNavAvatar();
     toggleProfilePanel();
   } catch(e) {
     alert('Failed to save: ' + e.message);
   }
-  btn.textContent = 'Save Profile'; btn.disabled = false;
+  if (btn) { btn.textContent = 'Save Profile'; btn.disabled = false; }
 }
 
 // ─── AUTH GUARD ───────────────────────────────────────────────

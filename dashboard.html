@@ -1258,8 +1258,9 @@
     async function loadUserProfile() {
       try {
         const doc = await db.collection('users').doc(currentUser.uid).get();
-        _userDoc = doc.exists ? doc.data() : {};
-      } catch(e) { _userDoc = {}; }
+        if (doc.exists) _userDoc = doc.data();
+        // If doc doesn't exist yet, keep _userDoc as-is (heartbeat will create it shortly)
+      } catch(e) { /* keep existing _userDoc on error */ }
       renderDashboardHeader();
     }
 
@@ -1331,12 +1332,19 @@
         alert('Gamertag must be 3–20 characters: letters, numbers, and underscores only.');
         return;
       }
-      btn.textContent = 'Saving…'; btn.disabled = true;
+      if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
       try {
-        const update = {};
-        if (gt) { update.gamertag = gt; } else { update.gamertag = firebase.firestore.FieldValue.delete(); }
-        if (_pendingAvatar) update.customAvatar = _pendingAvatar;
-        await db.collection('users').doc(currentUser.uid).update(update);
+        const data = {};
+        if (gt) { data.gamertag = gt; }
+        if (_pendingAvatar) { data.customAvatar = _pendingAvatar; }
+        // Use set+merge so it works even if the user doc hasn't been created yet
+        await db.collection('users').doc(currentUser.uid).set(data, { merge: true });
+        // If gamertag was cleared, explicitly remove the field
+        if (!gt && _userDoc.gamertag) {
+          await db.collection('users').doc(currentUser.uid).update({
+            gamertag: firebase.firestore.FieldValue.delete()
+          });
+        }
         if (gt) _userDoc.gamertag = gt; else delete _userDoc.gamertag;
         if (_pendingAvatar) { _userDoc.customAvatar = _pendingAvatar; _pendingAvatar = null; }
         renderDashboardHeader();
@@ -1344,7 +1352,7 @@
       } catch(e) {
         alert('Failed to save: ' + e.message);
       }
-      btn.textContent = 'Save Profile'; btn.disabled = false;
+      if (btn) { btn.textContent = 'Save Profile'; btn.disabled = false; }
     }
 
     function initDashboard() {
