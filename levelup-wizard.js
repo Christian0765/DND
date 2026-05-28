@@ -471,7 +471,7 @@ async function openLevelUpWizard(slot){
       .collection('characters').doc(slot).get();
     if (!snap.exists){ showToast('Character not found'); return; }
     const data = snap.data();
-    const cls = (luGetField(data,'class') || '').toLowerCase().trim();
+    const cls = (luGetField(data,'class') || '').toLowerCase().trim().replace(/\s*\d+$/, '');
     const lvl = parseInt(luGetField(data,'level')) || 1;
 
     if (lvl >= 20){ showToast('Character is already max level (20)!'); return; }
