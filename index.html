@@ -3190,7 +3190,12 @@ function renderLandCard(id, d) {
         ${_isDM ? `<button class="lands-add-trigger" onclick="toggleLandEntryForm('${escHtml(id)}','shops')">+ Add Shop</button>
         <div class="lands-add-form" id="lform-${escHtml(id)}-shops" style="display:none;">
           <div class="lands-field"><label>Shop Name *</label><input id="li-${escHtml(id)}-shops-name" type="text" placeholder="e.g. The Rusty Flagon"></div>
-          <div class="lands-field"><label>Shopkeeper (NPC name)</label><input id="li-${escHtml(id)}-shops-keeper" type="text" placeholder="e.g. Durnan the veteran"></div>
+          <div class="lands-field"><label>Shopkeeper</label>
+            <select id="li-${escHtml(id)}-shops-keeper" style="font-family:'Crimson Text',serif;font-size:0.85rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;width:100%;outline:none;">
+              <option value="">— None —</option>
+              <option value="" disabled>Loading…</option>
+            </select>
+          </div>
           <div class="lands-row">
             <div class="lands-field"><label>District</label><input id="li-${escHtml(id)}-shops-loc" type="text" placeholder="e.g. Market Quarter"></div>
             <div class="lands-field"><label>Type</label><input id="li-${escHtml(id)}-shops-type" type="text" placeholder="Weapons, Potions…"></div>
@@ -3535,7 +3540,29 @@ async function buyShopItem(landId, shopId, itemIdx, cost, btn) {
 
 function toggleLandEntryForm(landId, type) {
   const form = document.getElementById('lform-' + landId + '-' + type);
-  if (form) form.style.display = form.style.display === 'none' ? '' : 'none';
+  if (!form) return;
+  const isOpening = form.style.display === 'none';
+  form.style.display = isOpening ? '' : 'none';
+  if (isOpening && type === 'shops') populateShopkeeperDropdown(landId);
+}
+
+async function populateShopkeeperDropdown(landId, currentKeeper) {
+  const sel = document.getElementById('li-' + landId + '-shops-keeper');
+  if (!sel) return;
+  if (!_npcSearchCache) await buildNPCSearchCache();
+  const keepers = (_npcSearchCache || [])
+    .filter(n => {
+      const nRoles = n.roles && n.roles.length ? n.roles : (n.role ? [n.role] : []);
+      return nRoles.includes('Shopkeeper');
+    })
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  sel.innerHTML = '<option value="">— None —</option>' +
+    (keepers.length === 0
+      ? '<option value="" disabled style="font-style:italic;">No Shopkeeper NPCs defined yet</option>'
+      : keepers.map(n =>
+          `<option value="${escHtml(n.name)}">${escHtml(n.name)}${n.land !== 'General' ? ` (${escHtml(n.land)})` : ''}</option>`
+        ).join(''));
+  if (currentKeeper) sel.value = currentKeeper;
 }
 
 async function saveLandEntry(landId, type) {
@@ -3578,7 +3605,10 @@ async function saveLandEntry(landId, type) {
     if (type === 'npcs') clearNPCRoleField('li-' + landId + '-npcs');
     // reset form
     const form = document.getElementById('lform-' + landId + '-' + type);
-    if (form) form.querySelectorAll('input,textarea').forEach(el => el.value = '');
+    if (form) {
+      form.querySelectorAll('input,textarea').forEach(el => el.value = '');
+      form.querySelectorAll('select').forEach(el => { el.selectedIndex = 0; });
+    }
     if (type === 'maps') {
       delete _mapImgData[landId];
       const prev = document.getElementById('li-' + landId + '-maps-preview');
