@@ -407,6 +407,116 @@
     margin-right: 6px;
   }
 
+  /* ── ROADMAP MODAL ── */
+  #roadmap-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.82);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9998; padding: 16px; animation: luFadeIn .18s ease;
+  }
+  .rm-modal {
+    background: #0f0c07; border: 1px solid #6b4f1a; border-radius: 4px;
+    width: 100%; max-width: 540px; max-height: 88vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 0 1px #2a1f0a, 0 30px 80px rgba(0,0,0,.9),
+                inset 0 1px 0 rgba(201,168,76,.15);
+    font-family: 'Crimson Text', Georgia, serif;
+  }
+  .rm-header {
+    background: linear-gradient(180deg, #1a1108 0%, #0f0c07 100%);
+    border-bottom: 1px solid #3a2c0e; padding: 20px 24px 16px;
+    position: relative; flex-shrink: 0;
+  }
+  .rm-header-eyebrow {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px;
+    text-transform: uppercase; color: #8b6914; margin-bottom: 4px;
+  }
+  .rm-header-title {
+    font-family: 'Cinzel', serif; font-size: 20px; font-weight: 900;
+    color: #f0d98a; text-shadow: 0 0 30px rgba(201,168,76,.3); line-height: 1;
+  }
+  .rm-header-sub {
+    font-family: 'Crimson Text', serif; font-style: italic;
+    color: #6a5030; font-size: 14px; margin-top: 4px;
+  }
+  .rm-close-btn {
+    position: absolute; top: 18px; right: 20px;
+    background: none; border: none; color: #3a2c0e; font-size: 16px;
+    cursor: pointer; transition: color .15s;
+  }
+  .rm-close-btn:hover { color: #c9a84c; }
+  .rm-body { overflow-y: auto; flex: 1; padding: 0; }
+  .rm-body::-webkit-scrollbar { width: 6px; }
+  .rm-body::-webkit-scrollbar-track { background: transparent; }
+  .rm-body::-webkit-scrollbar-thumb { background: rgba(201,168,76,.25); border-radius: 3px; }
+  .rm-next-level {
+    background: linear-gradient(135deg, #1a1000, #0a0800);
+    border-bottom: 2px solid #c9a84c; padding: 20px 24px;
+  }
+  .rm-next-label {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px;
+    text-transform: uppercase; color: #c9a84c; margin-bottom: 12px;
+  }
+  .rm-next-inner { display: flex; align-items: flex-start; gap: 20px; }
+  .rm-level-num-big {
+    font-family: 'Cinzel', serif; font-size: 56px; font-weight: 900;
+    color: #f0d98a; text-shadow: 0 0 30px rgba(240,217,138,.4);
+    line-height: 1; flex-shrink: 0;
+    animation: rm-glow 3s ease-in-out infinite;
+  }
+  @keyframes rm-glow {
+    0%,100% { text-shadow: 0 0 30px rgba(240,217,138,.4), 0 0 70px rgba(201,168,76,.2); }
+    50%      { text-shadow: 0 0 55px rgba(240,217,138,.7), 0 0 110px rgba(201,168,76,.4); }
+  }
+  .rm-next-features { flex: 1; padding-top: 4px; }
+  .rm-level-block { border-bottom: 1px solid #1a1408; padding: 16px 24px; }
+  .rm-level-block:last-child { border-bottom: none; }
+  .rm-level-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .rm-level-label-num {
+    font-family: 'Cinzel', serif; font-size: 20px; font-weight: 900;
+    color: #3a2c0e; line-height: 1; min-width: 28px;
+  }
+  .rm-level-label-text {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px;
+    text-transform: uppercase; color: #3a2c0e;
+  }
+  .rm-level-divider { flex: 1; height: 1px; background: #1e1708; }
+  .rm-asi-tag, .rm-subclass-tag {
+    display: inline-block; font-family: 'Cinzel', serif;
+    font-size: 10px; font-weight: 700; padding: 3px 10px;
+    border-radius: 12px; margin-bottom: 8px; margin-right: 6px;
+  }
+  .rm-asi-tag { background: rgba(201,168,76,.15); color: #c9a84c; border: 1px solid rgba(201,168,76,.3); }
+  .rm-subclass-tag { background: rgba(120,80,200,.15); color: #b090e0; border: 1px solid rgba(120,80,200,.25); }
+  .rm-asi-pill {
+    font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 8px;
+    border-radius: 10px; background: rgba(201,168,76,.12); color: #c9a84c;
+    border: 1px solid rgba(201,168,76,.25); flex-shrink: 0;
+  }
+  .rm-subclass-pill {
+    font-family: 'Cinzel', serif; font-size: 9px; padding: 2px 8px;
+    border-radius: 10px; background: rgba(120,80,200,.12); color: #b090e0;
+    border: 1px solid rgba(120,80,200,.2); flex-shrink: 0;
+  }
+  .rm-features-body { padding-left: 4px; }
+  .rm-feature-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .rm-feature-row:last-child { margin-bottom: 0; }
+  .rm-feature-bullet { color: #3a2c0e; font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+  .rm-feature-text { font-family: 'Crimson Text', serif; font-size: 14px; color: #7a6030; line-height: 1.4; }
+  .rm-no-feature { color: #2a2010; font-style: italic; }
+  .rm-no-data, .rm-maxed {
+    padding: 24px; text-align: center;
+    font-family: 'Crimson Text', serif; font-style: italic; color: #5a4520; font-size: 15px;
+  }
+  .roadmap-btn {
+    background: none; border: 1px solid rgba(201,168,76,.25);
+    color: var(--gold, #c9a84c); font-family: 'Cinzel', serif;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 7px 14px; cursor: pointer; border-radius: 4px;
+    transition: all .15s; margin-top: 8px; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .roadmap-btn:hover { background: rgba(201,168,76,.08); border-color: rgba(201,168,76,.5); }
+
   /* CREATE CHARACTER BUTTON */
   .create-btn {
     display: flex;
@@ -2281,7 +2391,7 @@ function renderLevelRoadmap(charData, containerEl, slot) {
   const cls = rawClass.replace(/\s*\d+$/, '').toLowerCase().trim();
   const currentLevel = parseInt(charData['f-level'])
     || parseInt(rawClass.match(/\d+$/)?.[0]) || 1;
-  const subclass = charData['f-subclass'] || charData['f-archetype'] || '';
+
   const classData = (typeof LU_CLASS_DATA !== 'undefined') ? LU_CLASS_DATA[cls] : null;
 
   if (!classData || currentLevel >= 20) {
@@ -2289,57 +2399,11 @@ function renderLevelRoadmap(charData, containerEl, slot) {
     return;
   }
 
-  const asiLevelMap = {
-    fighter: [4,6,8,12,14,16,19],
-    rogue:   [4,8,10,12,16,19],
-  };
-  const defaultAsi = [4,8,12,16,19];
-
-  const placeholders = ['Archetype Feature','Path Feature','College Feature',
-    'Tradition Feature','Circle Feature','Conclave Feature','Patron Feature',
-    'Origin Feature','Oath Feature','Specialist Feature','Domain Feature'];
-
-  const previewLevels = [1,2,3].map(i => currentLevel + i).filter(l => l <= 20);
-
-  const rows = previewLevels.map(lvl => {
-    const baseFeatures = classData.baseFeatures?.[lvl] || [];
-    const subFeatures  = subclass ? (classData.subclasses?.[subclass]?.[lvl] || []) : [];
-    const filteredBase = subFeatures.length
-      ? baseFeatures.filter(f => !placeholders.includes(f))
-      : baseFeatures;
-    const allFeatures  = [...filteredBase, ...subFeatures];
-    const featureText  = allFeatures.length ? allFeatures.join(' · ') : 'No new features';
-    const asiLvls = asiLevelMap[cls] || defaultAsi;
-    const isAsi   = asiLvls.includes(lvl);
-    return `<div class="roadmap-row">
-      <div class="roadmap-level">
-        <span class="roadmap-lvl-num">${lvl}</span>
-        <span class="roadmap-lvl-label">LVL</span>
-      </div>
-      <div class="roadmap-features">
-        ${isAsi ? '<span class="roadmap-asi">⭐ ASI / Feat</span>' : ''}
-        <span class="roadmap-feat-text">${escHtml(featureText)}</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  const panelId = slot ? `roadmap-panel-${escHtml(slot)}` : 'roadmap-panel-main';
-  const safeSubclass = (subclass || '').replace(/'/g, "\\'");
+  const safeSlot = (slot || '').replace(/'/g, "\\'");
   containerEl.innerHTML = `
-    <div class="roadmap-panel" id="${panelId}" onclick="event.stopPropagation()">
-      <div class="roadmap-header" onclick="event.stopPropagation();document.getElementById('${panelId}').classList.toggle('expanded')">
-        <span class="roadmap-title">What's Coming</span>
-        <span class="roadmap-toggle">▾</span>
-      </div>
-      <div class="roadmap-body">
-        ${rows}
-        <div class="roadmap-full-link">
-          <button class="roadmap-view-all" onclick="event.stopPropagation();openFullRoadmap('${escHtml(cls)}',${currentLevel},'${escHtml(safeSubclass)}')">
-            View full progression →
-          </button>
-        </div>
-      </div>
-    </div>
+    <button class="roadmap-btn" onclick="openLevelRoadmapModal(event,'${safeSlot}')">
+      ⚔ What's Coming
+    </button>
   `;
 }
 
@@ -2394,6 +2458,133 @@ function openFullRoadmap(cls, currentLevel, subclass) {
   `;
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   document.body.appendChild(overlay);
+}
+
+// ── ROADMAP MODAL ─────────────────────────────────────────────
+
+function openLevelRoadmapModal(event, slot) {
+  event.stopPropagation();
+  event.preventDefault();
+  buildAndShowRoadmapModal(slot);
+}
+
+async function buildAndShowRoadmapModal(slot) {
+  let charData;
+  try {
+    const snap = await db.collection('campaigns').doc(campaignId)
+      .collection('characters').doc(slot).get();
+    if (!snap.exists) return;
+    charData = snap.data();
+  } catch(e) {
+    console.error('Roadmap modal: failed to load char', e);
+    return;
+  }
+
+  const rawClass = charData['f-class'] || '';
+  const cls = rawClass.replace(/\s*\d+$/, '').toLowerCase().trim();
+  const currentLevel = parseInt(charData['f-level'])
+    || parseInt(rawClass.match(/\d+$/)?.[0]) || 1;
+  const subclass = charData['f-subclass'] || charData['f-archetype'] || '';
+  const charName = charData['f-name'] || 'Character';
+
+  const classData = (typeof LU_CLASS_DATA !== 'undefined') ? LU_CLASS_DATA[cls] : null;
+
+  const asiLevelMap = { fighter: [4,6,8,12,14,16,19], rogue: [4,8,10,12,16,19] };
+  const asiLvls = asiLevelMap[cls] || [4,8,12,16,19];
+
+  const placeholders = ['Archetype Feature','Path Feature','College Feature',
+    'Tradition Feature','Circle Feature','Conclave Feature','Patron Feature',
+    'Origin Feature','Oath Feature','Specialist Feature','Domain Feature'];
+
+  const clsDisplay = cls.charAt(0).toUpperCase() + cls.slice(1);
+
+  const noDataHtml = !classData ? `
+    <div class="rm-no-data">
+      ⚠️ No roadmap data found for class "${escHtml(cls || '?')}".
+    </div>` : '';
+
+  let rowsHtml = '';
+  if (classData && currentLevel < 20) {
+    const levelRows = [];
+    for (let lvl = currentLevel + 1; lvl <= 20; lvl++) {
+      const isNext = lvl === currentLevel + 1;
+      const isAsi = asiLvls.includes(lvl);
+      const isSubclassLvl = (typeof LU_SUBCLASS_LEVEL !== 'undefined')
+        && LU_SUBCLASS_LEVEL[cls] === lvl;
+
+      let baseFeatures = classData.baseFeatures?.[lvl] || [];
+      const subFeatures = subclass ? (classData.subclasses?.[subclass]?.[lvl] || []) : [];
+      if (subFeatures.length) baseFeatures = baseFeatures.filter(f => !placeholders.includes(f));
+      const allFeatures = [...baseFeatures, ...subFeatures];
+
+      levelRows.push({ lvl, isNext, isAsi, isSubclassLvl, allFeatures });
+    }
+
+    rowsHtml = levelRows.map(({ lvl, isNext, isAsi, isSubclassLvl, allFeatures }) => {
+      const featuresHtml = allFeatures.length
+        ? allFeatures.map(f => `
+            <div class="rm-feature-row">
+              <span class="rm-feature-bullet">⚡</span>
+              <span class="rm-feature-text">${escHtml(f)}</span>
+            </div>`).join('')
+        : `<div class="rm-feature-row"><span class="rm-feature-text rm-no-feature">No new class features</span></div>`;
+
+      if (isNext) {
+        return `
+          <div class="rm-level-block rm-next-level">
+            <div class="rm-next-label">NEXT LEVEL</div>
+            <div class="rm-next-inner">
+              <div class="rm-level-num-big">${lvl}</div>
+              <div class="rm-next-features">
+                ${isAsi ? '<div class="rm-asi-tag">⭐ ASI / Feat available</div>' : ''}
+                ${isSubclassLvl ? '<div class="rm-subclass-tag">🎭 Subclass choice</div>' : ''}
+                ${featuresHtml}
+              </div>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="rm-level-block">
+          <div class="rm-level-header">
+            <span class="rm-level-label-num">${lvl}</span>
+            <span class="rm-level-label-text">LEVEL ${lvl}</span>
+            <div class="rm-level-divider"></div>
+            ${isAsi ? '<span class="rm-asi-pill">⭐ ASI</span>' : ''}
+            ${isSubclassLvl ? '<span class="rm-subclass-pill">🎭 Subclass</span>' : ''}
+          </div>
+          <div class="rm-features-body">${featuresHtml}</div>
+        </div>`;
+    }).join('');
+  }
+
+  const maxedHtml = currentLevel >= 20
+    ? '<div class="rm-maxed">🏆 This character has reached the maximum level!</div>' : '';
+
+  document.getElementById('roadmap-modal-overlay')?.remove();
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="roadmap-modal-overlay" onclick="if(event.target===this)closeRoadmapModal()">
+      <div class="rm-modal" role="dialog" aria-modal="true">
+        <div class="rm-header">
+          <div class="rm-header-eyebrow">Player Roadmap</div>
+          <div class="rm-header-title">Level Roadmap</div>
+          <div class="rm-header-sub">
+            ${escHtml(charName)} — ${escHtml(clsDisplay)} · Currently Level ${currentLevel}
+            ${subclass ? ` · <em>${escHtml(subclass)}</em>` : ''}
+          </div>
+          <button class="rm-close-btn" onclick="closeRoadmapModal()">✕</button>
+        </div>
+        <div class="rm-body">
+          ${noDataHtml}
+          ${rowsHtml}
+          ${maxedHtml}
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function closeRoadmapModal() {
+  document.getElementById('roadmap-modal-overlay')?.remove();
 }
 
 async function loadMyCharacter() {
@@ -2508,6 +2699,15 @@ async function loadMyCharacter() {
       } else {
         const rdEl = document.getElementById('char-roadmap-container');
         if (rdEl) rdEl.style.display = 'none';
+      }
+      // Guard: prevent .roadmap-btn clicks from activating the parent <a> link
+      const playerCard = container.querySelector('.player-card');
+      if (playerCard) {
+        playerCard.addEventListener('click', (e) => {
+          if (e.target.closest('.roadmap-btn, .lu-offer-banner, .lu-level-up-btn')) {
+            e.preventDefault();
+          }
+        });
       }
       return;
     }
