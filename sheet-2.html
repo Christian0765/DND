@@ -341,6 +341,26 @@ function loadFromFirestore() {
         if (el) el.value = data[id];
       }
     });
+    const rawClass = data['f-class'] || '';
+    const cleanClass = rawClass.replace(/\s*\d+$/, '').trim();
+    const level = parseInt(data['f-level']) || parseInt(rawClass.match(/\d+$/)?.[0]) || 1;
+    const classEl = document.getElementById('f-class');
+    if (classEl && cleanClass) classEl.value = `${cleanClass} ${level}`;
+    const race = data['f-race'] || '';
+    const alignment = data['f-align'] || '';
+    const subEl = document.querySelector('.char-sub');
+    if (subEl && cleanClass) {
+      subEl.textContent = [race, cleanClass, `Level ${level}`, alignment].filter(Boolean).join(' · ').toUpperCase();
+    }
+    const PROF_BONUS_TABLE = [0,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6];
+    const calculatedProf = PROF_BONUS_TABLE[level] || 2;
+    const storedProf = parseInt((data['f-prof'] || '').replace('+', '')) || 0;
+    if (storedProf !== calculatedProf) {
+      const profEl = document.getElementById('f-prof');
+      if (profEl) profEl.value = `+${calculatedProf}`;
+      db.collection('campaigns').doc(campaignId).collection('characters').doc(PLAYER_ID)
+        .update({ 'f-prof': `+${calculatedProf}` }).catch(() => {});
+    }
     setStatus('ok', 'Live ✓');
   }, () => setStatus('error', 'Connection error'));
 }

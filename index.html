@@ -2275,7 +2275,7 @@ function showLevelUpOfferBanner(slot, pendingData) {
   target.insertBefore(banner, target.firstChild);
 }
 
-function renderLevelRoadmap(charData, containerEl) {
+function renderLevelRoadmap(charData, containerEl, slot) {
   if (!containerEl) return;
   const rawClass = charData['f-class'] || '';
   const cls = rawClass.replace(/\s*\d+$/, '').toLowerCase().trim();
@@ -2323,10 +2323,11 @@ function renderLevelRoadmap(charData, containerEl) {
     </div>`;
   }).join('');
 
+  const panelId = slot ? `roadmap-panel-${escHtml(slot)}` : 'roadmap-panel-main';
   const safeSubclass = (subclass || '').replace(/'/g, "\\'");
   containerEl.innerHTML = `
-    <div class="roadmap-panel">
-      <div class="roadmap-header" onclick="event.stopPropagation();this.closest('.roadmap-panel').classList.toggle('expanded')">
+    <div class="roadmap-panel" id="${panelId}" onclick="event.stopPropagation()">
+      <div class="roadmap-header" onclick="event.stopPropagation();document.getElementById('${panelId}').classList.toggle('expanded')">
         <span class="roadmap-title">What's Coming</span>
         <span class="roadmap-toggle">▾</span>
       </div>
@@ -2503,7 +2504,7 @@ async function loadMyCharacter() {
       createBtn.style.display = '';
       createBtn.textContent = '+ Submit New Character';
       if (typeof LU_CLASS_DATA !== 'undefined' && Object.keys(LU_CLASS_DATA).length > 0) {
-        renderLevelRoadmap(d, document.getElementById('char-roadmap-container'));
+        renderLevelRoadmap(d, document.getElementById('char-roadmap-container'), _myCharSlot);
       } else {
         const rdEl = document.getElementById('char-roadmap-container');
         if (rdEl) rdEl.style.display = 'none';
