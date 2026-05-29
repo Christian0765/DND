@@ -33,7 +33,8 @@ let _luWizard = {
   step: 0,          // 0=confirm 1=hp 2=features 3=spells 4=asi 5=summary 6=subclass
   totalSteps: 0,
   hpRoll: null,
-  hpChoice: 'average', // 'average' | 'roll'
+  hpChoice: 'average',    // 'average' | 'roll'
+  dmHealthChoice: 'add',  // 'full' | 'add' | 'keep'  (set by DM, sent with offer)
   asiChoice: null,   // 'plus2' | 'plus11' | 'feat'
   asiStat1: 'str',
   asiStat2: 'str',
@@ -46,6 +47,14 @@ let _luWizard = {
 
 function luModifier(score){
   return Math.floor((parseInt(score)||10 - 10) / 2);
+}
+
+function luCalculateCorrectHpMax(cls, level, conMod){
+  const hd = LU_HIT_DIE[cls] || 8;
+  const avg = Math.ceil(hd / 2) + 1;
+  let total = hd + conMod; // level 1: max die
+  for (let l = 2; l <= level; l++) total += avg + conMod;
+  return total;
 }
 
 function luIsAsiLevel(cls, lvl){
@@ -126,7 +135,10 @@ function luGetFeatures(cls, lvl, subclassName){
 
 function luDetermineSteps(){
   const w = _luWizard;
-  let steps = [0,1,2]; // confirm, hp, features — always present
+  let steps = [0]; // confirm always first
+  // Skip HP step if DM chose full recalc or keep — no player choice needed
+  if (w.dmHealthChoice !== 'full' && w.dmHealthChoice !== 'keep') steps.push(1);
+  steps.push(2); // features
   if(luIsSubclassLevel(w.className, w.newLevel)) steps.push(6); // subclass picker
   if(luHasSpells(w.className)) steps.push(3);                   // spell slots
   if(luIsAsiLevel(w.className, w.newLevel)) steps.push(4);      // asi/feat
@@ -153,10 +165,11 @@ async function _luLoadChar(slot){
   if (lvl >= 20){ showToast('Character is already max level (20)!'); return null; }
 
   const existingSubclass = luGetField(data,'subclass') || luGetField(data,'archetype') || '';
+  const dmHealthChoice = data.pendingLevelUp?.dmHealthChoice || 'add';
   _luWizard = {
     open: true, slot, charData: data, className: cls,
     currentLevel: lvl, newLevel: lvl + 1,
-    step: 0, hpRoll: null, hpChoice: 'average',
+    step: 0, hpRoll: null, hpChoice: 'average', dmHealthChoice,
     asiChoice: null, asiStat1: 'str', asiStat2: 'str',
     featChoice: '', subclassChoice: existingSubclass, changes: [],
   };
@@ -501,9 +514,17 @@ function luStepSummary(){
   const subclassWarning = hasSubclassStep && !w.subclassChoice
     ? `<div class="lup-warning-box" style="margin-bottom:10px;"><span>⚠️</span><div class="lup-warning-text">No subclass selected — go back to choose one.</div></div>` : '';
 
+  const dmHC = w.dmHealthChoice || 'add';
   const items = [];
   items.push({ icon:'📈', text:`Level: <strong>${w.currentLevel} → ${w.newLevel}</strong>`, hl:true });
-  items.push({ icon:'❤️', text:`HP Max: <strong>+${hpGain}</strong> (${w.hpChoice==='average'?'average':'rolled '+w.hpRoll})`, hl:true });
+  if (dmHC === 'full') {
+    const fullHp = luCalculateCorrectHpMax(w.className, w.newLevel, conMod);
+    items.push({ icon:'❤️', text:`HP Max: <strong>${fullHp}</strong> (full recalculation)`, hl:true });
+  } else if (dmHC === 'add') {
+    items.push({ icon:'❤️', text:`HP Max: <strong>+${hpGain}</strong> (${w.hpChoice==='average'?'average':'rolled '+w.hpRoll})`, hl:true });
+  } else {
+    items.push({ icon:'❤️', text:`HP Max: <strong>no change</strong>`, hl:false });
+  }
   if (profNew > profOld) items.push({ icon:'🛡️', text:`Proficiency Bonus: <strong>+${profNew}</strong>`, hl:true });
   if (w.subclassChoice) items.push({ icon:'🎭', text:`Subclass: <strong>${escHtml(w.subclassChoice)}</strong>`, hl:true });
 
@@ -598,6 +619,45 @@ function closeLuModal(){
 
 // ── DM READ-ONLY REVIEW MODAL ─────────────────────────────────
 
+function luDmHealthSection(){
+  const w = _luWizard;
+  const hd = LU_HIT_DIE[w.className] || 8;
+  const conMod = luModifier(luGetField(w.charData,'con'));
+  const avg = Math.ceil(hd / 2) + 1;
+  const hpGain = avg + conMod;
+  const fullHp = luCalculateCorrectHpMax(w.className, w.newLevel, conMod);
+  const ch = w.dmHealthChoice || 'add';
+  const opts = [
+    { val:'full', icon:'💯', label:'Full Health',
+      desc:`Set HP max to ${fullHp} — full recalculation from scratch (level 1 max + averages × ${w.newLevel} levels)` },
+    { val:'add',  icon:'➕', label:'Add HP',
+      desc:`Player chooses average (+${avg}) or rolls d${hd} — standard 5e level-up` },
+    { val:'keep', icon:'🔒', label:'Keep HP',
+      desc:'HP stays the same — all other level-up benefits still apply' },
+  ];
+  return `
+    <div class="lu-dm-health-section">
+      <div class="lu-dm-health-title">❤️ Health on Level Up</div>
+      <div class="lu-dm-health-options">
+        ${opts.map(o => `
+          <div class="lu-dm-health-option${ch===o.val?' lu-dm-health-selected':''}"
+               onclick="luSetDmHealth('${o.val}')">
+            <div class="lu-dm-health-icon">${o.icon}</div>
+            <div>
+              <div class="lu-dm-health-label">${o.label}</div>
+              <div class="lu-dm-health-desc">${o.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function luSetDmHealth(val){
+  _luWizard.dmHealthChoice = val;
+  renderLuDMModal();
+}
+
 function renderLuDMModal(){
   const existing = document.getElementById('lu-modal-overlay');
   if (existing) existing.remove();
@@ -625,6 +685,7 @@ function renderLuDMModal(){
         </div>
       </div>
       <div class="lu-dm-body">${luDMReviewBody()}</div>
+      ${luDmHealthSection()}
       <div class="lu-dm-footer">
         <div class="lu-dm-footer-note">Player receives this offer and makes their own choices.</div>
         <button class="lu-dm-send-btn" id="lu-dm-send-btn" onclick="luSendLevelUp()">
@@ -748,6 +809,7 @@ async function luSendLevelUp(){
       .update({
         pendingLevelUp: {
           newLevel: w.newLevel,
+          dmHealthChoice: w.dmHealthChoice || 'add',
           offeredAt: firebase.firestore.FieldValue.serverTimestamp(),
         }
       });
@@ -780,20 +842,27 @@ async function luApplyLevelUp(){
   const hd = LU_HIT_DIE[w.className]||8;
   const conMod = luModifier(luGetField(w.charData,'con'));
   const avg = Math.ceil(hd/2)+1;
-  const hpGain = w.hpChoice==='roll' && w.hpRoll!==null
-    ? w.hpRoll + conMod : avg + conMod;
-
   const currentMaxHp = parseInt(luGetField(w.charData,'maxhp')||0);
   const currentHp    = parseInt(luGetField(w.charData,'hp')||0);
   const profNew = LU_PROF_BONUS[w.newLevel]||2;
+  const dmHC = w.dmHealthChoice || 'add';
 
   const updates = {
-    'f-level':           String(w.newLevel),
-    'f-maxhp':           String(currentMaxHp + hpGain),
-    'f-hp':              String(currentHp + hpGain),
+    'f-level':            String(w.newLevel),
     'f-proficiencybonus': String(profNew),
-    'f-pb':              String(profNew),
+    'f-pb':               String(profNew),
   };
+
+  if (dmHC === 'full') {
+    const fullHp = luCalculateCorrectHpMax(w.className, w.newLevel, conMod);
+    updates['f-maxhp'] = String(fullHp);
+    updates['f-hp']    = String(fullHp);
+  } else if (dmHC === 'add') {
+    const hpGain = w.hpChoice==='roll' && w.hpRoll!==null ? w.hpRoll + conMod : avg + conMod;
+    updates['f-maxhp'] = String(currentMaxHp + hpGain);
+    updates['f-hp']    = String(currentHp + hpGain);
+  }
+  // dmHC === 'keep': no HP fields added — HP unchanged
 
   // ASI stat bumps
   if(w.asiChoice === 'plus2'){
@@ -1124,6 +1193,33 @@ async function luApplyLevelUp(){
     .lu-dm-spell-table tr:last-child td { border-bottom:none; }
     .lu-dm-slot-diamonds { letter-spacing:2px; color:#d4af37; }
     .lu-dm-slot-num { font-size:11px; color:#5a4520; margin-left:6px; }
+
+    /* Health options (DM modal) */
+    .lu-dm-health-section {
+      padding:16px 24px; border-top:1px solid rgba(201,168,76,.12);
+      background:rgba(0,0,0,.25); flex-shrink:0;
+    }
+    .lu-dm-health-title {
+      font-family:'Cinzel',serif; font-size:9px; text-transform:uppercase;
+      letter-spacing:3px; color:#8b6914; margin-bottom:10px;
+    }
+    .lu-dm-health-options { display:flex; flex-direction:column; gap:6px; }
+    .lu-dm-health-option {
+      display:flex; align-items:flex-start; gap:10px; padding:10px 12px;
+      border:1px solid rgba(106,79,26,.4); border-radius:3px;
+      cursor:pointer; transition:all .15s; background:rgba(255,255,255,.02);
+    }
+    .lu-dm-health-option:hover { border-color:rgba(201,168,76,.5); background:rgba(201,168,76,.05); }
+    .lu-dm-health-selected { border-color:#c9a84c !important; background:rgba(201,168,76,.12) !important; }
+    .lu-dm-health-icon { font-size:1.1rem; flex-shrink:0; margin-top:1px; }
+    .lu-dm-health-label {
+      font-family:'Cinzel',serif; font-size:10px; font-weight:700;
+      color:#d4af37; margin-bottom:2px; letter-spacing:.5px;
+    }
+    .lu-dm-health-desc {
+      font-family:'Crimson Text',serif; font-size:12px;
+      color:rgba(212,175,55,.5); line-height:1.3;
+    }
 
     /* Footer */
     .lu-dm-footer {
