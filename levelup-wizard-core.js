@@ -71,6 +71,28 @@ function luGetField(data, key){
   return data[`f-${key}`] || data[key] || '';
 }
 
+function _luFeatureIcon(name){
+  const n = (name||'').toLowerCase();
+  if (/attack|strike|weapon/.test(n))                                                     return '⚔️';
+  if (/defense|armor|ward|shield|protection|abjur/.test(n))                               return '🛡️';
+  if (/spell|magic|cantrip|ritual|evoc|conjur|illus|enchant|necro|divin|transmut/.test(n)) return '✨';
+  if (/rage|berserker|frenzy/.test(n))                                                    return '💢';
+  if (/archetype|tradition|subclass|college|path|circle|oath|patron|origin|conclave/.test(n)) return '🎭';
+  if (/healing|lay on|smite/.test(n))                                                     return '💛';
+  if (/movement|speed|dash/.test(n))                                                      return '💨';
+  if (/sneak|cunning/.test(n))                                                            return '🗡️';
+  if (/ki|stance|martial/.test(n))                                                        return '🥋';
+  if (/recovery|surge|second wind|rest/.test(n))                                          return '🌙';
+  if (/bardic|inspiration|song/.test(n))                                                  return '🎵';
+  return '📜';
+}
+
+function _luParseFeature(f){
+  const m = (f||'').match(/^([^(]+?)\s*\((.+)\)$/s);
+  if (m) return { name: m[1].trim(), desc: m[2].trim() };
+  return { name: f, desc: '' };
+}
+
 // ── FEATURE LOOKUP ───────────────────────────────────────────
 // Returns the combined feature list for the current level:
 // base class features + subclass features (if a subclass is chosen)
@@ -175,19 +197,18 @@ function renderLuModal(){
   if(existing) existing.remove();
 
   const w = _luWizard;
-  const stepLabels = ['Confirm','Hit Points','Features','Spell Slots','ASI / Feat','Summary','Subclass'];
   const steps = luDetermineSteps();
+  const stepLabels = ['Confirm','HP','Features','Spells','ASI','Summary','Subclass'];
 
   const stepIndicator = steps.map((s,i) => {
-    const active = i === w.step ? 'lu-step-active' : (i < w.step ? 'lu-step-done' : '');
-    return `<div class="lu-step-dot ${active}" title="${stepLabels[s]}">
-      ${i < w.step ? '✓' : i+1}
-    </div>`;
-  }).join('<div class="lu-step-line"></div>');
+    const isDone = i < w.step;
+    const isActive = i === w.step;
+    const cls = isDone ? 'lup-step-dot lup-done' : isActive ? 'lup-step-dot lup-active' : 'lup-step-dot';
+    return `<div class="${cls}" title="${stepLabels[s]||''}">${isDone ? '✓' : i+1}</div>`;
+  }).join('<div class="lup-step-line"></div>');
 
-  let bodyHtml = '';
   const currentStepIndex = steps[w.step];
-
+  let bodyHtml = '';
   if(currentStepIndex === 0) bodyHtml = luStepConfirm();
   else if(currentStepIndex === 1) bodyHtml = luStepHp();
   else if(currentStepIndex === 2) bodyHtml = luStepFeatures();
@@ -196,28 +217,30 @@ function renderLuModal(){
   else if(currentStepIndex === 5) bodyHtml = luStepSummary();
   else if(currentStepIndex === 6) bodyHtml = luStepSubclass();
 
-  const isLast = w.step === steps.length - 1;
+  const isLast  = w.step === steps.length - 1;
   const isFirst = w.step === 0;
+
+  const classIcon = { fighter:'⚔️', barbarian:'🪓', paladin:'🛡️', ranger:'🏹', monk:'🥋',
+    rogue:'🗡️', wizard:'📚', sorcerer:'🔮', warlock:'👁️', cleric:'⛪',
+    druid:'🌿', bard:'🎵', artificer:'⚙️' }[w.className] || '⚔️';
 
   const overlay = document.createElement('div');
   overlay.id = 'lu-modal-overlay';
   overlay.innerHTML = `
-    <div class="lu-modal" role="dialog" aria-modal="true" aria-label="Level Up Wizard">
-      <div class="lu-header">
-        <div class="lu-title-row">
-          <span class="lu-title-icon">⚔️</span>
-          <div>
-            <div class="lu-title">Level Up Wizard</div>
-            <div class="lu-subtitle">${escHtml(luGetField(w.charData,'name') || 'Character')} — ${escHtml(w.className||'Unknown Class')}</div>
-          </div>
-          <button class="lu-close-btn" onclick="closeLuModal()" aria-label="Close">✕</button>
+    <div class="lup-modal" role="dialog" aria-modal="true" aria-label="Level Up Wizard">
+      <div class="lup-header">
+        <div class="lup-header-icon">${classIcon}</div>
+        <div class="lup-header-text">
+          <div class="lup-title">Level Up Wizard</div>
+          <div class="lup-subtitle">${escHtml(luGetField(w.charData,'name')||'Character')} — ${escHtml(w.className||'Unknown')}</div>
         </div>
-        <div class="lu-steps">${stepIndicator}</div>
+        <button class="lup-close" onclick="closeLuModal()" aria-label="Close">✕</button>
       </div>
-      <div class="lu-body">${bodyHtml}</div>
-      <div class="lu-footer">
-        ${!isFirst ? `<button class="lu-btn lu-btn-ghost" onclick="luNavStep(-1)">← Back</button>` : `<div></div>`}
-        <button class="lu-btn lu-btn-primary" onclick="${isLast ? 'luApplyLevelUp()' : 'luNavStep(1)'}">
+      <div class="lup-steps">${stepIndicator}</div>
+      <div class="lup-body">${bodyHtml}</div>
+      <div class="lup-footer">
+        ${!isFirst ? `<button class="lup-back-btn" onclick="luNavStep(-1)">← Back</button>` : '<div></div>'}
+        <button class="lup-next-btn${isLast?' lup-apply':''}" onclick="${isLast ? 'luApplyLevelUp()' : 'luNavStep(1)'}">
           ${isLast ? '🎉 Apply Level Up' : 'Next →'}
         </button>
       </div>
@@ -236,41 +259,37 @@ function luStepConfirm(){
   const w = _luWizard;
   const profOld = LU_PROF_BONUS[w.currentLevel] || 2;
   const profNew = LU_PROF_BONUS[w.newLevel] || 2;
-  const profChange = profNew > profOld
-    ? `<span class="lu-badge lu-badge-green">+1 Proficiency Bonus (now +${profNew})</span>` : '';
   const classData = LU_CLASS_DATA[w.className];
 
   return `
-    <div class="lu-step-confirm">
-      <div class="lu-level-display">
-        <div class="lu-level-box lu-level-old">
-          <div class="lu-level-num">${w.currentLevel}</div>
-          <div class="lu-level-label">Current Level</div>
-        </div>
-        <div class="lu-level-arrow">→</div>
-        <div class="lu-level-box lu-level-new">
-          <div class="lu-level-num">${w.newLevel}</div>
-          <div class="lu-level-label">New Level</div>
-        </div>
+    <div class="lup-level-banner">
+      <div class="lup-level-block">
+        <div class="lup-level-num lup-lvl-old">${w.currentLevel}</div>
+        <div class="lup-level-label lup-lvl-old-label">Current</div>
       </div>
-      <div class="lu-confirm-details">
-        <div class="lu-detail-row">
-          <span class="lu-detail-label">Class</span>
-          <span class="lu-detail-val">${escHtml(w.className||'Unknown')}</span>
-        </div>
-        <div class="lu-detail-row">
-          <span class="lu-detail-label">Proficiency Bonus</span>
-          <span class="lu-detail-val">+${profOld} → +${profNew} ${profChange}</span>
-        </div>
-        <div class="lu-detail-row">
-          <span class="lu-detail-label">Hit Die</span>
-          <span class="lu-detail-val">d${LU_HIT_DIE[w.className]||8}</span>
-        </div>
-        ${!classData ? `<div class="lu-warning">⚠️ Class data not found for "${escHtml(w.className)}" — features won't display.</div>` : ''}
-        ${luIsAsiLevel(w.className, w.newLevel) ? `<div class="lu-badge lu-badge-gold" style="margin-top:8px">⭐ ASI / Feat available at this level!</div>` : ''}
-        ${luIsSubclassLevel(w.className, w.newLevel) ? `<div class="lu-badge lu-badge-gold" style="margin-top:8px">🎭 Subclass selection at this level!</div>` : ''}
+      <div class="lup-level-arrow">→</div>
+      <div class="lup-level-block">
+        <div class="lup-level-num lup-lvl-new">${w.newLevel}</div>
+        <div class="lup-level-label lup-lvl-new-label">New Level</div>
       </div>
     </div>
+    <div class="lup-detail-rows">
+      <div class="lup-detail-row">
+        <div class="lup-detail-label">Class</div>
+        <div class="lup-detail-value">${escHtml(w.className||'Unknown')}</div>
+      </div>
+      <div class="lup-detail-row">
+        <div class="lup-detail-label">Proficiency Bonus</div>
+        <div class="lup-detail-value"><span class="lup-muted">+${profOld}</span> → +${profNew}</div>
+      </div>
+      <div class="lup-detail-row">
+        <div class="lup-detail-label">Hit Die</div>
+        <div class="lup-detail-value">d${LU_HIT_DIE[w.className]||8}</div>
+      </div>
+    </div>
+    ${!classData ? `<div class="lup-warning-box" style="margin-top:10px;"><span>⚠️</span><div class="lup-warning-text">Class data not found for "${escHtml(w.className)}" — features won't display correctly.</div></div>` : ''}
+    ${luIsAsiLevel(w.className, w.newLevel)     ? `<div class="lup-asi-badge"><span>⭐</span><span class="lup-asi-badge-text">ASI / Feat available at this level!</span></div>` : ''}
+    ${luIsSubclassLevel(w.className, w.newLevel) ? `<div class="lup-asi-badge"><span>🎭</span><span class="lup-asi-badge-text">Subclass selection at this level!</span></div>` : ''}
   `;
 }
 
@@ -282,45 +301,39 @@ function luStepHp(){
   const avg = Math.ceil(hd / 2) + 1;
   const totalAvg = avg + conMod;
   const totalRoll = w.hpRoll !== null ? (w.hpRoll + conMod) : null;
+  const currentMaxHp = parseInt(luGetField(w.charData,'maxhp')||0);
 
   return `
-    <div class="lu-step-hp">
-      <p class="lu-step-desc">Roll your hit die or take the average HP increase.</p>
-      <div class="lu-hp-options">
-        <label class="lu-hp-option ${w.hpChoice==='average'?'lu-hp-selected':''}">
-          <input type="radio" name="lu-hp" value="average" onchange="luSetHpChoice('average')"
-            ${w.hpChoice==='average'?'checked':''}>
-          <div class="lu-hp-option-body">
-            <div class="lu-hp-option-title">Take Average</div>
-            <div class="lu-hp-option-val">${avg} ${conStr} = <strong>+${totalAvg} HP</strong></div>
-            <div class="lu-hp-option-sub">Consistent, reliable choice</div>
-          </div>
-        </label>
-        <label class="lu-hp-option ${w.hpChoice==='roll'?'lu-hp-selected':''}">
-          <input type="radio" name="lu-hp" value="roll" onchange="luSetHpChoice('roll')"
-            ${w.hpChoice==='roll'?'checked':''}>
-          <div class="lu-hp-option-body">
-            <div class="lu-hp-option-title">Roll d${hd}</div>
-            ${w.hpRoll !== null
-              ? `<div class="lu-hp-option-val"><span id="lu-hp-roll-display">${w.hpRoll}</span> ${conStr} = <strong>+${totalRoll} HP</strong></div>`
-              : `<div class="lu-hp-option-sub">Risk it for a higher result</div>`
-            }
-          </div>
-        </label>
-      </div>
-      ${w.hpChoice === 'roll' ? `
-        <button id="lu-roll-hp-btn" class="lu-btn lu-btn-roll">🎲 Roll d${hd}</button>
-        <div class="lu-hp-manual-row">
-          <span class="lu-hp-manual-label">Or enter result manually:</span>
-          <input type="number" class="lu-hp-manual-input" min="1" max="${hd}"
-            placeholder="1–${hd}" value="${w.hpRoll !== null ? w.hpRoll : ''}"
-            onchange="_luWizard.hpRoll = Math.min(${hd}, Math.max(1, parseInt(this.value)||1)); _luWizard.hpChoice='roll'; renderLuModal();">
+    <p class="lup-step-desc">Roll your hit die or take the average HP increase.</p>
+    <div class="lup-hp-options">
+      <div class="lup-hp-option${w.hpChoice==='average'?' lup-selected':''}" onclick="luSetHpChoice('average')">
+        <div class="lup-radio-dot${w.hpChoice==='average'?' lup-radio-checked':''}"></div>
+        <div>
+          <div class="lup-hp-title">Take Average</div>
+          <div class="lup-hp-value">${avg} ${conStr} = <strong>+${totalAvg} HP</strong></div>
+          <div class="lup-hp-sub">Consistent, reliable choice</div>
         </div>
-      ` : ''}
-      <div class="lu-hp-summary">
-        <span>Current HP Max: <strong>${luGetField(w.charData,'maxhp')||'?'}</strong></span>
-        <span>→ New HP Max: <strong>${parseInt(luGetField(w.charData,'maxhp')||0) + (w.hpChoice==='average' ? totalAvg : (totalRoll ?? '?'))}</strong></span>
       </div>
+      <div class="lup-hp-option${w.hpChoice==='roll'?' lup-selected':''}" onclick="luSetHpChoice('roll')">
+        <div class="lup-radio-dot${w.hpChoice==='roll'?' lup-radio-checked':''}"></div>
+        <div style="flex:1;">
+          <div class="lup-hp-title">Roll d${hd}</div>
+          ${w.hpRoll !== null
+            ? `<div class="lup-hp-value"><span id="lu-hp-roll-display">${w.hpRoll}</span> ${conStr} = <strong>+${totalRoll} HP</strong></div>`
+            : `<div class="lup-hp-sub">Risk it for a higher result</div>`
+          }
+          ${w.hpChoice === 'roll' ? `
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button id="lu-roll-hp-btn" style="background:linear-gradient(135deg,#8b3a3a,#6b2e2e);border:1px solid rgba(201,168,76,.3);color:#f5e6c8;font-family:'Cinzel',serif;font-size:0.6rem;padding:7px 14px;cursor:pointer;border-radius:2px;letter-spacing:1px;">🎲 Roll d${hd}</button>
+            <input type="number" style="width:55px;background:#0a0800;border:1px solid #3a2c0e;color:#d4af37;font-family:'Cinzel',serif;font-size:0.85rem;padding:5px 8px;border-radius:2px;text-align:center;" min="1" max="${hd}" placeholder="1–${hd}" value="${w.hpRoll !== null ? w.hpRoll : ''}"
+              onchange="_luWizard.hpRoll=Math.min(${hd},Math.max(1,parseInt(this.value)||1));_luWizard.hpChoice='roll';renderLuModal();">
+          </div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="lup-hp-summary">
+      <span>Current HP Max: <strong>${currentMaxHp||'?'}</strong></span>
+      <span>→ New HP Max: <strong>${currentMaxHp + (w.hpChoice==='average' ? totalAvg : (totalRoll ?? '?'))}</strong></span>
     </div>
   `;
 }
@@ -329,51 +342,57 @@ function luStepFeatures(){
   const w = _luWizard;
   const features = luGetFeatures(w.className, w.newLevel, w.subclassChoice);
   const classData = LU_CLASS_DATA[w.className];
+  const realFeatures = features.filter(f =>
+    f !== 'No new class features at this level.' && f !== 'No new features at this level.'
+  );
+
+  const featHtml = realFeatures.length
+    ? realFeatures.map(f => {
+        const { name, desc } = _luParseFeature(f);
+        return `<div class="lup-feature-item">
+          <div class="lup-feature-icon">${_luFeatureIcon(name)}</div>
+          <div>
+            <div class="lup-feature-name">${escHtml(name)}</div>
+            ${desc ? `<div class="lup-feature-desc">${escHtml(desc)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')
+    : `<div style="font-family:'Crimson Text',serif;font-style:italic;color:#4a3820;font-size:14px;padding:8px 0;">No new class features at this level.</div>`;
 
   return `
-    <div class="lu-step-features">
-      <p class="lu-step-desc">
-        New features at <strong>${escHtml(w.className||'')}</strong> level <strong>${w.newLevel}</strong>
-        ${w.subclassChoice ? `— <em>${escHtml(w.subclassChoice)}</em>` : ''}:
-      </p>
-      <ul class="lu-features-list">
-        ${features.map(f => `<li class="lu-feature-item">
-          <span class="lu-feature-bullet">⚡</span>
-          <span>${escHtml(f)}</span>
-        </li>`).join('')}
-      </ul>
-      ${!classData ? `<div class="lu-warning">⚠️ Class "${escHtml(w.className)}" not recognised — check that the character sheet class field matches a standard D&amp;D 5e class name exactly.</div>` : ''}
-      ${classData && w.subclassChoice && !classData.subclasses?.[w.subclassChoice] ? `<div class="lu-info-box">ℹ️ Subclass "${escHtml(w.subclassChoice)}" not found in data — showing base class features only.</div>` : ''}
-    </div>
+    <div class="lup-section-label">New Features at ${escHtml(w.className||'')} Level ${w.newLevel}${w.subclassChoice ? ` — ${escHtml(w.subclassChoice)}` : ''}</div>
+    <div class="lup-features-list">${featHtml}</div>
+    ${!classData ? `<div class="lup-warning-box" style="margin-top:12px;"><span>⚠️</span><div class="lup-warning-text">Class "${escHtml(w.className)}" not recognised — check spelling.</div></div>` : ''}
+    ${classData && w.subclassChoice && !classData.subclasses?.[w.subclassChoice] ? `<div class="lup-warning-box" style="margin-top:12px;"><span>ℹ️</span><div class="lup-warning-text">Subclass "${escHtml(w.subclassChoice)}" not found — showing base features only.</div></div>` : ''}
   `;
 }
 
 function luStepSpells(){
   const w = _luWizard;
   const slots = luGetSlots(w.className, w.newLevel);
-  if(!slots) return `<div class="lu-step-spells"><p>No spell slots for this class.</p></div>`;
+  if(!slots) return `<p class="lup-step-desc">No spell slots for this class.</p>`;
 
   const warlockNote = w.className === 'warlock'
-    ? `<div class="lu-info-box">⚡ Warlock uses Pact Magic — all slots are the same level and recover on a short rest.</div>`
-    : '';
+    ? `<div class="lup-warning-box" style="margin-bottom:14px;"><span>⚡</span><div class="lup-warning-text">Pact Magic — all slots are the same level and recover on a short rest.</div></div>` : '';
 
+  const ordinals = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
   const slotRows = slots.map((count, i) => {
-    if(count === 0) return '';
+    if(!count) return '';
     return `<tr>
-      <td class="lu-slot-level">${i+1}${['st','nd','rd','th','th','th','th','th','th'][i]}</td>
-      <td class="lu-slot-count">${'◆'.repeat(count)}<span class="lu-slot-num">${count}</span></td>
+      <td>${ordinals[i]||i+1+'th'}</td>
+      <td><span class="lu-dm-slot-diamonds">${'◆'.repeat(Math.min(count,5))}${count>5?'+':''}</span><span class="lu-dm-slot-num">${count}</span></td>
     </tr>`;
   }).filter(Boolean).join('');
 
   return `
-    <div class="lu-step-spells">
-      <p class="lu-step-desc">Your spell slot table at level <strong>${w.newLevel}</strong>:</p>
-      ${warlockNote}
-      <table class="lu-spell-table">
-        <thead><tr><th>Slot Level</th><th>Slots</th></tr></thead>
-        <tbody>${slotRows}</tbody>
-      </table>
-      <div class="lu-info-box" style="margin-top:12px">📖 Remember to choose new spells from your class spell list where applicable.</div>
+    <div class="lup-section-label">Spell Slots at Level ${w.newLevel}</div>
+    ${warlockNote}
+    <table class="lu-dm-spell-table">
+      <thead><tr><th>Slot Level</th><th>Slots</th></tr></thead>
+      <tbody>${slotRows}</tbody>
+    </table>
+    <div class="lup-warning-box" style="margin-top:14px;">
+      <span>📖</span><div class="lup-warning-text">Remember to choose new spells from your class spell list where applicable.</div>
     </div>
   `;
 }
@@ -384,32 +403,30 @@ function luStepSubclass(){
   const options = classData ? Object.keys(classData.subclasses || {}) : [];
 
   if(options.length === 0){
-    return `<div class="lu-step-subclass">
-      <p class="lu-step-desc">No subclass data found for <strong>${escHtml(w.className)}</strong>. Note your choice manually.</p>
-    </div>`;
+    return `
+      <div class="lup-section-label">Subclass Selection</div>
+      <p class="lup-step-desc">No subclass data found for <strong>${escHtml(w.className)}</strong>. Note your choice manually.</p>
+    `;
   }
 
   return `
-    <div class="lu-step-subclass">
-      <p class="lu-step-desc">Choose your <strong>${escHtml(w.className)}</strong> subclass archetype:</p>
-      <div class="lu-subclass-list">
-        ${options.map(name => {
-          const selected = w.subclassChoice === name;
-          // Show the level 3 (or subclass level) description from subclasses data
-          const firstLevelFeatures = classData.subclasses[name]?.[LU_SUBCLASS_LEVEL[w.className]] || [];
-          const preview = firstLevelFeatures[0] || '';
-          return `
-            <label class="lu-subclass-option ${selected ? 'lu-subclass-selected' : ''}">
-              <input type="radio" name="lu-subclass" value="${escHtml(name)}"
-                onchange="luSetSubclass('${escHtml(name).replace(/'/g,"\\'")}')">
-              <div class="lu-subclass-body">
-                <div class="lu-subclass-name">${escHtml(name)}</div>
-                ${preview ? `<div class="lu-subclass-desc">${escHtml(preview)}</div>` : ''}
-              </div>
-              ${selected ? '<div class="lu-subclass-check">✓</div>' : ''}
-            </label>`;
-        }).join('')}
-      </div>
+    <div class="lup-section-label">Choose your ${escHtml(w.className)} Subclass</div>
+    <div class="lup-subclass-list">
+      ${options.map(name => {
+        const selected = w.subclassChoice === name;
+        const firstLevelFeatures = classData.subclasses[name]?.[LU_SUBCLASS_LEVEL[w.className]] || [];
+        const preview = firstLevelFeatures[0] || '';
+        const { name: fn, desc: fd } = preview ? _luParseFeature(preview) : { name:'', desc:'' };
+        return `
+          <div class="lup-subclass-option${selected?' lup-selected':''}" onclick="luSetSubclass('${escHtml(name).replace(/'/g,"\\'")}')">
+            <div class="lup-radio-dot${selected?' lup-radio-checked':''}"></div>
+            <div style="flex:1;">
+              <div class="lup-subclass-name">${escHtml(name)}</div>
+              ${fn ? `<div class="lup-subclass-preview">${escHtml(fn)}${fd ? ` — <em style="color:#4a3820;">${escHtml(fd.substring(0,80))}${fd.length>80?'…':''}</em>` : ''}</div>` : ''}
+            </div>
+            ${selected ? `<div style="color:#c9a84c;font-size:1.1rem;font-weight:700;flex-shrink:0;">✓</div>` : ''}
+          </div>`;
+      }).join('')}
     </div>
   `;
 }
@@ -421,8 +438,11 @@ function luStepAsi(){
     return {key:s, name:LU_STAT_NAMES[s], val};
   });
 
-  const statOptions = stats.map(s =>
-    `<option value="${s.key}">${s.name} (${s.val})</option>`
+  const statOpts1 = stats.map(s =>
+    `<option value="${s.key}" ${w.asiStat1===s.key?'selected':''}>${s.name} (${s.val})</option>`
+  ).join('');
+  const statOpts2 = stats.map(s =>
+    `<option value="${s.key}" ${w.asiStat2===s.key?'selected':''}>${s.name} (${s.val})</option>`
   ).join('');
 
   const featOptions = LU_FEATS.map(f =>
@@ -430,38 +450,34 @@ function luStepAsi(){
   ).join('');
 
   return `
-    <div class="lu-step-asi">
-      <p class="lu-step-desc">Choose your Ability Score Improvement or Feat:</p>
-      <div class="lu-asi-options">
-        <label class="lu-asi-option ${w.asiChoice==='plus2'?'lu-asi-selected':''}">
-          <input type="radio" name="lu-asi" value="plus2" onchange="luSetAsi('plus2')" ${w.asiChoice==='plus2'?'checked':''}>
-          <div class="lu-asi-body">
-            <div class="lu-asi-title">+2 to One Stat</div>
-            <select class="lu-stat-select" id="lu-asi-stat1" onchange="_luWizard.asiStat1=this.value">
-              ${statOptions}
-            </select>
+    <p class="lup-step-desc">Choose your Ability Score Improvement or Feat:</p>
+    <div class="lup-asi-options">
+      <div class="lup-asi-option${w.asiChoice==='plus2'?' lup-selected':''}" onclick="luSetAsi('plus2')">
+        <div class="lup-radio-dot${w.asiChoice==='plus2'?' lup-radio-checked':''}"></div>
+        <div class="lup-asi-body">
+          <div class="lup-asi-title">+2 to One Stat</div>
+          <select class="lup-asi-select" id="lu-asi-stat1" onchange="_luWizard.asiStat1=this.value;luSetAsi('plus2')">${statOpts1}</select>
+        </div>
+      </div>
+      <div class="lup-asi-option${w.asiChoice==='plus11'?' lup-selected':''}" onclick="luSetAsi('plus11')">
+        <div class="lup-radio-dot${w.asiChoice==='plus11'?' lup-radio-checked':''}"></div>
+        <div class="lup-asi-body">
+          <div class="lup-asi-title">+1 to Two Stats</div>
+          <div class="lup-asi-pair">
+            <select class="lup-asi-select" id="lu-asi-stat2a" onchange="_luWizard.asiStat1=this.value;luSetAsi('plus11')">${statOpts1}</select>
+            <select class="lup-asi-select" id="lu-asi-stat2b" onchange="_luWizard.asiStat2=this.value;luSetAsi('plus11')">${statOpts2}</select>
           </div>
-        </label>
-        <label class="lu-asi-option ${w.asiChoice==='plus11'?'lu-asi-selected':''}">
-          <input type="radio" name="lu-asi" value="plus11" onchange="luSetAsi('plus11')" ${w.asiChoice==='plus11'?'checked':''}>
-          <div class="lu-asi-body">
-            <div class="lu-asi-title">+1 to Two Stats</div>
-            <div class="lu-stat-pair">
-              <select class="lu-stat-select" id="lu-asi-stat2a" onchange="_luWizard.asiStat1=this.value">${statOptions}</select>
-              <select class="lu-stat-select" id="lu-asi-stat2b" onchange="_luWizard.asiStat2=this.value">${statOptions}</select>
-            </div>
-          </div>
-        </label>
-        <label class="lu-asi-option ${w.asiChoice==='feat'?'lu-asi-selected':''}">
-          <input type="radio" name="lu-asi" value="feat" onchange="luSetAsi('feat')" ${w.asiChoice==='feat'?'checked':''}>
-          <div class="lu-asi-body">
-            <div class="lu-asi-title">Take a Feat</div>
-            <select class="lu-stat-select" id="lu-asi-feat" onchange="_luWizard.featChoice=this.value">
-              <option value="">— Choose feat —</option>
-              ${featOptions}
-            </select>
-          </div>
-        </label>
+        </div>
+      </div>
+      <div class="lup-asi-option${w.asiChoice==='feat'?' lup-selected':''}" onclick="luSetAsi('feat')">
+        <div class="lup-radio-dot${w.asiChoice==='feat'?' lup-radio-checked':''}"></div>
+        <div class="lup-asi-body">
+          <div class="lup-asi-title">Take a Feat</div>
+          <select class="lup-asi-select" id="lu-asi-feat" onchange="_luWizard.featChoice=this.value;luSetAsi('feat')">
+            <option value="">— Choose feat —</option>
+            ${featOptions}
+          </select>
+        </div>
       </div>
     </div>
   `;
@@ -472,42 +488,46 @@ function luStepSummary(){
   const hd = LU_HIT_DIE[w.className]||8;
   const conMod = luModifier(luGetField(w.charData,'con'));
   const avg = Math.ceil(hd/2)+1;
-  const hpGain = w.hpChoice==='roll' && w.hpRoll!==null
-    ? w.hpRoll + conMod
-    : avg + conMod;
+  const hpGain = w.hpChoice==='roll' && w.hpRoll!==null ? w.hpRoll+conMod : avg+conMod;
   const profOld = LU_PROF_BONUS[w.currentLevel]||2;
   const profNew = LU_PROF_BONUS[w.newLevel]||2;
   const features = luGetFeatures(w.className, w.newLevel, w.subclassChoice);
-
-  const lines = [
-    `📈 Level: ${w.currentLevel} → ${w.newLevel}`,
-    `❤️ HP Max: +${hpGain} (${w.hpChoice==='average'?'average':'rolled '+w.hpRoll})`,
-    profNew > profOld ? `🛡️ Proficiency Bonus: +${profOld} → +${profNew}` : null,
-    w.subclassChoice ? `🎭 Subclass: ${w.subclassChoice}` : null,
-    ...features.filter(f => f !== 'No new features at this level.').map(f => `⚡ ${f}`),
-  ];
-
-  if(w.asiChoice === 'plus2') lines.push(`⭐ ASI: +2 ${LU_STAT_NAMES[w.asiStat1]}`);
-  else if(w.asiChoice === 'plus11') lines.push(`⭐ ASI: +1 ${LU_STAT_NAMES[w.asiStat1]}, +1 ${LU_STAT_NAMES[w.asiStat2]}`);
-  else if(w.asiChoice === 'feat' && w.featChoice) lines.push(`⭐ Feat: ${w.featChoice}`);
-
   const steps = luDetermineSteps();
   const hasAsiStep = steps.includes(4);
   const hasSubclassStep = steps.includes(6);
+
   const asiWarning = hasAsiStep && !w.asiChoice
-    ? `<div class="lu-warning">⚠️ No ASI / Feat selected. Go back to choose one.</div>` : '';
+    ? `<div class="lup-warning-box" style="margin-bottom:10px;"><span>⚠️</span><div class="lup-warning-text">No ASI / Feat selected — go back to choose one.</div></div>` : '';
   const subclassWarning = hasSubclassStep && !w.subclassChoice
-    ? `<div class="lu-warning">⚠️ No subclass selected. Go back to choose one.</div>` : '';
+    ? `<div class="lup-warning-box" style="margin-bottom:10px;"><span>⚠️</span><div class="lup-warning-text">No subclass selected — go back to choose one.</div></div>` : '';
+
+  const items = [];
+  items.push({ icon:'📈', text:`Level: <strong>${w.currentLevel} → ${w.newLevel}</strong>`, hl:true });
+  items.push({ icon:'❤️', text:`HP Max: <strong>+${hpGain}</strong> (${w.hpChoice==='average'?'average':'rolled '+w.hpRoll})`, hl:true });
+  if (profNew > profOld) items.push({ icon:'🛡️', text:`Proficiency Bonus: <strong>+${profNew}</strong>`, hl:true });
+  if (w.subclassChoice) items.push({ icon:'🎭', text:`Subclass: <strong>${escHtml(w.subclassChoice)}</strong>`, hl:true });
+
+  features.filter(f => f !== 'No new features at this level.' && f !== 'No new class features at this level.').forEach(f => {
+    const { name, desc } = _luParseFeature(f);
+    items.push({ icon: _luFeatureIcon(name), text:`<strong>${escHtml(name)}</strong>${desc ? ` — ${escHtml(desc.substring(0,60))}${desc.length>60?'…':''}` : ''}`, hl:false });
+  });
+
+  if (w.asiChoice === 'plus2')  items.push({ icon:'⭐', text:`ASI: <strong>+2 ${LU_STAT_NAMES[w.asiStat1]}</strong>`, hl:true });
+  else if (w.asiChoice === 'plus11') items.push({ icon:'⭐', text:`ASI: <strong>+1 ${LU_STAT_NAMES[w.asiStat1]}, +1 ${LU_STAT_NAMES[w.asiStat2]}</strong>`, hl:true });
+  else if (w.asiChoice === 'feat' && w.featChoice) items.push({ icon:'⭐', text:`Feat: <strong>${escHtml(w.featChoice)}</strong>`, hl:true });
 
   return `
-    <div class="lu-step-summary">
-      <p class="lu-step-desc">Review your changes before applying:</p>
-      ${asiWarning}
-      ${subclassWarning}
-      <ul class="lu-summary-list">
-        ${lines.filter(Boolean).map(l => `<li>${escHtml(l)}</li>`).join('')}
-      </ul>
-      <div class="lu-info-box" style="margin-top:12px">✅ Clicking "Apply Level Up" will update the character sheet in Firestore. This cannot be undone.</div>
+    <div class="lup-section-label">Review Changes</div>
+    ${asiWarning}${subclassWarning}
+    <div class="lup-summary-list">
+      ${items.map(it => `<div class="lup-summary-item${it.hl?' lup-summary-highlight':''}">
+        <div class="lup-summary-icon">${it.icon}</div>
+        <div class="lup-summary-text">${it.text}</div>
+      </div>`).join('')}
+    </div>
+    <div class="lup-warning-box" style="margin-top:14px;">
+      <span>⚠️</span>
+      <div class="lup-warning-text">Clicking "Apply Level Up" will update the character sheet in Firestore. This cannot be undone.</div>
     </div>
   `;
 }
@@ -629,39 +649,15 @@ function luDMReviewBody(){
   const features = luGetFeatures(w.className, w.newLevel, w.subclassChoice);
   const slots   = luGetSlots(w.className, w.newLevel);
 
-  // Icon mapper for feature names
-  function featureIcon(name){
-    const n = name.toLowerCase();
-    if (/attack|strike|weapon/.test(n))                                                 return '⚔️';
-    if (/defense|armor|ward|shield|protection|abjur/.test(n))                           return '🛡️';
-    if (/spell|magic|cantrip|ritual|evoc|conjur|illus|enchant|necro|divin|transmut/.test(n)) return '✨';
-    if (/rage|berserker|frenzy/.test(n))                                                return '💢';
-    if (/archetype|tradition|subclass|college|path|circle|oath|patron|origin|conclave/.test(n)) return '🎭';
-    if (/healing|lay on|smite/.test(n))                                                 return '💛';
-    if (/movement|speed|dash/.test(n))                                                  return '💨';
-    if (/sneak|cunning/.test(n))                                                        return '🗡️';
-    if (/ki|stance|martial/.test(n))                                                    return '🥋';
-    if (/recovery|surge|second wind|rest/.test(n))                                      return '🌙';
-    if (/bardic|inspiration|song/.test(n))                                              return '🎵';
-    return '📜';
-  }
-
-  // Split "Name (description)" → { name, desc }
-  function parseFeature(f){
-    const m = f.match(/^([^(]+?)\s*\((.+)\)$/s);
-    if (m) return { name: m[1].trim(), desc: m[2].trim() };
-    return { name: f, desc: '' };
-  }
-
   const realFeatures = features.filter(f =>
     f !== 'No new class features at this level.' && f !== 'No new features at this level.'
   );
 
   const featuresHtml = realFeatures.length
     ? realFeatures.map(f => {
-        const { name, desc } = parseFeature(f);
+        const { name, desc } = _luParseFeature(f);
         return `<div class="lu-dm-feature-item">
-          <div class="lu-dm-feature-icon">${featureIcon(name)}</div>
+          <div class="lu-dm-feature-icon">${_luFeatureIcon(name)}</div>
           <div>
             <div class="lu-dm-feature-name">${escHtml(name)}</div>
             ${desc ? `<div class="lu-dm-feature-desc">${escHtml(desc)}</div>` : ''}
@@ -867,154 +863,152 @@ async function luApplyLevelUp(){
     }
     @keyframes luFadeIn { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
 
-    .lu-modal {
-      background: var(--parchment-dark, #1a1209);
-      border: 2px solid var(--gold, #c9a84c);
-      border-radius:12px; width:100%; max-width:520px;
-      max-height:90vh; overflow:hidden;
-      display:flex; flex-direction:column;
-      font-family:'Crimson Text', Georgia, serif;
-      box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(201,168,76,.3);
+    /* ─── PLAYER LEVEL-UP WIZARD ───────────────────────────────────── */
+    .lup-modal {
+      background:#0f0c07; border:1px solid #6b4f1a; border-radius:4px; overflow:hidden;
+      box-shadow:0 0 0 1px #2a1f0a,0 30px 80px rgba(0,0,0,.9),inset 0 1px 0 rgba(201,168,76,.15);
+      width:100%; max-width:520px; max-height:90vh; display:flex; flex-direction:column;
+      font-family:'Crimson Text',Georgia,serif;
     }
 
-    .lu-header {
-      background: linear-gradient(135deg, rgba(201,168,76,.15), transparent);
-      border-bottom: 1px solid var(--border, rgba(201,168,76,.3));
-      padding:16px 20px 12px;
+    /* Header */
+    .lup-header {
+      background:linear-gradient(180deg,#1a1108 0%,#0f0c07 100%);
+      border-bottom:1px solid #3a2c0e; padding:20px 24px 16px;
+      position:relative; display:flex; align-items:center; gap:14px; flex-shrink:0;
     }
-    .lu-title-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-    .lu-title-icon { font-size:1.6rem; }
-    .lu-title { font-family:'Cinzel',serif; color:var(--gold,#c9a84c); font-size:1.1rem; font-weight:700; }
-    .lu-subtitle { color:var(--parchment,#f5e6c8); font-size:.9rem; opacity:.8; }
-    .lu-close-btn {
-      margin-left:auto; background:none; border:none;
-      color:var(--parchment,#f5e6c8); font-size:1.1rem; cursor:pointer;
-      opacity:.6; padding:4px 8px; border-radius:4px;
-    }
-    .lu-close-btn:hover { opacity:1; background:rgba(255,255,255,.1); }
+    .lup-header-icon { font-size:24px; filter:drop-shadow(0 0 6px rgba(201,168,76,.4)); }
+    .lup-title { font-family:'Cinzel',serif; font-size:18px; font-weight:900; color:#f0d98a; letter-spacing:1px; line-height:1; text-shadow:0 0 30px rgba(201,168,76,.3); }
+    .lup-subtitle { font-family:'Crimson Text',serif; font-style:italic; color:#6a5030; font-size:13px; margin-top:3px; }
+    .lup-close { position:absolute; top:18px; right:20px; background:none; border:none; color:#3a2c0e; font-size:16px; cursor:pointer; transition:color .15s; }
+    .lup-close:hover { color:#c9a84c; }
 
-    .lu-steps { display:flex; align-items:center; gap:0; }
-    .lu-step-dot {
-      width:28px; height:28px; border-radius:50%;
+    /* Steps bar */
+    .lup-steps { display:flex; align-items:center; padding:14px 24px; background:#0a0800; border-bottom:1px solid #1e1708; flex-shrink:0; }
+    .lup-step-dot {
+      width:30px; height:30px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
-      font-size:.75rem; font-weight:700; font-family:'Cinzel',serif;
-      background:rgba(201,168,76,.15); color:var(--parchment,#f5e6c8);
-      border:1px solid rgba(201,168,76,.3); transition:all .2s; flex-shrink:0;
+      font-family:'Cinzel',serif; font-size:11px; font-weight:700;
+      border:1px solid #2a2010; background:#13100a; color:#3a2c0e;
+      flex-shrink:0; transition:all .2s;
     }
-    .lu-step-dot.lu-step-active {
-      background:var(--gold,#c9a84c); color:#1a1209;
-      box-shadow: 0 0 12px rgba(201,168,76,.5);
+    .lup-step-dot.lup-done { background:#1a1608; border-color:#c9a84c; color:#c9a84c; font-size:13px; }
+    .lup-step-dot.lup-active { background:linear-gradient(135deg,#c9a84c,#a8853e); border-color:#d4af37; color:#0a0800; box-shadow:0 0 16px rgba(201,168,76,.5); }
+    .lup-step-line { flex:1; height:1px; background:#1e1708; }
+
+    /* Body */
+    .lup-body { padding:24px; overflow-y:auto; flex:1; }
+    .lup-body::-webkit-scrollbar { width:4px; }
+    .lup-body::-webkit-scrollbar-track { background:transparent; }
+    .lup-body::-webkit-scrollbar-thumb { background:#2a1f0a; border-radius:2px; }
+
+    .lup-step-desc { font-family:'Crimson Text',serif; font-size:15px; color:#7a6030; font-style:italic; margin-bottom:20px; line-height:1.4; }
+
+    .lup-section-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; text-transform:uppercase; color:#c9a84c; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+    .lup-section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,#3a2c0e,transparent); }
+
+    /* Step 1 — Level banner */
+    .lup-level-banner {
+      background:linear-gradient(135deg,#1a0a00,#0a0800); border:1px solid #3a2c0e; border-radius:3px;
+      padding:24px; display:flex; align-items:center; justify-content:center; gap:0;
+      margin-bottom:16px; position:relative; overflow:hidden;
     }
-    .lu-step-dot.lu-step-done { background:rgba(201,168,76,.3); color:var(--gold,#c9a84c); }
-    .lu-step-line { flex:1; height:1px; background:rgba(201,168,76,.25); }
-
-    .lu-body { flex:1; overflow-y:auto; padding:20px; }
-    .lu-body::-webkit-scrollbar { width:6px; }
-    .lu-body::-webkit-scrollbar-track { background:transparent; }
-    .lu-body::-webkit-scrollbar-thumb { background:rgba(201,168,76,.3); border-radius:3px; }
-
-    .lu-footer {
-      padding:12px 20px; border-top:1px solid var(--border,rgba(201,168,76,.3));
-      display:flex; justify-content:space-between; align-items:center;
-      background:rgba(0,0,0,.2);
+    .lup-level-banner::before { content:'LEVEL UP'; position:absolute; font-family:'Cinzel',serif; font-size:60px; font-weight:900; color:rgba(201,168,76,.04); letter-spacing:6px; pointer-events:none; }
+    .lup-level-block { text-align:center; padding:0 20px; }
+    .lup-level-num { font-family:'Cinzel',serif; font-size:64px; font-weight:900; line-height:1; }
+    .lup-lvl-old { color:#2a2010; }
+    .lup-lvl-new { color:#f0d98a; text-shadow:0 0 30px rgba(240,217,138,.5),0 0 70px rgba(201,168,76,.25); animation:lupGlow 3s ease-in-out infinite; }
+    @keyframes lupGlow {
+      0%,100% { text-shadow:0 0 30px rgba(240,217,138,.4),0 0 70px rgba(201,168,76,.2); }
+      50%      { text-shadow:0 0 55px rgba(240,217,138,.7),0 0 110px rgba(201,168,76,.4); }
     }
+    .lup-level-label { font-family:'Cinzel',serif; font-size:8px; letter-spacing:3px; text-transform:uppercase; margin-top:4px; }
+    .lup-lvl-old-label { color:#2a2010; }
+    .lup-lvl-new-label { color:#8b6914; }
+    .lup-level-arrow { font-size:24px; color:#c9a84c; opacity:.4; padding:0 6px; margin-bottom:18px; }
 
-    .lu-btn {
-      padding:8px 20px; border-radius:6px; border:none; cursor:pointer;
-      font-family:'Cinzel',serif; font-size:.85rem; font-weight:600;
-      transition:all .15s; letter-spacing:.05em;
+    /* Step 1 — Detail rows */
+    .lup-detail-rows { display:flex; flex-direction:column; gap:6px; }
+    .lup-detail-row { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#13100a; border:1px solid #1e1708; border-radius:3px; }
+    .lup-detail-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:#4a3820; }
+    .lup-detail-value { font-family:'Cinzel',serif; font-size:14px; font-weight:700; color:#d4af37; }
+    .lup-muted { color:#2a2010; }
+
+    /* Step 1 — ASI/Subclass badge */
+    .lup-asi-badge { background:linear-gradient(135deg,#1a1000,#0f0c07); border:1px solid #c9a84c; border-radius:3px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-top:8px; }
+    .lup-asi-badge-text { font-family:'Cinzel',serif; font-size:11px; font-weight:700; color:#f0d98a; letter-spacing:1px; }
+
+    /* Step 2 — HP */
+    .lup-hp-options { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+    .lup-hp-option { display:flex; align-items:flex-start; gap:14px; padding:14px 16px; background:#13100a; border:2px solid #2a2010; border-radius:3px; cursor:pointer; transition:all .15s; position:relative; }
+    .lup-hp-option.lup-selected { border-color:#c9a84c; background:#1a1208; }
+    .lup-hp-option.lup-selected::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,#c9a84c,transparent); }
+    .lup-radio-dot { width:18px; height:18px; border-radius:50%; border:2px solid #3a2c0e; flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .lup-radio-dot.lup-radio-checked { border-color:#c9a84c; background:#c9a84c; box-shadow:0 0 8px rgba(201,168,76,.4); }
+    .lup-radio-dot.lup-radio-checked::after { content:''; width:6px; height:6px; border-radius:50%; background:#0a0800; display:block; }
+    .lup-hp-title { font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#d4af37; margin-bottom:4px; }
+    .lup-hp-value { font-family:'Crimson Text',serif; font-size:15px; color:#f0d98a; font-weight:600; }
+    .lup-hp-sub { font-family:'Crimson Text',serif; font-size:13px; color:#4a3820; font-style:italic; }
+    .lup-hp-summary { display:flex; justify-content:space-between; padding:10px 14px; background:#0a0800; border:1px solid #1e1708; border-radius:3px; font-family:'Crimson Text',serif; font-size:14px; color:#6a5030; }
+    .lup-hp-summary strong { color:#d4af37; }
+
+    /* Step 3 — Features */
+    .lup-features-list { display:flex; flex-direction:column; gap:0; }
+    .lup-feature-item { display:flex; align-items:flex-start; gap:14px; padding:14px 0; border-bottom:1px solid #1a1408; }
+    .lup-feature-item:last-child { border-bottom:none; }
+    .lup-feature-icon { width:34px; height:34px; background:#13100a; border:1px solid #3a2c0e; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+    .lup-feature-name { font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#d4af37; margin-bottom:3px; }
+    .lup-feature-desc { font-family:'Crimson Text',serif; font-size:13px; color:#5a4520; font-style:italic; line-height:1.4; }
+
+    /* Step 4 — ASI */
+    .lup-asi-options { display:flex; flex-direction:column; gap:10px; }
+    .lup-asi-option { padding:14px 16px; background:#13100a; border:2px solid #2a2010; border-radius:3px; cursor:pointer; transition:all .15s; display:flex; align-items:flex-start; gap:14px; position:relative; }
+    .lup-asi-option.lup-selected { border-color:#c9a84c; background:#1a1208; }
+    .lup-asi-option.lup-selected::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,#c9a84c,transparent); }
+    .lup-asi-body { flex:1; }
+    .lup-asi-title { font-family:'Cinzel',serif; font-size:12px; font-weight:700; color:#d4af37; margin-bottom:8px; letter-spacing:.5px; }
+    .lup-asi-select { width:100%; background:#0a0800; border:1px solid #3a2c0e; color:#d4af37; font-family:'Cinzel',serif; font-size:12px; padding:8px 12px; border-radius:2px; appearance:none; cursor:pointer; }
+    .lup-asi-select:focus { outline:none; border-color:#c9a84c; }
+    .lup-asi-pair { display:flex; gap:8px; }
+    .lup-asi-pair select { flex:1; }
+
+    /* Subclass step */
+    .lup-subclass-list { display:flex; flex-direction:column; gap:8px; }
+    .lup-subclass-option { display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:#13100a; border:2px solid #2a2010; border-radius:3px; cursor:pointer; transition:all .15s; position:relative; }
+    .lup-subclass-option.lup-selected { border-color:#c9a84c; background:#1a1208; }
+    .lup-subclass-option.lup-selected::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,#c9a84c,transparent); }
+    .lup-subclass-name { font-family:'Cinzel',serif; font-size:13px; font-weight:700; color:#d4af37; margin-bottom:3px; }
+    .lup-subclass-preview { font-family:'Crimson Text',serif; font-size:12px; color:#5a4520; line-height:1.4; }
+
+    /* Step 5 — Summary */
+    .lup-summary-list { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .lup-summary-item { display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:#13100a; border:1px solid #1e1708; border-left:3px solid #2a2010; border-radius:0 3px 3px 0; }
+    .lup-summary-item.lup-summary-highlight { border-left-color:#c9a84c; }
+    .lup-summary-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
+    .lup-summary-text { font-family:'Crimson Text',serif; font-size:15px; color:#a08040; line-height:1.3; }
+    .lup-summary-text strong { color:#d4af37; font-weight:600; }
+
+    /* Warning / info box */
+    .lup-warning-box { background:#0f0c07; border:1px solid #2a2010; border-radius:3px; padding:12px 14px; display:flex; align-items:flex-start; gap:10px; }
+    .lup-warning-text { font-family:'Crimson Text',serif; font-size:13px; color:#4a3820; font-style:italic; line-height:1.4; }
+
+    /* Footer */
+    .lup-footer { padding:16px 24px; background:#080601; border-top:1px solid #1e1708; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .lup-back-btn { background:none; border:1px solid #2a2010; color:#4a3820; font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; text-transform:uppercase; padding:10px 18px; cursor:pointer; border-radius:2px; transition:all .15s; }
+    .lup-back-btn:hover { border-color:#6a5030; color:#8b6914; }
+    .lup-next-btn {
+      background:linear-gradient(135deg,#d4af37 0%,#c9a84c 40%,#a8853e 100%);
+      border:none; color:#0a0800; font-family:'Cinzel',serif; font-size:11px; font-weight:700;
+      letter-spacing:2px; text-transform:uppercase; padding:12px 24px;
+      cursor:pointer; border-radius:2px; transition:all .2s;
+      box-shadow:0 4px 16px rgba(201,168,76,.3),inset 0 1px 0 rgba(255,255,255,.2);
+      position:relative; overflow:hidden;
     }
-    .lu-btn-primary {
-      background: linear-gradient(135deg, var(--gold,#c9a84c), #a8853e);
-      color:#1a1209; box-shadow: 0 2px 8px rgba(201,168,76,.3);
-    }
-    .lu-btn-primary:hover { filter:brightness(1.1); transform:translateY(-1px); }
-    .lu-btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-    .lu-btn-ghost { background:transparent; color:var(--parchment,#f5e6c8); border:1px solid rgba(201,168,76,.3); }
-    .lu-btn-ghost:hover { background:rgba(201,168,76,.1); }
-    .lu-btn-roll {
-      background:linear-gradient(135deg,#8b3a3a,#6b2e2e);
-      color:var(--parchment,#f5e6c8); border:1px solid rgba(201,168,76,.4);
-      width:100%; margin-top:12px; padding:10px;
-    }
-    .lu-btn-roll:hover { filter:brightness(1.15); }
-
-    .lu-step-desc { color:var(--parchment,#f5e6c8); margin:0 0 16px; opacity:.85; font-size:1rem; }
-
-    /* CONFIRM */
-    .lu-level-display { display:flex; align-items:center; justify-content:center; gap:20px; margin-bottom:20px; }
-    .lu-level-box { text-align:center; padding:16px 24px; border-radius:8px; border:1px solid rgba(201,168,76,.3); }
-    .lu-level-old { background:rgba(255,255,255,.04); }
-    .lu-level-new { background:rgba(201,168,76,.12); border-color:var(--gold,#c9a84c); }
-    .lu-level-num { font-family:'Cinzel',serif; font-size:2.5rem; font-weight:700; color:var(--gold,#c9a84c); line-height:1; }
-    .lu-level-label { color:var(--parchment,#f5e6c8); font-size:.8rem; opacity:.7; margin-top:4px; }
-    .lu-level-arrow { font-size:2rem; color:var(--gold,#c9a84c); opacity:.6; }
-    .lu-confirm-details { display:flex; flex-direction:column; gap:8px; }
-    .lu-detail-row { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:rgba(255,255,255,.04); border-radius:4px; }
-    .lu-detail-label { color:var(--parchment,#f5e6c8); opacity:.65; font-size:.9rem; }
-    .lu-detail-val { color:var(--parchment,#f5e6c8); font-weight:600; }
-    .lu-badge { display:inline-block; padding:4px 10px; border-radius:20px; font-size:.8rem; font-weight:600; }
-    .lu-badge-green { background:rgba(80,200,80,.2); color:#6fdb6f; border:1px solid rgba(80,200,80,.3); }
-    .lu-badge-gold { background:rgba(201,168,76,.2); color:var(--gold,#c9a84c); border:1px solid rgba(201,168,76,.3); }
-
-    /* HP */
-    .lu-hp-options { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
-    .lu-hp-option { display:flex; align-items:flex-start; gap:12px; padding:12px; border-radius:8px; border:2px solid rgba(201,168,76,.2); cursor:pointer; transition:all .15s; }
-    .lu-hp-option:hover { border-color:rgba(201,168,76,.4); background:rgba(201,168,76,.06); }
-    .lu-hp-option input[type=radio] { margin-top:3px; accent-color:var(--gold,#c9a84c); }
-    .lu-hp-selected { border-color:var(--gold,#c9a84c) !important; background:rgba(201,168,76,.1) !important; }
-    .lu-hp-option-title { color:var(--gold,#c9a84c); font-weight:700; font-size:.95rem; margin-bottom:2px; }
-    .lu-hp-option-val { color:var(--parchment,#f5e6c8); font-size:1rem; }
-    .lu-hp-option-sub { color:var(--parchment,#f5e6c8); font-size:.8rem; opacity:.6; }
-    .lu-hp-manual-row { display:flex; align-items:center; gap:10px; margin-top:8px; }
-    .lu-hp-manual-label { color:var(--parchment,#f5e6c8); font-size:.85rem; opacity:.7; }
-    .lu-hp-manual-input { width:70px; background:rgba(0,0,0,.4); color:var(--parchment,#f5e6c8); border:1px solid rgba(201,168,76,.3); border-radius:4px; padding:4px 8px; font-size:.9rem; text-align:center; }
-    .lu-hp-summary { display:flex; justify-content:space-between; padding:10px 12px; background:rgba(255,255,255,.05); border-radius:6px; margin-top:12px; color:var(--parchment,#f5e6c8); font-size:.9rem; }
-
-    /* FEATURES */
-    .lu-features-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
-    .lu-feature-item { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; background:rgba(255,255,255,.04); border-radius:6px; border-left:3px solid var(--gold,#c9a84c); }
-    .lu-feature-bullet { color:var(--gold,#c9a84c); flex-shrink:0; }
-    .lu-feature-item span:last-child { color:var(--parchment,#f5e6c8); font-size:.95rem; line-height:1.4; }
-
-    /* SPELLS */
-    .lu-spell-table { width:100%; border-collapse:collapse; }
-    .lu-spell-table th { color:var(--gold,#c9a84c); font-family:'Cinzel',serif; font-size:.8rem; text-align:left; padding:8px 12px; border-bottom:1px solid rgba(201,168,76,.3); }
-    .lu-spell-table td { padding:8px 12px; color:var(--parchment,#f5e6c8); border-bottom:1px solid rgba(255,255,255,.06); }
-    .lu-slot-level { font-weight:700; }
-    .lu-slot-count { font-size:1rem; letter-spacing:3px; }
-    .lu-slot-num { font-size:.8rem; opacity:.6; margin-left:6px; }
-
-    /* ASI */
-    .lu-asi-options { display:flex; flex-direction:column; gap:10px; }
-    .lu-asi-option { display:flex; align-items:flex-start; gap:12px; padding:12px; border-radius:8px; border:2px solid rgba(201,168,76,.2); cursor:pointer; transition:all .15s; }
-    .lu-asi-option:hover { border-color:rgba(201,168,76,.4); }
-    .lu-asi-option input { margin-top:3px; accent-color:var(--gold,#c9a84c); }
-    .lu-asi-selected { border-color:var(--gold,#c9a84c) !important; background:rgba(201,168,76,.1) !important; }
-    .lu-asi-title { color:var(--gold,#c9a84c); font-weight:700; font-size:.95rem; margin-bottom:6px; }
-    .lu-asi-body { flex:1; }
-    .lu-stat-select { background:rgba(0,0,0,.4); color:var(--parchment,#f5e6c8); border:1px solid rgba(201,168,76,.3); border-radius:4px; padding:4px 8px; font-size:.9rem; width:100%; margin-top:4px; }
-    .lu-stat-pair { display:flex; gap:8px; }
-    .lu-stat-pair select { flex:1; }
-
-    /* SUBCLASS */
-    .lu-subclass-list { display:flex; flex-direction:column; gap:8px; }
-    .lu-subclass-option { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:8px; border:2px solid rgba(201,168,76,.2); cursor:pointer; transition:all .15s; position:relative; }
-    .lu-subclass-option:hover { border-color:rgba(201,168,76,.5); background:rgba(201,168,76,.06); }
-    .lu-subclass-selected { border-color:var(--gold,#c9a84c) !important; background:rgba(201,168,76,.12) !important; }
-    .lu-subclass-option input[type=radio] { position:absolute; opacity:0; pointer-events:none; }
-    .lu-subclass-body { flex:1; }
-    .lu-subclass-name { color:var(--gold,#c9a84c); font-weight:700; font-size:.95rem; margin-bottom:4px; font-family:'Cinzel',serif; }
-    .lu-subclass-desc { color:var(--parchment,#f5e6c8); font-size:.875rem; line-height:1.5; opacity:.85; }
-    .lu-subclass-check { color:var(--gold,#c9a84c); font-size:1.1rem; font-weight:700; flex-shrink:0; align-self:center; }
-
-    /* SUMMARY */
-    .lu-summary-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
-    .lu-summary-list li { padding:8px 12px; background:rgba(255,255,255,.04); border-radius:6px; color:var(--parchment,#f5e6c8); font-size:.95rem; }
-
-    /* SHARED */
-    .lu-info-box { background:rgba(201,168,76,.1); border:1px solid rgba(201,168,76,.25); border-radius:6px; padding:10px 12px; color:var(--parchment,#f5e6c8); font-size:.875rem; line-height:1.5; }
-    .lu-warning { background:rgba(200,100,50,.15); border:1px solid rgba(200,100,50,.3); border-radius:6px; padding:10px 12px; color:#e8b090; font-size:.875rem; margin-bottom:12px; }
+    .lup-next-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 60%); pointer-events:none; }
+    .lup-next-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(201,168,76,.5),inset 0 1px 0 rgba(255,255,255,.25); filter:brightness(1.08); }
+    .lup-next-btn:active { transform:translateY(0); }
+    .lup-next-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    .lup-next-btn.lup-apply { font-size:10px; letter-spacing:1px; padding:12px 20px; }
 
     /* ─── DM REVIEW MODAL ─────────────────────────────────────────── */
     .lu-dm-modal {
