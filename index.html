@@ -214,6 +214,199 @@
   }
   .card-link:hover { background: rgba(154,112,0,0.15); }
 
+  /* LEVEL ROADMAP PANEL */
+  .roadmap-panel {
+    border: 1px solid rgba(154,112,0,0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px 0 6px;
+  }
+  .roadmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: rgba(154,112,0,0.1);
+    user-select: none;
+    transition: background .15s;
+  }
+  .roadmap-header:hover { background: rgba(154,112,0,0.18); }
+  .roadmap-title {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold, #9a7000);
+  }
+  .roadmap-toggle {
+    color: var(--gold, #9a7000);
+    font-size: 11px;
+    transition: transform .2s;
+  }
+  .roadmap-panel .roadmap-body { display: none; }
+  .roadmap-panel.expanded .roadmap-body { display: block; }
+  .roadmap-panel.expanded .roadmap-toggle { transform: rotate(180deg); }
+  .roadmap-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid rgba(154,112,0,0.12);
+  }
+  .roadmap-row:nth-child(even) { background: rgba(0,0,0,0.04); }
+  .roadmap-level {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 28px;
+    flex-shrink: 0;
+  }
+  .roadmap-lvl-num {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold, #9a7000);
+    line-height: 1;
+  }
+  .roadmap-lvl-label {
+    font-family: 'Cinzel', serif;
+    font-size: 6px;
+    letter-spacing: 1px;
+    color: var(--ink-light, #666);
+    margin-top: 1px;
+  }
+  .roadmap-features { flex: 1; }
+  .roadmap-asi {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: var(--gold, #9a7000);
+    background: rgba(154,112,0,0.1);
+    border: 1px solid rgba(154,112,0,0.25);
+    border-radius: 10px;
+    padding: 1px 6px;
+    margin-right: 4px;
+    margin-bottom: 2px;
+  }
+  .roadmap-feat-text {
+    font-family: 'Crimson Text', serif;
+    font-size: 12px;
+    color: var(--ink, #2c1a0e);
+    opacity: .75;
+    line-height: 1.35;
+    display: block;
+    margin-top: 2px;
+  }
+  .roadmap-full-link {
+    padding: 8px 12px;
+    border-top: 1px solid rgba(154,112,0,0.12);
+  }
+  .roadmap-view-all {
+    background: none;
+    border: none;
+    color: var(--gold, #9a7000);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    padding: 0;
+    opacity: .7;
+    transition: opacity .15s;
+  }
+  .roadmap-view-all:hover { opacity: 1; }
+
+  /* FULL ROADMAP MODAL */
+  #roadmap-full-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.78);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+  }
+  .roadmap-full-modal {
+    background: #0f0c07;
+    border: 1px solid #6b4f1a;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 80px rgba(0,0,0,.9);
+  }
+  .roadmap-full-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #3a2c0e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .roadmap-full-title {
+    font-family: 'Cinzel', serif;
+    font-size: .8rem;
+    color: #f0d98a;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .roadmap-full-close {
+    background: none;
+    border: none;
+    color: #4a3a1a;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    transition: color .15s;
+  }
+  .roadmap-full-close:hover { color: #c9a84c; }
+  .roadmap-full-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .roadmap-full-list::-webkit-scrollbar { width: 4px; }
+  .roadmap-full-list::-webkit-scrollbar-track { background: transparent; }
+  .roadmap-full-list::-webkit-scrollbar-thumb { background: #2a1f0a; border-radius: 2px; }
+  .roadmap-full-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 20px;
+    border-bottom: 1px solid #1a1408;
+  }
+  .roadmap-full-row:last-child { border-bottom: none; }
+  .roadmap-full-lvl {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: #c9a84c;
+    min-width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .roadmap-full-features { flex: 1; }
+  .roadmap-full-feat {
+    font-family: 'Crimson Text', serif;
+    font-size: 13px;
+    color: #b89a60;
+    line-height: 1.4;
+  }
+  .roadmap-full-asi {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: #c9a84c;
+    background: rgba(201,168,76,.1);
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-right: 6px;
+  }
+
   /* CREATE CHARACTER BUTTON */
   .create-btn {
     display: flex;
@@ -2082,6 +2275,126 @@ function showLevelUpOfferBanner(slot, pendingData) {
   target.insertBefore(banner, target.firstChild);
 }
 
+function renderLevelRoadmap(charData, containerEl) {
+  if (!containerEl) return;
+  const rawClass = charData['f-class'] || '';
+  const cls = rawClass.replace(/\s*\d+$/, '').toLowerCase().trim();
+  const currentLevel = parseInt(charData['f-level'])
+    || parseInt(rawClass.match(/\d+$/)?.[0]) || 1;
+  const subclass = charData['f-subclass'] || charData['f-archetype'] || '';
+  const classData = (typeof LU_CLASS_DATA !== 'undefined') ? LU_CLASS_DATA[cls] : null;
+
+  if (!classData || currentLevel >= 20) {
+    containerEl.innerHTML = '';
+    return;
+  }
+
+  const asiLevelMap = {
+    fighter: [4,6,8,12,14,16,19],
+    rogue:   [4,8,10,12,16,19],
+  };
+  const defaultAsi = [4,8,12,16,19];
+
+  const placeholders = ['Archetype Feature','Path Feature','College Feature',
+    'Tradition Feature','Circle Feature','Conclave Feature','Patron Feature',
+    'Origin Feature','Oath Feature','Specialist Feature','Domain Feature'];
+
+  const previewLevels = [1,2,3].map(i => currentLevel + i).filter(l => l <= 20);
+
+  const rows = previewLevels.map(lvl => {
+    const baseFeatures = classData.baseFeatures?.[lvl] || [];
+    const subFeatures  = subclass ? (classData.subclasses?.[subclass]?.[lvl] || []) : [];
+    const filteredBase = subFeatures.length
+      ? baseFeatures.filter(f => !placeholders.includes(f))
+      : baseFeatures;
+    const allFeatures  = [...filteredBase, ...subFeatures];
+    const featureText  = allFeatures.length ? allFeatures.join(' · ') : 'No new features';
+    const asiLvls = asiLevelMap[cls] || defaultAsi;
+    const isAsi   = asiLvls.includes(lvl);
+    return `<div class="roadmap-row">
+      <div class="roadmap-level">
+        <span class="roadmap-lvl-num">${lvl}</span>
+        <span class="roadmap-lvl-label">LVL</span>
+      </div>
+      <div class="roadmap-features">
+        ${isAsi ? '<span class="roadmap-asi">⭐ ASI / Feat</span>' : ''}
+        <span class="roadmap-feat-text">${escHtml(featureText)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const safeSubclass = (subclass || '').replace(/'/g, "\\'");
+  containerEl.innerHTML = `
+    <div class="roadmap-panel">
+      <div class="roadmap-header" onclick="event.stopPropagation();this.closest('.roadmap-panel').classList.toggle('expanded')">
+        <span class="roadmap-title">What's Coming</span>
+        <span class="roadmap-toggle">▾</span>
+      </div>
+      <div class="roadmap-body">
+        ${rows}
+        <div class="roadmap-full-link">
+          <button class="roadmap-view-all" onclick="event.stopPropagation();openFullRoadmap('${escHtml(cls)}',${currentLevel},'${escHtml(safeSubclass)}')">
+            View full progression →
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openFullRoadmap(cls, currentLevel, subclass) {
+  document.getElementById('roadmap-full-overlay')?.remove();
+  const classData = (typeof LU_CLASS_DATA !== 'undefined') ? LU_CLASS_DATA[cls] : null;
+  if (!classData) return;
+
+  const asiLevelMap = {
+    fighter: [4,6,8,12,14,16,19],
+    rogue:   [4,8,10,12,16,19],
+  };
+  const defaultAsi = [4,8,12,16,19];
+  const asiLvls = asiLevelMap[cls] || defaultAsi;
+
+  const placeholders = ['Archetype Feature','Path Feature','College Feature',
+    'Tradition Feature','Circle Feature','Conclave Feature','Patron Feature',
+    'Origin Feature','Oath Feature','Specialist Feature','Domain Feature'];
+
+  const remainingLevels = [];
+  for (let lvl = currentLevel + 1; lvl <= 20; lvl++) remainingLevels.push(lvl);
+
+  const rows = remainingLevels.map(lvl => {
+    const baseFeatures = classData.baseFeatures?.[lvl] || [];
+    const subFeatures  = subclass ? (classData.subclasses?.[subclass]?.[lvl] || []) : [];
+    const filteredBase = subFeatures.length
+      ? baseFeatures.filter(f => !placeholders.includes(f))
+      : baseFeatures;
+    const allFeatures  = [...filteredBase, ...subFeatures];
+    const featureText  = allFeatures.length ? allFeatures.join(' · ') : 'No new features';
+    const isAsi = asiLvls.includes(lvl);
+    return `<div class="roadmap-full-row">
+      <div class="roadmap-full-lvl">${lvl}</div>
+      <div class="roadmap-full-features">
+        ${isAsi ? '<span class="roadmap-full-asi">⭐ ASI / Feat</span>' : ''}
+        <span class="roadmap-full-feat">${escHtml(featureText)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const clsDisplay = cls.charAt(0).toUpperCase() + cls.slice(1);
+  const overlay = document.createElement('div');
+  overlay.id = 'roadmap-full-overlay';
+  overlay.innerHTML = `
+    <div class="roadmap-full-modal">
+      <div class="roadmap-full-header">
+        <span class="roadmap-full-title">${escHtml(clsDisplay)} Progression${subclass ? ' — ' + escHtml(subclass) : ''}</span>
+        <button class="roadmap-full-close" onclick="document.getElementById('roadmap-full-overlay').remove()">✕</button>
+      </div>
+      <div class="roadmap-full-list">${rows}</div>
+    </div>
+  `;
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
 async function loadMyCharacter() {
   const container = document.getElementById('my-char-content');
   const createBtn = document.getElementById('create-char-btn');
@@ -2128,18 +2441,23 @@ async function loadMyCharacter() {
       const maxhp = d['f-maxhp'] || '—';
       const pct = (curhp !== '—' && maxhp !== '—') ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0 : 0;
       const barClass = pct < 25 ? ' low' : pct < 50 ? ' mid' : '';
+      const rawClass = d['f-class'] || '';
+      const cleanClass = rawClass.replace(/\s*\d+$/, '').trim();
+      const charLevel = parseInt(d['f-level']) || parseInt(rawClass.match(/\d+$/)?.[0]) || 1;
+      const classSubtitle = [cleanClass, charLevel ? `Level ${charLevel}` : '', d['f-race'] || ''].filter(Boolean).join(' · ');
 
       container.innerHTML = `
         <a class="player-card" href="${escHtml(sheetUrl)}">
           <div class="card-role">Your Character · ${escHtml(_myCharSlot)}</div>
           <div class="card-name">${escHtml(d['f-name'] || 'Unnamed')}</div>
-          <div class="card-class">${escHtml([d['f-class'], d['f-race']].filter(Boolean).join(' · ') || '—')}</div>
+          <div class="card-class">${escHtml(classSubtitle || '—')}</div>
           <div class="card-stats">
             <div class="stat-box"><span class="sv hp">${escHtml(String(curhp))}</span><span class="sl">HP</span></div>
             <div class="stat-box"><span class="sv">${escHtml(String(d['f-ac'] || '—'))}</span><span class="sl">AC</span></div>
             <div class="stat-box"><span class="sv gp">${escHtml(String(d['f-gold'] || '—'))}</span><span class="sl">GP</span></div>
           </div>
           <div class="hp-bar-wrap"><div class="hp-bar${barClass}" style="width:${pct}%"></div></div>
+          <div id="char-roadmap-container"></div>
           <div class="card-link">View &amp; Edit Sheet →</div>
         </a>
         <div style="margin-top:8px;">
@@ -2184,6 +2502,12 @@ async function loadMyCharacter() {
         </div>`;
       createBtn.style.display = '';
       createBtn.textContent = '+ Submit New Character';
+      if (typeof LU_CLASS_DATA !== 'undefined' && Object.keys(LU_CLASS_DATA).length > 0) {
+        renderLevelRoadmap(d, document.getElementById('char-roadmap-container'));
+      } else {
+        const rdEl = document.getElementById('char-roadmap-container');
+        if (rdEl) rdEl.style.display = 'none';
+      }
       return;
     }
 
@@ -4658,7 +4982,10 @@ async function loadPlayersTab() {
       const slotNum = info.slot.replace('player', '');
       const sheetUrl = `sheet-${slotNum}.html?c=${campaignId}`;
       const charName = hasChar ? escHtml(c['f-name']) : '—';
-      const charCls = [c['f-class'], c['f-race']].filter(Boolean).map(escHtml).join(' · ');
+      const rawCls = c['f-class'] || '';
+      const cleanCls = rawCls.replace(/\s*\d+$/, '').trim();
+      const charLvl = parseInt(c['f-level']) || parseInt(rawCls.match(/\d+$/)?.[0]) || null;
+      const charCls = [cleanCls, charLvl ? `Level ${charLvl}` : '', c['f-race'] || ''].filter(Boolean).map(escHtml).join(' · ');
       const curhp = c['f-curhp'] || '—';
       const maxhp = c['f-maxhp'] || '?';
       const pct = (curhp !== '—' && maxhp !== '?') ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0 : 0;
