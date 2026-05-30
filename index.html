@@ -1192,6 +1192,38 @@
   .catalog-picker-name { flex:1; }
   .catalog-picker-cost { font-family:'Cinzel',serif;font-size:0.65rem;color:var(--gold); }
   .catalog-picker-cat { font-family:'Cinzel',serif;font-size:0.5rem;color:var(--border-light);text-transform:uppercase; }
+
+  /* ── Race Panel ────────────────────────────────────────────── */
+  .race-panel { margin-top:8px;border:1px solid rgba(122,90,40,0.3);border-radius:3px;background:linear-gradient(160deg,#1a0e04,#0d0802);padding:8px 12px; }
+  .race-panel-header { display:flex;align-items:center;gap:6px;cursor:pointer;padding:2px 0;user-select:none; }
+  .race-panel-title { font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);flex:1; }
+  .race-panel-chevron { font-size:0.5rem;color:var(--border-light); }
+  .race-panel-body { display:none;padding:8px 0 2px; }
+  .race-panel-body.open { display:block; }
+  .race-trait-row { display:flex;gap:7px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(122,90,40,0.12); }
+  .race-trait-row:last-child { border-bottom:none; }
+  .race-trait-badge { font-family:'Cinzel',serif;font-size:0.44rem;text-transform:uppercase;letter-spacing:0.05em;padding:1px 5px;border-radius:2px;flex-shrink:0;margin-top:3px;white-space:nowrap; }
+  .race-trait-badge.passive  { background:rgba(60,100,200,0.15);border:1px solid #3c64c8;color:#7a9ae6; }
+  .race-trait-badge.active   { background:rgba(40,150,60,0.15);border:1px solid #3a9a4c;color:#6dca80; }
+  .race-trait-badge.resource { background:rgba(154,112,0,0.15);border:1px solid var(--gold);color:var(--gold-light); }
+  .race-trait-name { font-family:'Cinzel',serif;font-size:0.65rem;font-weight:600;color:var(--parchment);margin-bottom:2px; }
+  .race-trait-desc { font-family:'Crimson Text',serif;font-size:0.75rem;color:var(--parchment-dark);line-height:1.4; }
+  /* Cooldown pills */
+  .cooldown-pill { display:inline-flex;align-items:center;gap:4px;font-family:'Cinzel',serif;font-size:0.52rem;padding:2px 8px;border-radius:10px;cursor:pointer;border:1px solid var(--gold);color:var(--gold-light);background:rgba(154,112,0,0.1);margin:2px;transition:all 0.15s;user-select:none; }
+  .cooldown-pill.used { border-color:var(--border);color:var(--border-light);background:none;opacity:0.5; }
+  .cooldown-pill:hover { border-color:var(--gold-light); }
+  /* Buff tracker in combat */
+  .cb-buff-row { display:flex;flex-wrap:wrap;gap:3px;padding:3px 0 1px;min-height:16px; }
+  .buff-badge { display:inline-flex;align-items:center;gap:3px;font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.04em;padding:2px 6px;border-radius:2px;background:rgba(40,150,60,0.15);border:1px solid #3a9a4c;color:#6dca80;cursor:pointer;transition:all 0.12s; }
+  .buff-badge:hover { background:rgba(122,21,21,0.2);border-color:var(--red);color:#e06060; }
+  /* Action toggles in combat */
+  .action-toggle { display:inline-flex;align-items:center;gap:3px;font-family:'Cinzel',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.04em;padding:2px 7px;border-radius:2px;cursor:pointer;border:1px solid var(--border);color:var(--border-light);background:none;transition:all 0.12s; }
+  .action-toggle.used { background:rgba(122,21,21,0.2);border-color:var(--red);color:#e06060; }
+  /* Rage tracker */
+  .rage-badge { display:inline-flex;align-items:center;gap:3px;font-family:'Cinzel',serif;font-size:0.5rem;padding:3px 8px;border-radius:2px;background:rgba(122,21,21,0.2);border:1px solid var(--red);color:#e06060;cursor:pointer;transition:all 0.12s; }
+  .rage-badge.inactive { border-color:var(--border);color:var(--border-light);background:none;opacity:0.55; }
+  /* NPC racial badge */
+  .npc-race-badge { display:inline-block;font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.06em;padding:1px 5px;border-radius:2px;background:rgba(154,112,0,0.12);border:1px solid rgba(122,90,40,0.35);color:var(--gold);margin-left:4px; }
 </style>
 </head>
 <body>
@@ -1576,6 +1608,16 @@
     <div id="dice-mode-desc" style="font-size:0.68rem;color:var(--border-light);line-height:1.5;"></div>
   </div>
 
+  <div class="dm-section" id="rest-section">
+    <div class="dm-section-title">Party Rest</div>
+    <div style="font-size:0.68rem;color:var(--border-light);margin-bottom:10px;">Resets racial ability cooldowns for all party members.</div>
+    <div style="display:flex;gap:8px;">
+      <button class="dm-btn" onclick="triggerRest('short')" style="flex:1;">☀️ Short Rest</button>
+      <button class="dm-btn" onclick="triggerRest('long')"  style="flex:1;">🌙 Long Rest</button>
+    </div>
+    <div id="rest-status" style="font-size:0.65rem;color:var(--gold-light);margin-top:6px;min-height:14px;"></div>
+  </div>
+
 </div>
 
 <!-- PROFILE / SETTINGS PANEL -->
@@ -1737,6 +1779,7 @@
               <button id="gn-role-save-btn" onclick="saveNewNPCRole('gn',this)" style="display:none;font-family:'Cinzel',serif;font-size:0.6rem;padding:5px 10px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;">Add</button>
             </div>
           </div>
+          <div class="lands-field"><label>Race (D&amp;D 5e — optional)</label><select id="gn-dndrace" onchange="applyNPCRaceSelect('gn',this.value)" style="font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;width:100%;"></select></div>
           <div class="lands-row">
             <div class="lands-field"><label>Race / Class</label><input id="gn-race" type="text" placeholder="e.g. Human Paladin"></div>
             <div class="lands-field"><label>Alignment</label><input id="gn-align" type="text" placeholder="e.g. Lawful Good"></div>
@@ -1769,6 +1812,7 @@
               <button id="gf-role-save-btn" onclick="saveNewNPCRole('gf',this)" style="display:none;font-family:'Cinzel',serif;font-size:0.6rem;padding:5px 10px;border:1px solid var(--gold);border-radius:2px;background:rgba(154,112,0,0.1);color:var(--gold);cursor:pointer;">Add</button>
             </div>
           </div>
+          <div class="lands-field"><label>Race (D&amp;D 5e — optional)</label><select id="gf-dndrace" onchange="applyNPCRaceSelect('gf',this.value)" style="font-family:'Crimson Text',serif;font-size:0.82rem;background:#1a0e04;border:1px solid var(--border);border-radius:2px;color:var(--parchment-dark);padding:5px 6px;outline:none;width:100%;"></select></div>
           <div class="lands-row">
             <div class="lands-field"><label>Race</label><input id="gf-race" type="text" placeholder="e.g. High Elf"></div>
             <div class="lands-field"><label>Class &amp; Level</label><input id="gf-class" type="text" placeholder="e.g. Wizard 12"></div>
@@ -2385,6 +2429,267 @@ function showLevelUpOfferBanner(slot, pendingData) {
   target.insertBefore(banner, target.firstChild);
 }
 
+// ── RACE DATA HELPERS ─────────────────────────────────────────
+
+function buildRaceOptions() {
+  if (typeof DND_RACE_DATA === 'undefined') return '<option value="">Race data not loaded</option>';
+  let opts = '<option value="">— Select Race (optional)</option>';
+  const raceNames = { human:'Human', elf:'Elf', dwarf:'Dwarf', halfling:'Halfling', gnome:'Gnome', 'half-elf':'Half-Elf', 'half-orc':'Half-Orc', tiefling:'Tiefling', dragonborn:'Dragonborn', aasimar:'Aasimar', genasi:'Genasi', goliath:'Goliath', tabaxi:'Tabaxi', kenku:'Kenku', lizardfolk:'Lizardfolk' };
+  for (const [k, label] of Object.entries(raceNames)) {
+    if (DND_RACE_DATA[k]) opts += `<option value="${escHtml(k)}">${escHtml(label)}</option>`;
+  }
+  return opts;
+}
+
+function populateNPCRaceDropdowns() {
+  const opts = buildRaceOptions();
+  ['gn-dndrace','gf-dndrace'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.innerHTML === '') el.innerHTML = opts;
+  });
+}
+
+function applyNPCRaceSelect(prefix, raceKey) {
+  if (!raceKey || typeof DND_RACE_DATA === 'undefined') return;
+  const rd = DND_RACE_DATA[raceKey];
+  if (!rd) return;
+  const raceLabel = raceKey.charAt(0).toUpperCase() + raceKey.slice(1);
+  const textId = prefix === 'gn' ? 'gn-race' : prefix === 'gf' ? 'gf-race' : null;
+  if (textId) {
+    const el = document.getElementById(textId);
+    if (el && !el.value) el.value = raceLabel;
+  }
+}
+
+function matchRaceFromCharData(charData) {
+  if (typeof DND_RACE_DATA === 'undefined') return null;
+  const raceRaw = (charData['f-race'] || '').toLowerCase().trim();
+  if (!raceRaw) return null;
+  const keys = Object.keys(DND_RACE_DATA);
+  for (const k of keys) {
+    if (raceRaw === k || raceRaw === k.replace('-',' ')) return { raceKey: k, subraceKey: null };
+  }
+  for (const k of keys) {
+    const rd = DND_RACE_DATA[k];
+    if (rd.subraces) {
+      for (const srName of Object.keys(rd.subraces)) {
+        if (raceRaw === srName.toLowerCase() || srName.toLowerCase().startsWith(raceRaw) || raceRaw.startsWith(srName.toLowerCase().split(' ')[0])) {
+          return { raceKey: k, subraceKey: srName };
+        }
+      }
+    }
+  }
+  for (const k of keys) {
+    if (raceRaw.includes(k.replace('-',' ')) || k.replace('-',' ').includes(raceRaw)) {
+      return { raceKey: k, subraceKey: null };
+    }
+  }
+  return null;
+}
+
+function renderRacialTraitsPanel(charData, containerEl) {
+  if (!containerEl) return;
+  if (typeof DND_RACE_DATA === 'undefined') { containerEl.innerHTML = ''; return; }
+  const match = matchRaceFromCharData(charData);
+  if (!match) { return; }
+  const { raceKey, subraceKey } = match;
+  const raceData = DND_RACE_DATA[raceKey];
+  const subraceData = subraceKey ? raceData.subraces[subraceKey] : null;
+  const allTraits = [...(raceData.traits || []), ...(subraceData ? subraceData.traits || [] : [])];
+  if (!allTraits.length) return;
+
+  const baseBonuses = { ...(raceData.abilityBonuses || {}), ...(subraceData ? subraceData.abilityBonuses || {} : {}) };
+  const bonusStr = Object.entries(baseBonuses)
+    .filter(([k,v]) => k !== 'any1' && k !== 'any2' && v)
+    .map(([k,v]) => `+${v} ${k.toUpperCase()}`).join(' · ');
+
+  const level   = parseInt(charData['f-level']) || 1;
+  const conMod  = Math.floor(((parseInt(charData['f-con']) || 10) - 10) / 2);
+  const dexMod  = Math.floor(((parseInt(charData['f-dex']) || 10) - 10) / 2);
+  const profBon = [2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6][Math.min(level,20)-1] || 2;
+
+  const raceName = subraceKey || (raceKey.split('-').map(p => p.charAt(0).toUpperCase()+p.slice(1)).join(' '));
+  const traitRows = allTraits.map(t => {
+    let desc = t.desc || '';
+    if (raceKey === 'dragonborn' && t.name === 'Breath Weapon') {
+      const dc  = 8 + conMod + profBon;
+      const dmg = level >= 16 ? '5d6' : level >= 11 ? '4d6' : level >= 6 ? '3d6' : '2d6';
+      desc += ` | Current DC: ${dc} · Damage: ${dmg}`;
+    }
+    if (raceKey === 'lizardfolk' && t.name === 'Natural Armor') {
+      desc += ` | Your natural AC: ${13 + dexMod}`;
+    }
+    const badgeType = t.type || 'passive';
+    const badgeLabel = badgeType === 'resource' ? '⚡ Use' : badgeType === 'active' ? '⚔ Act' : '◉ Pass';
+    return `<div class="race-trait-row">
+      <span class="race-trait-badge ${badgeType}">${badgeLabel}</span>
+      <div>
+        <div class="race-trait-name">${escHtml(t.name)}</div>
+        <div class="race-trait-desc">${escHtml(desc)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const panelDiv = document.createElement('div');
+  panelDiv.className = 'race-panel';
+  panelDiv.innerHTML = `
+    <div class="race-panel-header" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.race-panel-chevron').textContent=this.nextElementSibling.classList.contains('open')?'▲':'▼';">
+      <span class="race-panel-title">🧬 ${escHtml(raceName)} Traits</span>
+      ${bonusStr ? `<span style="font-size:0.6rem;color:var(--gold-light);margin-right:6px;">${escHtml(bonusStr)}</span>` : ''}
+      <span class="race-panel-chevron">▼</span>
+    </div>
+    <div class="race-panel-body">${traitRows}</div>
+  `;
+  containerEl.appendChild(panelDiv);
+}
+
+function renderNPCRaceTraits(raceKey, subraceKey, expanded) {
+  if (typeof DND_RACE_DATA === 'undefined' || !DND_RACE_DATA[raceKey]) return '';
+  const rd = DND_RACE_DATA[raceKey];
+  const sr = subraceKey ? rd.subraces[subraceKey] : null;
+  const traits = [...(rd.traits||[]), ...(sr ? sr.traits||[] : [])].slice(0,4);
+  if (!traits.length) return '';
+  const rows = traits.map(t =>
+    `<div style="font-size:0.68rem;color:var(--ink-light);padding:2px 0;">
+      <span style="font-family:'Cinzel',serif;font-size:0.55rem;text-transform:uppercase;color:var(--gold);">${escHtml(t.name)}</span>
+      <span style="margin-left:4px;font-style:italic;">${escHtml((t.desc||'').substring(0,80))}${(t.desc||'').length>80?'…':''}</span>
+    </div>`).join('');
+  return `<div style="border-top:1px solid rgba(0,0,0,0.15);margin-top:6px;padding-top:6px;">
+    <div style="font-family:'Cinzel',serif;font-size:0.5rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:4px;">🧬 ${escHtml(raceKey)} traits</div>
+    ${rows}
+  </div>`;
+}
+
+// ── RACIAL COOLDOWNS ──────────────────────────────────────────
+
+function getResourceTraitsForChar(charData) {
+  if (typeof DND_RACE_DATA === 'undefined') return [];
+  const match = matchRaceFromCharData(charData);
+  if (!match) return [];
+  const { raceKey, subraceKey } = match;
+  const rd = DND_RACE_DATA[raceKey];
+  const sr = subraceKey ? rd.subraces[subraceKey] : null;
+  const allTraits = [...(rd.traits||[]), ...(sr ? sr.traits||[] : [])];
+  return allTraits.filter(t => t.type === 'resource');
+}
+
+function renderRacialCooldowns(charData, slot, containerEl) {
+  if (!containerEl || !charData) return;
+  const resourceTraits = getResourceTraitsForChar(charData);
+  if (!resourceTraits.length) return;
+  const cooldowns = charData['f-racial-cooldowns'] || {};
+  const pills = resourceTraits.map(t => {
+    const used = cooldowns[t.name] === true;
+    return `<span class="cooldown-pill ${used ? 'used' : ''}" title="${escHtml(t.desc||'')}" onclick="toggleRacialCooldown('${escHtml(slot)}','${escHtml(t.name.replace(/'/g,"\\'"))}',this)">${used ? '✕' : '✓'} ${escHtml(t.name)}</span>`;
+  }).join('');
+  const cooldownDiv = document.createElement('div');
+  cooldownDiv.style.cssText = 'margin-top:6px;padding:6px 12px 4px;background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid rgba(122,90,40,0.3);border-radius:3px;';
+  cooldownDiv.innerHTML = `<div style="font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--border-light);margin-bottom:4px;">Racial Abilities</div>${pills}`;
+  containerEl.appendChild(cooldownDiv);
+}
+
+async function toggleRacialCooldown(slot, traitName, el) {
+  try {
+    const docRef = db.collection('campaigns').doc(campaignId).collection('characters').doc(slot);
+    const snap = await docRef.get();
+    if (!snap.exists) return;
+    const cooldowns = snap.data()['f-racial-cooldowns'] || {};
+    const wasUsed = cooldowns[traitName] === true;
+    cooldowns[traitName] = !wasUsed;
+    await docRef.update({ 'f-racial-cooldowns': cooldowns });
+    if (el) {
+      el.classList.toggle('used', !wasUsed);
+      el.textContent = (!wasUsed ? '✕ ' : '✓ ') + traitName;
+    }
+  } catch(e) { console.warn('Cooldown toggle failed:', e); }
+}
+
+async function triggerRest(restType) {
+  if (!_isDM || !campaignId) return;
+  const statusEl = document.getElementById('rest-status');
+  if (statusEl) statusEl.textContent = 'Applying…';
+  try {
+    const players = _campaignData.players || {};
+    const slots = Object.values(players).map(p => p.slot);
+    const charDocs = await Promise.all(slots.map(s =>
+      db.collection('campaigns').doc(campaignId).collection('characters').doc(s).get()
+    ));
+    const updates = [];
+    charDocs.forEach((snap, i) => {
+      if (!snap.exists) return;
+      const data = snap.data();
+      const resourceTraits = getResourceTraitsForChar(data);
+      if (!resourceTraits.length) return;
+      const cooldowns = data['f-racial-cooldowns'] || {};
+      let changed = false;
+      resourceTraits.forEach(t => {
+        if (cooldowns[t.name] === true) {
+          cooldowns[t.name] = false;
+          changed = true;
+        }
+      });
+      if (changed) updates.push(snap.ref.update({ 'f-racial-cooldowns': cooldowns }));
+    });
+    if (updates.length) await Promise.all(updates);
+    if (statusEl) statusEl.textContent = `${restType === 'long' ? '🌙 Long' : '☀️ Short'} Rest applied — abilities restored.`;
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+// ── COMBAT BUFF TRACKER ───────────────────────────────────────
+
+function combatRenderBuffRow(c, sid) {
+  const buffs = c.activeBuffs || [];
+  if (!_isDM && !buffs.length) return '';
+  const buffBadges = buffs.map(b =>
+    `<span class="buff-badge" title="Click to remove" onclick="combatRemoveBuff('${sid}','${escHtml(b)}')">${escHtml(b)} ✕</span>`
+  ).join('');
+  const addBuff = _isDM ? `<button class="action-toggle" onclick="combatAddBuffPrompt('${sid}')" style="font-size:0.44rem;" title="Add buff/note">＋ Buff</button>` : '';
+  const isCurTurn = (_combatState.combatants||[]).indexOf(c) === (_combatState.currentTurnIndex||0);
+  const baUsed = c.bonusActionUsed ? 'used' : '';
+  const reUsed = c.reactionUsed ? 'used' : '';
+  const turnToggles = (_isDM && isCurTurn) ? `<span class="action-toggle ${baUsed}" title="Bonus Action" onclick="combatToggleBonusAction('${sid}')" style="margin-left:4px;">BA</span><span class="action-toggle ${reUsed}" title="Reaction" onclick="combatToggleReaction('${sid}')" style="margin-left:2px;">Reaction</span>` : '';
+  const rageActive = c.rageActive;
+  const rageBtn = (typeof c.isRager !== 'undefined' || (c.type==='player')) ? `` : '';
+  if (!buffs.length && !_isDM) return '';
+  return `<div class="cb-buff-row">${buffBadges}${addBuff}${turnToggles}</div>`;
+}
+
+function combatAddBuffPrompt(id) {
+  const name = prompt('Buff / condition name (e.g. Haste, Bless):');
+  if (!name || !name.trim()) return;
+  const c = (_combatState.combatants||[]).find(x => x.id === id);
+  if (!c) return;
+  c.activeBuffs = [...(c.activeBuffs||[]), name.trim()];
+  combatSave().then(() => combatRenderActive());
+}
+
+async function combatRemoveBuff(id, buffName) {
+  const c = (_combatState.combatants||[]).find(x => x.id === id);
+  if (!c) return;
+  c.activeBuffs = (c.activeBuffs||[]).filter(b => b !== buffName);
+  await combatSave();
+  combatRenderActive();
+}
+
+async function combatToggleBonusAction(id) {
+  const c = (_combatState.combatants||[]).find(x => x.id === id);
+  if (!c) return;
+  c.bonusActionUsed = !c.bonusActionUsed;
+  await combatSave();
+  combatRenderActive();
+}
+
+async function combatToggleReaction(id) {
+  const c = (_combatState.combatants||[]).find(x => x.id === id);
+  if (!c) return;
+  c.reactionUsed = !c.reactionUsed;
+  await combatSave();
+  combatRenderActive();
+}
+
 function renderLevelRoadmap(charData, containerEl, slot) {
   if (!containerEl) return;
   const rawClass = charData['f-class'] || '';
@@ -2652,6 +2957,7 @@ async function loadMyCharacter() {
           <div id="char-roadmap-container"></div>
           <div class="card-link">View &amp; Edit Sheet →</div>
         </a>
+        <div id="char-race-container"></div>
         <div style="margin-top:8px;">
           <button class="nav-btn" onclick="toggleInventoryPanel()" id="inv-toggle-btn" style="font-size:0.6rem;padding:5px 14px;">🎒 Inventory</button>
         </div>
@@ -2700,6 +3006,8 @@ async function loadMyCharacter() {
         const rdEl = document.getElementById('char-roadmap-container');
         if (rdEl) rdEl.style.display = 'none';
       }
+      renderRacialTraitsPanel(d, document.getElementById('char-race-container'));
+      renderRacialCooldowns(d, _myCharSlot, document.getElementById('char-race-container'));
       // Guard: prevent .roadmap-btn clicks from activating the parent <a> link
       const playerCard = container.querySelector('.player-card');
       if (playerCard) {
@@ -3877,6 +4185,7 @@ function renderGNPCCard(id, d) {
         ${d.speed ? `<div style="font-size:0.75rem;color:var(--ink-light);margin-bottom:6px;">Speed: ${escHtml(String(d.speed))}</div>` : ''}
         ${d.traits ? `<div style="font-size:0.78rem;color:var(--ink-light);font-style:italic;margin-top:6px;">${escHtml(d.traits)}</div>` : ''}
         ${d.desc ? `<div style="font-size:0.78rem;color:var(--ink-light);margin-top:6px;">${escHtml(d.desc)}</div>` : ''}
+        ${d.dndRaceKey && typeof DND_RACE_DATA !== 'undefined' && DND_RACE_DATA[d.dndRaceKey] ? '<div style="margin-top:10px;">' + renderNPCRaceTraits(d.dndRaceKey, null, true) + '</div>' : ''}
       </div>
     </div>`;
   }
@@ -3892,8 +4201,9 @@ function renderGNPCCard(id, d) {
     ${pubBtn}
     ${portrait}
     <div class="gnpc-name">${escHtml(d.name||'Unknown')}</div>
-    <div class="gnpc-sub">${escHtml([(d.roles&&d.roles.length?d.roles.join(', '):d.role), d.race, d.align].filter(Boolean).join(' · ') || '')}</div>
+    <div class="gnpc-sub">${escHtml([(d.roles&&d.roles.length?d.roles.join(', '):d.role), d.race, d.align].filter(Boolean).join(' · ') || '')}${d.dndRaceKey&&typeof DND_RACE_DATA!=='undefined'&&DND_RACE_DATA[d.dndRaceKey]?`<span class="npc-race-badge">🧬 ${escHtml(d.dndRaceKey)}</span>`:''}</div>
     ${statsHtml}
+    ${d.dndRaceKey && typeof DND_RACE_DATA !== 'undefined' && DND_RACE_DATA[d.dndRaceKey] ? renderNPCRaceTraits(d.dndRaceKey, null) : ''}
     ${d.desc ? `<div class="gnpc-desc">${escHtml(d.desc)}</div>` : ''}
   </div>`;
 }
@@ -3918,6 +4228,7 @@ function toggleGeneralNPCForm() {
   const form = document.getElementById('gnpc-form');
   const closing = form.style.display !== 'none';
   form.style.display = closing ? 'none' : '';
+  if (!closing) populateNPCRaceDropdowns();
   if (closing && _gnpcEditId) {
     _gnpcEditId = null;
     ['Save NPC','Save Full Sheet NPC','Save Goon'].forEach((txt, i) => {
@@ -3965,6 +4276,7 @@ function editGeneralNPC(id) {
 
   // Show form and select correct type tab
   document.getElementById('gnpc-form').style.display = '';
+  populateNPCRaceDropdowns();
   document.querySelectorAll('.gnpc-type-btn').forEach((b, i) => {
     b.classList.toggle('active', ['simple','full','goon'][i] === type);
   });
@@ -3981,11 +4293,15 @@ function editGeneralNPC(id) {
     document.getElementById('gn-hp').value    = d.hp    || '';
     document.getElementById('gn-ac').value    = d.ac    || '';
     document.getElementById('gn-desc').value  = d.desc  || '';
+    const gnDndRace = document.getElementById('gn-dndrace');
+    if (gnDndRace) gnDndRace.value = d.dndRaceKey || '';
     _npcRoleSelections['gn'] = roles; renderNPCRoleChips('gn');
     document.querySelector('#gnpc-form-simple .lands-save-btn').textContent = 'Update NPC';
   } else if (type === 'full') {
     document.getElementById('gf-name').value   = d.name   || '';
     document.getElementById('gf-race').value   = d.race   || '';
+    const gfDndRace = document.getElementById('gf-dndrace');
+    if (gfDndRace) gfDndRace.value = d.dndRaceKey || '';
     document.getElementById('gf-class').value  = d.class  || '';
     document.getElementById('gf-align').value  = d.align  || '';
     document.getElementById('gf-bg').value     = d.bg     || '';
@@ -4054,20 +4370,22 @@ async function saveGeneralNPC(type) {
   let nameId, resetIds;
 
   if (type === 'simple') {
-    data.name  = document.getElementById('gn-name').value.trim();
-    data.roles = (_npcRoleSelections['gn'] || []).slice();
-    data.race  = document.getElementById('gn-race').value.trim();
-    data.align = document.getElementById('gn-align').value.trim();
-    data.hp    = document.getElementById('gn-hp').value.trim();
-    data.ac    = document.getElementById('gn-ac').value.trim();
-    data.desc  = document.getElementById('gn-desc').value.trim();
+    data.name       = document.getElementById('gn-name').value.trim();
+    data.roles      = (_npcRoleSelections['gn'] || []).slice();
+    data.race       = document.getElementById('gn-race').value.trim();
+    data.dndRaceKey = document.getElementById('gn-dndrace')?.value || '';
+    data.align      = document.getElementById('gn-align').value.trim();
+    data.hp         = document.getElementById('gn-hp').value.trim();
+    data.ac         = document.getElementById('gn-ac').value.trim();
+    data.desc       = document.getElementById('gn-desc').value.trim();
     if (_gnpcPortrait) data.portrait = _gnpcPortrait;
     resetIds = ['gn-name','gn-role','gn-race','gn-align','gn-hp','gn-ac','gn-desc'];
   } else if (type === 'full') {
-    data.name   = document.getElementById('gf-name').value.trim();
-    data.roles  = (_npcRoleSelections['gf'] || []).slice();
-    data.race   = document.getElementById('gf-race').value.trim();
-    data.class  = document.getElementById('gf-class').value.trim();
+    data.name       = document.getElementById('gf-name').value.trim();
+    data.roles      = (_npcRoleSelections['gf'] || []).slice();
+    data.race       = document.getElementById('gf-race').value.trim();
+    data.dndRaceKey = document.getElementById('gf-dndrace')?.value || '';
+    data.class      = document.getElementById('gf-class').value.trim();
     data.align  = document.getElementById('gf-align').value.trim();
     data.bg     = document.getElementById('gf-bg').value.trim();
     data.hp     = document.getElementById('gf-hp').value.trim();
@@ -5558,8 +5876,8 @@ async function combatStartBattle() {
   const winCond   = _combatSetup.winCond;
   const maxRounds = winCond === 'timed' ? (parseInt(document.getElementById('cb-max-rounds').value) || 5) : 0;
   const combatants = [
-    ...players.map(p => ({ id:'p_'+p.uid, name:p.name, hp:p.maxHp, maxHp:p.maxHp, ac:p.ac, type:'player', conditions:[] })),
-    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[], showHp:false })),
+    ...players.map(p => ({ id:'p_'+p.uid, name:p.name, hp:p.maxHp, maxHp:p.maxHp, ac:p.ac, type:'player', conditions:[], activeBuffs:[], bonusActionUsed:false, reactionUsed:false })),
+    ...enemies.map(e  => ({ id:'e_'+e.id,  name:e.name, hp:e.maxHp, maxHp:e.maxHp, ac:e.ac, type:'enemy',  conditions:[], showHp:false, activeBuffs:[], bonusActionUsed:false, reactionUsed:false })),
   ];
   _combatState = { mode:'active', round:1, winCond, maxRounds, combatants, result:null, currentTurnIndex:0 };
   await combatSave();
@@ -5591,7 +5909,7 @@ async function combatAddMidBattle() {
   const maxHp = parseInt(document.getElementById('cb-mid-hp').value) || 10;
   const ac    = parseInt(document.getElementById('cb-mid-ac').value) || 10;
   if (!name) { document.getElementById('cb-mid-name').focus(); return; }
-  const c = { id:'e_'+Date.now(), name, hp:maxHp, maxHp, ac, type:'enemy', conditions:[] };
+  const c = { id:'e_'+Date.now(), name, hp:maxHp, maxHp, ac, type:'enemy', conditions:[], activeBuffs:[], bonusActionUsed:false, reactionUsed:false };
   _combatState.combatants = (_combatState.combatants || []).concat(c);
   ['cb-mid-name','cb-mid-hp','cb-mid-ac'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cb-mid-name').focus();
@@ -5684,10 +6002,19 @@ function combatRenderActive() {
     const turnBadge = isCurTurn
       ? `<span style="font-family:'Cinzel',serif;font-size:0.46rem;border:1px solid var(--gold);color:var(--gold);padding:1px 4px;border-radius:2px;margin-left:4px;">TURN</span>`
       : '';
+    const getCondTip = cd => {
+      if (typeof DND_COMBAT_DATA !== 'undefined') {
+        const key = cd.toLowerCase().replace(/[^a-z]/g,'');
+        const cond = DND_COMBAT_DATA.conditions[key];
+        if (cond) return cond.desc || '';
+      }
+      return '';
+    };
     const conds = (c.conditions||[]).map(cd =>
-      `<span class="cb-cond active" onclick="combatToggleCondition('${sid}','${cd}')" title="Remove">${cd}</span>`).join('');
+      `<span class="cb-cond active" onclick="combatToggleCondition('${sid}','${cd}')" title="${escHtml(getCondTip(cd)||'Click to remove')}">${cd}</span>`).join('');
     const rest = _combatConditions.filter(cd=>!(c.conditions||[]).includes(cd)).map(cd =>
-      `<span class="cb-cond" onclick="combatToggleCondition('${sid}','${cd}')">${cd}</span>`).join('');
+      `<span class="cb-cond" onclick="combatToggleCondition('${sid}','${cd}')" title="${escHtml(getCondTip(cd))}">${cd}</span>`).join('');
+    const buffRow = combatRenderBuffRow(c, sid);
     return `<div class="cb-combatant${isE?' cb-enemy':''}${c.hp===0?' cb-unconscious':''}${isCurTurn?' cb-active-turn':''}" data-cbid="${sid}"
       draggable="true"
       ondragstart="combatDragStart(event,'${sid}')"
@@ -5711,6 +6038,7 @@ function combatRenderActive() {
         <button class="cb-hp-btn heal" onclick="combatAdjustHp('${sid}',1)">+</button>
       </div>
       <div class="cb-conds">${conds}${rest}</div>
+      ${buffRow}
     </div>`;
   }).join('');
 }
@@ -5774,7 +6102,10 @@ async function combatDrop(e, targetId) {
 async function combatEndTurn() {
   const cs = _combatState.combatants || [];
   if (!cs.length) return;
-  let next = ((_combatState.currentTurnIndex || 0) + 1) % cs.length;
+  const curIdx = _combatState.currentTurnIndex || 0;
+  // Reset BA/reaction for the combatant whose turn just ended
+  if (cs[curIdx]) { cs[curIdx].bonusActionUsed = false; cs[curIdx].reactionUsed = false; }
+  let next = (curIdx + 1) % cs.length;
   if (next === 0) {
     _combatState.round = (_combatState.round || 1) + 1;
     combatCheckResult();
@@ -6871,6 +7202,9 @@ function showToast(msg) {
 window.loadPartyRoster = loadPlayersTab;
 </script>
 <script src="levelup-data-core.js"></script>
+<script src="Game%20Data/Race%20Data/dnd-races-core.js"></script>
+<script src="Game%20Data/Race%20Data/dnd-races-extra.js"></script>
+<script src="Game%20Data/Race%20Data/dnd-combat-data.js"></script>
 <script src="levelup-barbarian.js"></script>
 <script src="levelup-bard.js"></script>
 <script src="levelup-cleric.js"></script>
