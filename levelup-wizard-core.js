@@ -361,21 +361,22 @@ function luStepHp(){
         <div style="flex:1;">
           <div class="lup-hp-title">Roll d${hd}</div>
           ${w.hpRoll !== null
-            ? `<div class="lup-hp-value"><span id="lu-hp-roll-display">${w.hpRoll}</span> ${conStr} = <strong>+${totalRoll} HP</strong></div>`
+            ? `<div class="lup-hp-value" id="lu-hp-roll-val"><span id="lu-hp-roll-display">${w.hpRoll}</span> ${conStr} = <strong>+${totalRoll} HP</strong></div>`
             : `<div class="lup-hp-sub">Risk it for a higher result</div>`
           }
           ${w.hpChoice === 'roll' ? `
           <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <button id="lu-roll-hp-btn" style="background:linear-gradient(135deg,#8b3a3a,#6b2e2e);border:1px solid rgba(201,168,76,.3);color:#f5e6c8;font-family:'Cinzel',serif;font-size:0.6rem;padding:7px 14px;cursor:pointer;border-radius:2px;letter-spacing:1px;">🎲 Roll d${hd}</button>
-            <input type="number" style="width:55px;background:#0a0800;border:1px solid #3a2c0e;color:#d4af37;font-family:'Cinzel',serif;font-size:0.85rem;padding:5px 8px;border-radius:2px;text-align:center;" min="1" max="${hd}" placeholder="1–${hd}" value="${w.hpRoll !== null ? w.hpRoll : ''}"
-              onchange="_luWizard.hpRoll=Math.min(${hd},Math.max(1,parseInt(this.value)||1));_luWizard.hpChoice='roll';renderLuModal();">
+            <button id="lu-roll-hp-btn" style="background:linear-gradient(135deg,#8b3a3a,#6b2e2e);border:1px solid rgba(201,168,76,.3);color:#f5e6c8;font-family:'Cinzel',serif;font-size:0.6rem;padding:7px 14px;cursor:pointer;border-radius:2px;letter-spacing:1px;">🎲 ${w.hpRoll !== null ? 'Reroll' : 'Roll'} d${hd}</button>
+            <input type="number" id="lu-hp-manual-input" style="width:55px;background:#0a0800;border:1px solid #3a2c0e;color:#d4af37;font-family:'Cinzel',serif;font-size:0.85rem;padding:5px 8px;border-radius:2px;text-align:center;" min="1" max="${hd}" placeholder="1–${hd}" value="${w.hpRoll !== null ? w.hpRoll : ''}"
+              oninput="luManualHpInput(this, ${hd})"
+              onchange="luManualHpInput(this, ${hd})">
           </div>` : ''}
         </div>
       </div>
     </div>
     <div class="lup-hp-summary">
       <span>Current HP Max: <strong>${currentMaxHp||'?'}</strong></span>
-      <span>→ New HP Max: <strong>${newMax}</strong></span>
+      <span>→ New HP Max: <strong class="lu-hp-summary-new">${newMax}</strong></span>
     </div>
     ${currentHpNote}
   `;
@@ -616,6 +617,10 @@ function luNavStep(dir){
   const next = w.step + dir;
   if(next < 0 || next >= steps.length) return;
 
+  if(steps[w.step] === 1 && dir === 1 && w.hpChoice === 'roll' && w.hpRoll === null){
+    showToast('Please roll or enter a value before continuing.');
+    return;
+  }
   if(steps[w.step] === 4 && dir === 1 && !w.asiChoice){
     showToast('Please select an ASI / Feat option first.');
     return;
@@ -636,26 +641,117 @@ function luSetHpChoice(val){
 }
 
 function luRollHp(){
-  const hd = LU_HIT_DIE[_luWizard.className]||8;
-  const finalRoll = Math.floor(Math.random()*hd)+1;
+  const hd        = LU_HIT_DIE[_luWizard.className] || 8;
+  const finalRoll = Math.floor(Math.random() * hd) + 1;
+  const conMod    = luModifier(luGetField(_luWizard.charData, 'con'));
 
-  // Animate flickering numbers for ~1 second before settling
-  let ticks = 0;
-  const maxTicks = 14;
-  const display = document.getElementById('lu-hp-roll-display');
+  const btn = document.getElementById('lu-roll-hp-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '…rolling…'; }
 
-  const interval = setInterval(() => {
-    ticks++;
-    const fakeRoll = Math.floor(Math.random()*hd)+1;
-    if(display) display.textContent = fakeRoll;
+  luShowDiceAnimation(hd, finalRoll, () => {
+    _luWizard.hpRoll   = finalRoll;
+    _luWizard.hpChoice = 'roll';
 
-    if(ticks >= maxTicks){
-      clearInterval(interval);
-      _luWizard.hpRoll = finalRoll;
-      _luWizard.hpChoice = 'roll';
+    const display = document.getElementById('lu-hp-roll-display');
+    if (display) {
+      display.textContent = finalRoll;
+      const manual = document.getElementById('lu-hp-manual-input');
+      if (manual) manual.value = finalRoll;
+      luPatchHpSummary();
+      if (btn) { btn.disabled = false; btn.textContent = `🎲 Reroll d${hd}`; }
+    } else {
       renderLuModal();
     }
-  }, 75);
+  });
+}
+
+function luManualHpInput(input, hd) {
+  const raw = parseInt(input.value);
+  if (isNaN(raw)) return;
+
+  const clamped          = Math.min(hd, Math.max(1, raw));
+  _luWizard.hpRoll       = clamped;
+  _luWizard.hpChoice     = 'roll';
+
+  const display = document.getElementById('lu-hp-roll-display');
+  if (display) {
+    display.textContent = clamped;
+    luPatchHpSummary();
+  } else {
+    renderLuModal();
+  }
+}
+
+function luPatchHpSummary() {
+  const w          = _luWizard;
+  const hd         = LU_HIT_DIE[w.className] || 8;
+  const conMod     = luModifier(luGetField(w.charData, 'con'));
+  const conStr     = conMod >= 0 ? `+${conMod}` : `${conMod}`;
+  const avg        = Math.ceil(hd / 2) + 1;
+  const totalAvg   = avg + conMod;
+  const totalRoll  = w.hpRoll !== null ? (w.hpRoll + conMod) : null;
+  const currentMax = parseInt(luGetField(w.charData, 'maxhp') || 0);
+  const newMax     = currentMax + (w.hpChoice === 'average' ? totalAvg : (totalRoll ?? 0));
+
+  const summaryEl = document.querySelector('.lu-hp-summary-new');
+  if (summaryEl) summaryEl.textContent = newMax;
+
+  const rollValEl = document.getElementById('lu-hp-roll-val');
+  if (rollValEl && w.hpRoll !== null) {
+    rollValEl.innerHTML = `<span id="lu-hp-roll-display">${w.hpRoll}</span> ${conStr} = <strong>+${w.hpRoll + conMod} HP</strong>`;
+  }
+}
+
+function luShowDiceAnimation(sides, finalResult, onComplete) {
+  document.getElementById('lu-dice-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'lu-dice-overlay';
+  overlay.innerHTML = `
+    <div class="lu-dice-backdrop"></div>
+    <div class="lu-dice-stage">
+      <div class="lu-dice-label">d${sides}</div>
+      <div class="lu-dice-face" id="lu-dice-face">?</div>
+      <div class="lu-dice-result-label" id="lu-dice-result-label"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const face        = document.getElementById('lu-dice-face');
+  const resultLabel = document.getElementById('lu-dice-result-label');
+  luDiceStep(sides, finalResult, 0, 18, 10, onComplete, face, resultLabel);
+}
+
+function luDiceStep(sides, finalResult, tick, totalTicks, fastPhase, onComplete, face, resultLabel) {
+  if (tick >= totalTicks) {
+    face.textContent = finalResult;
+    face.classList.remove('lu-dice-spinning');
+    face.classList.add('lu-dice-landing');
+    resultLabel.textContent = finalResult === sides
+      ? '✨ Maximum roll!'
+      : finalResult === 1
+      ? '💀 Minimum...'
+      : '';
+
+    setTimeout(() => {
+      const overlay = document.getElementById('lu-dice-overlay');
+      if (overlay) {
+        overlay.classList.add('lu-dice-fade-out');
+        setTimeout(() => { overlay.remove(); onComplete(); }, 300);
+      } else {
+        onComplete();
+      }
+    }, 1200);
+    return;
+  }
+
+  face.textContent = Math.floor(Math.random() * sides) + 1;
+  face.classList.toggle('lu-dice-spinning', tick % 2 === 0);
+
+  const delay = 55 + (tick >= fastPhase ? (tick - fastPhase) * 45 : 0);
+  setTimeout(() => {
+    luDiceStep(sides, finalResult, tick + 1, totalTicks, fastPhase, onComplete, face, resultLabel);
+  }, delay);
 }
 
 function luSetAsi(val){
@@ -1378,6 +1474,20 @@ async function luApplyLevelUp(){
       cursor:pointer; white-space:nowrap; flex-shrink:0; letter-spacing:.04em;
     }
     .lu-offer-banner .lu-offer-btn:hover { filter:brightness(1.1); }
+
+    /* ── DICE OVERLAY ── */
+    #lu-dice-overlay { position:fixed; inset:0; z-index:10001; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .lu-dice-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.55); animation:luFadeIn .15s ease; }
+    .lu-dice-stage { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:12px; animation:luDiceAppear .15s ease; }
+    @keyframes luDiceAppear { from{transform:scale(.5) translateY(30px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+    .lu-dice-label { font-family:'Cinzel',serif; font-size:14px; letter-spacing:4px; text-transform:uppercase; color:rgba(201,168,76,.6); }
+    .lu-dice-face { width:120px; height:120px; background:linear-gradient(135deg,#1a1108,#0a0800); border:3px solid #c9a84c; border-radius:16px; display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:64px; font-weight:900; color:#f0d98a; box-shadow:0 0 30px rgba(201,168,76,.3),inset 0 1px 0 rgba(201,168,76,.2); transition:transform .06s ease; }
+    .lu-dice-face.lu-dice-spinning { transform:rotate(-8deg) scale(.95); color:rgba(240,217,138,.7); }
+    .lu-dice-face.lu-dice-landing { animation:luDiceLand .3s ease forwards; color:#f0d98a; box-shadow:0 0 60px rgba(201,168,76,.6),inset 0 1px 0 rgba(201,168,76,.2); }
+    @keyframes luDiceLand { 0%{transform:scale(1.3) rotate(3deg)} 40%{transform:scale(.9) rotate(-2deg)} 70%{transform:scale(1.1) rotate(1deg)} 100%{transform:scale(1) rotate(0)} }
+    .lu-dice-result-label { font-family:'Cinzel',serif; font-size:13px; letter-spacing:2px; color:#c9a84c; min-height:20px; text-align:center; }
+    .lu-dice-fade-out { animation:luDiceFadeOut .3s ease forwards; }
+    @keyframes luDiceFadeOut { to{opacity:0;transform:scale(1.05)} }
   `;
   document.head.appendChild(style);
 })();
