@@ -1224,6 +1224,393 @@
   .rage-badge.inactive { border-color:var(--border);color:var(--border-light);background:none;opacity:0.55; }
   /* NPC racial badge */
   .npc-race-badge { display:inline-block;font-family:'Cinzel',serif;font-size:0.48rem;text-transform:uppercase;letter-spacing:0.06em;padding:1px 5px;border-radius:2px;background:rgba(154,112,0,0.12);border:1px solid rgba(122,90,40,0.35);color:var(--gold);margin-left:4px; }
+
+  /* ── COMPENDIUM OVERLAY & MODAL ───────────────────────── */
+  #comp-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9990;
+    padding: 16px;
+  }
+  .comp-modal {
+    background: #0f0c07;
+    border: 1px solid #6b4f1a;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 900px;
+    height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 0 1px #2a1f0a, 0 30px 80px rgba(0,0,0,.9),
+                inset 0 1px 0 rgba(201,168,76,.15);
+    overflow: hidden;
+  }
+  .comp-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 18px 24px 12px;
+    background: linear-gradient(180deg, #1a1108 0%, #0f0c07 100%);
+    border-bottom: 1px solid #3a2c0e;
+    flex-shrink: 0;
+  }
+  .comp-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #8b6914;
+    margin-bottom: 3px;
+  }
+  .comp-title {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: #f0d98a;
+    text-shadow: 0 0 30px rgba(201,168,76,.3);
+    line-height: 1;
+  }
+  .comp-close {
+    background: none;
+    border: none;
+    color: #3a2c0e;
+    font-size: 18px;
+    cursor: pointer;
+    transition: color .15s;
+    padding: 0;
+    line-height: 1;
+  }
+  .comp-close:hover { color: #c9a84c; }
+  .comp-tabs {
+    display: flex;
+    border-bottom: 1px solid #2a1f0a;
+    background: #0a0800;
+    flex-shrink: 0;
+  }
+  .comp-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #3a2c0e;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .comp-tab:hover { color: #8b6914; }
+  .comp-tab.comp-tab-active {
+    color: #c9a84c;
+    border-bottom-color: #c9a84c;
+  }
+  .comp-body { flex: 1; overflow: hidden; display: flex; }
+  .comp-pane {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .comp-list-col {
+    width: 340px;
+    min-width: 220px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #1e1708;
+    overflow: hidden;
+  }
+  .comp-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #1e1708;
+    flex-shrink: 0;
+  }
+  .comp-search {
+    width: 100%;
+    background: rgba(0,0,0,.3);
+    border: 1px solid #2a1f0a;
+    border-radius: 3px;
+    color: #f5e6c8;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: 'Crimson Text', Georgia, serif;
+    box-sizing: border-box;
+  }
+  .comp-search::placeholder { color: #3a2c0e; }
+  .comp-filter {
+    width: 100%;
+    background: rgba(0,0,0,.3);
+    border: 1px solid #2a1f0a;
+    border-radius: 3px;
+    color: #8b6914;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: 'Cinzel', serif;
+    box-sizing: border-box;
+  }
+  .comp-count {
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #2a1f0a;
+    flex-shrink: 0;
+    border-bottom: 1px solid #1a1208;
+  }
+  .comp-list { flex: 1; overflow-y: auto; }
+  .comp-list::-webkit-scrollbar { width: 4px; }
+  .comp-list::-webkit-scrollbar-thumb { background: #2a1f0a; border-radius: 2px; }
+  .comp-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 9px 12px;
+    border-bottom: 1px solid #12100a;
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .comp-row:hover { background: rgba(201,168,76,.06); }
+  .comp-row.comp-row-active { background: rgba(201,168,76,.1); border-left: 2px solid #c9a84c; }
+  .comp-row-lvl {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b4f1a;
+    flex-shrink: 0;
+    min-width: 36px;
+  }
+  .comp-row-name {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 14px;
+    color: #c9a84c;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .comp-row-active .comp-row-name { color: #f0d98a; }
+  .comp-row-meta {
+    font-size: 11px;
+    color: #3a2c0e;
+    flex-shrink: 0;
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .comp-no-prereq { color: #2a1f0a; font-style: italic; }
+  .comp-conc-dot  { color: #6b4f1a; font-size: 11px; }
+  @media (max-width: 600px) { .comp-hide-narrow { display: none; } }
+  .comp-empty {
+    padding: 20px 12px;
+    color: #2a1f0a;
+    font-style: italic;
+    font-size: 13px;
+    font-family: 'Crimson Text', Georgia, serif;
+  }
+  .comp-detail-col {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px;
+  }
+  .comp-detail-col::-webkit-scrollbar { width: 4px; }
+  .comp-detail-col::-webkit-scrollbar-thumb { background: #2a1f0a; border-radius: 2px; }
+  .comp-detail-placeholder {
+    margin-top: 40px;
+    text-align: center;
+    color: #2a1f0a;
+    font-family: 'Crimson Text', Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+  }
+  .comp-detail-name {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: #f0d98a;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .comp-detail-sub {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 13px;
+    color: #6a5030;
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+  .comp-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    margin-bottom: 14px;
+  }
+  .comp-detail-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 6px;
+  }
+  .comp-detail-lbl {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #6b4f1a;
+    margin-bottom: 1px;
+  }
+  .comp-detail-desc {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 14px;
+    color: #7a6030;
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+  .comp-detail-section-lbl {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #6b4f1a;
+    margin: 14px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #1e1708;
+  }
+  .comp-detail-list {
+    margin: 0 0 10px 16px;
+    padding: 0;
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 13px;
+    color: #6a5030;
+    line-height: 1.6;
+  }
+  .comp-detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .comp-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(201,168,76,.1);
+    border: 1px solid rgba(201,168,76,.2);
+    color: #8b6914;
+  }
+  .comp-badge-conc {
+    background: rgba(80,130,220,.1);
+    border-color: rgba(80,130,220,.2);
+    color: #6080b0;
+  }
+  .comp-feat-bonus {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: #c9a84c;
+    background: rgba(201,168,76,.08);
+    border: 1px solid rgba(201,168,76,.2);
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin-bottom: 12px;
+  }
+  .comp-monster-stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,.2);
+    border-radius: 4px;
+    border: 1px solid #1e1708;
+    margin-bottom: 12px;
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 13px;
+    color: #6a5030;
+  }
+  .comp-monster-stats-bar strong {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #6b4f1a;
+    margin-right: 4px;
+  }
+  .comp-stats-row {
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    padding: 10px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #1e1708;
+  }
+  .comp-stat-cell { flex: 1; }
+  .comp-stat-val {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: #c9a84c;
+    line-height: 1;
+  }
+  .comp-stat-mod { font-size: 12px; color: #8b6914; margin: 1px 0; }
+  .comp-stat-key {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #3a2c0e;
+  }
+  .comp-action {
+    margin-bottom: 10px;
+    padding-left: 8px;
+    border-left: 1px solid #2a1f0a;
+  }
+  .comp-action-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+  .comp-action-name {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #c9a84c;
+  }
+  .comp-action-stat {
+    font-size: 11px;
+    color: #8b6914;
+    font-family: 'Crimson Text', Georgia, serif;
+  }
+  .comp-action-desc {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 13px;
+    color: #6a5030;
+    line-height: 1.45;
+  }
+  .comp-nav-btn {
+    background: none;
+    border: 1px solid rgba(201,168,76,.25);
+    color: #c9a84c;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all .15s;
+  }
+  .comp-nav-btn:hover {
+    background: rgba(201,168,76,.08);
+    border-color: rgba(201,168,76,.5);
+  }
+  @media (max-width: 640px) {
+    .comp-pane { flex-direction: column; }
+    .comp-list-col { width: 100%; min-width: 0; height: 40%; border-right: none; border-bottom: 1px solid #1e1708; }
+    .comp-detail-col { height: 60%; }
+  }
 </style>
 </head>
 <body>
@@ -1243,6 +1630,7 @@
   <button class="nav-btn" id="announce-btn" onclick="toggleAnnouncePanel()" style="display:none;">📢 Events</button>
   <button class="nav-btn" id="ann-view-btn" onclick="reopenAnnouncement()" style="display:none;">👁 View</button>
   <button class="nav-btn" id="items-tab-btn" onclick="toggleItemsTab()">🗡️ Items</button>
+  <button class="nav-btn comp-nav-btn" onclick="openCompendium()">📖 Compendium</button>
   <button class="nav-btn" id="dice-btn" onclick="toggleDicePanel()" style="display:none;">🎲 Roll</button>
   <button class="nav-btn" id="combat-nav-tab" onclick="goToCombat()" style="display:none;">⚔ Combat</button>
   <button class="nav-btn" id="profile-nav-btn" onclick="toggleProfilePanel()" title="Settings" style="padding:5px 10px;">
@@ -7336,6 +7724,468 @@ window.loadPartyRoster = loadPlayersTab;
   <div id="your-turn-toast-name" style="font-family:'Crimson Text',serif;font-size:0.85rem;color:var(--parchment-dark);margin-bottom:10px;"></div>
   <button onclick="goToCombat()" style="width:100%;padding:7px;background:rgba(154,112,0,0.2);border:1px solid var(--gold);border-radius:2px;color:var(--gold-light);font-family:'Cinzel',serif;font-size:0.58rem;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">Go to Combat →</button>
 </div>
+
+<!-- RULE COMPENDIUM MODAL -->
+<div id="comp-overlay" style="display:none;"
+  onclick="if(event.target===this)closeCompendium()">
+  <div class="comp-modal" role="dialog" aria-modal="true" aria-label="Rule Compendium">
+
+    <div class="comp-header">
+      <div class="comp-header-left">
+        <div class="comp-eyebrow">Reference</div>
+        <div class="comp-title">Compendium</div>
+      </div>
+      <button class="comp-close" onclick="closeCompendium()">✕</button>
+    </div>
+
+    <div class="comp-tabs" role="tablist">
+      <button class="comp-tab" id="comp-tab-spells"
+        onclick="compSwitchTab('spells')" role="tab">Spells</button>
+      <button class="comp-tab" id="comp-tab-feats"
+        onclick="compSwitchTab('feats')" role="tab">Feats</button>
+      <button class="comp-tab" id="comp-tab-backgrounds"
+        onclick="compSwitchTab('backgrounds')" role="tab">Backgrounds</button>
+      <button class="comp-tab" id="comp-tab-monsters"
+        onclick="compSwitchTab('monsters')" role="tab">Monsters</button>
+    </div>
+
+    <div class="comp-body" id="comp-body"></div>
+
+  </div>
+</div>
+
+<script>
+// ── RULE COMPENDIUM ────────────────────────────────────────
+
+const _comp = {
+  tab:         'spells',
+  spellSearch: '',
+  spellLevel:  'all',
+  spellClass:  'all',
+  spellSchool: 'all',
+  featSearch:  '',
+  featPrereq:  'all',
+  bgSearch:    '',
+  monSearch:   '',
+  monCR:       'all',
+  monType:     'all',
+  selected:    null,
+};
+
+function openCompendium(tab) {
+  if (tab) _comp.tab = tab;
+  if (typeof DND_SPELL_DATA === 'undefined' &&
+      typeof DND_FEAT_DATA  === 'undefined') {
+    showToast('Compendium data not loaded yet.');
+    return;
+  }
+  _comp.selected = null;
+  renderCompendium();
+  document.getElementById('comp-overlay').style.display = 'flex';
+}
+
+function closeCompendium() {
+  const el = document.getElementById('comp-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function compSwitchTab(tab) {
+  _comp.tab = tab;
+  _comp.selected = null;
+  renderCompendium();
+}
+
+function renderCompendium() {
+  const body = document.getElementById('comp-body');
+  if (!body) return;
+  ['spells','feats','backgrounds','monsters'].forEach(t => {
+    const el = document.getElementById('comp-tab-' + t);
+    if (el) el.classList.toggle('comp-tab-active', t === _comp.tab);
+  });
+  switch (_comp.tab) {
+    case 'spells':      body.innerHTML = renderCompSpells();      break;
+    case 'feats':       body.innerHTML = renderCompFeats();       break;
+    case 'backgrounds': body.innerHTML = renderCompBackgrounds(); break;
+    case 'monsters':    body.innerHTML = renderCompMonsters();    break;
+  }
+}
+
+// ── SPELLS TAB ────────────────────────────────────────────
+
+function renderCompSpells() {
+  if (typeof DND_SPELL_DATA === 'undefined')
+    return '<div class="comp-empty">Spell data not loaded.</div>';
+
+  const levels = [0,1,2,3,4,5,6,7,8,9];
+  const levelLabels = ['Cantrip','1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
+
+  const all = levels.flatMap(lvl => {
+    const key = lvl === 0 ? 'cantrips' : 'level' + lvl;
+    return DND_SPELL_DATA[key] || [];
+  });
+
+  const allClasses = [...new Set(all.flatMap(s => s.classes || []))].sort();
+  const allSchools = [...new Set(all.map(s => s.school))].sort();
+
+  let filtered = all;
+  if (_comp.spellSearch) {
+    const q = _comp.spellSearch.toLowerCase();
+    filtered = filtered.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.desc.toLowerCase().includes(q) ||
+      s.school.toLowerCase().includes(q)
+    );
+  }
+  if (_comp.spellLevel !== 'all') {
+    const lvl = parseInt(_comp.spellLevel);
+    filtered = filtered.filter(s => s.level === lvl);
+  }
+  if (_comp.spellClass !== 'all') {
+    filtered = filtered.filter(s => s.classes && s.classes.includes(_comp.spellClass));
+  }
+  if (_comp.spellSchool !== 'all') {
+    filtered = filtered.filter(s => s.school.toLowerCase() === _comp.spellSchool);
+  }
+
+  const classOpts = ['<option value="all">All Classes</option>']
+    .concat(allClasses.map(c => `<option value="${escHtml(c)}" ${_comp.spellClass===c?'selected':''}>${escHtml(c.charAt(0).toUpperCase()+c.slice(1))}</option>`))
+    .join('');
+
+  const levelOpts = ['<option value="all">All Levels</option>']
+    .concat(levelLabels.map((l,i) => `<option value="${i}" ${_comp.spellLevel==i?'selected':''}>${escHtml(l)}</option>`))
+    .join('');
+
+  const schoolOpts = ['<option value="all">All Schools</option>']
+    .concat(allSchools.map(s => `<option value="${escHtml(s.toLowerCase())}" ${_comp.spellSchool===s.toLowerCase()?'selected':''}>${escHtml(s)}</option>`))
+    .join('');
+
+  const rows = filtered.map(s => {
+    const lvlLabel = s.level === 0 ? 'C' : s.level;
+    const conc = s.concentration ? '<span class="comp-conc-dot" title="Concentration">◎</span>' : '';
+    const safeName = escHtml(s.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="comp-row ${_comp.selected===s.name?'comp-row-active':''}"
+      onclick="_comp.selected='${safeName}'; renderCompendium()">
+      <span class="comp-row-lvl">${lvlLabel}</span>
+      <span class="comp-row-name">${escHtml(s.name)} ${conc}</span>
+      <span class="comp-row-meta">${escHtml(s.school)}</span>
+      <span class="comp-row-meta comp-hide-narrow">${escHtml(s.castingTime)}</span>
+    </div>`;
+  }).join('') || '<div class="comp-empty">No spells match your filters.</div>';
+
+  let detail = '';
+  if (_comp.selected && typeof DND_SPELL_DATA.getSpell === 'function') {
+    const s = DND_SPELL_DATA.getSpell(_comp.selected);
+    if (s) {
+      const lvlLabel = s.level === 0 ? 'Cantrip' : `Level ${s.level}`;
+      const concBadge = s.concentration ? '<span class="comp-badge comp-badge-conc">Concentration</span>' : '';
+      const classBadges = (s.classes||[]).map(c =>
+        `<span class="comp-badge">${escHtml(c)}</span>`).join('');
+      const dmgRow = s.damageDice
+        ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Damage</span><span>${escHtml(s.damageDice)} ${escHtml(s.damageType||'')}</span></div>` : '';
+      const atkRow = s.attackType && s.attackType !== 'none'
+        ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Attack / Save</span><span>${escHtml(s.attackType)}</span></div>` : '';
+
+      detail = `
+        <div class="comp-detail">
+          <div class="comp-detail-name">${escHtml(s.name)}</div>
+          <div class="comp-detail-sub">${escHtml(lvlLabel)} · ${escHtml(s.school)} ${concBadge}</div>
+          <div class="comp-detail-grid">
+            <div class="comp-detail-row"><span class="comp-detail-lbl">Casting Time</span><span>${escHtml(s.castingTime)}</span></div>
+            <div class="comp-detail-row"><span class="comp-detail-lbl">Range</span><span>${escHtml(s.range)}</span></div>
+            <div class="comp-detail-row"><span class="comp-detail-lbl">Components</span><span>${escHtml(s.components)}</span></div>
+            <div class="comp-detail-row"><span class="comp-detail-lbl">Duration</span><span>${escHtml(s.duration)}</span></div>
+            ${dmgRow}${atkRow}
+          </div>
+          <div class="comp-detail-desc">${escHtml(s.desc)}</div>
+          <div class="comp-detail-tags">${classBadges}</div>
+        </div>`;
+    }
+  }
+
+  return `
+    <div class="comp-pane">
+      <div class="comp-list-col">
+        <div class="comp-filters">
+          <input class="comp-search" placeholder="Search spells…" value="${escHtml(_comp.spellSearch)}"
+            oninput="_comp.spellSearch=this.value;_comp.selected=null;renderCompendium()">
+          <select class="comp-filter" onchange="_comp.spellLevel=this.value;_comp.selected=null;renderCompendium()">${levelOpts}</select>
+          <select class="comp-filter" onchange="_comp.spellClass=this.value;_comp.selected=null;renderCompendium()">${classOpts}</select>
+          <select class="comp-filter" onchange="_comp.spellSchool=this.value;_comp.selected=null;renderCompendium()">${schoolOpts}</select>
+        </div>
+        <div class="comp-count">${filtered.length} of ${all.length} spells</div>
+        <div class="comp-list">${rows}</div>
+      </div>
+      <div class="comp-detail-col">${detail || '<div class="comp-detail-placeholder">Select a spell to see its description.</div>'}</div>
+    </div>`;
+}
+
+// ── FEATS TAB ─────────────────────────────────────────────
+
+function renderCompFeats() {
+  if (typeof DND_FEAT_DATA === 'undefined')
+    return '<div class="comp-empty">Feat data not loaded.</div>';
+
+  const all = DND_FEAT_DATA.getAll();
+  let filtered = all;
+
+  if (_comp.featSearch) {
+    filtered = DND_FEAT_DATA.search(_comp.featSearch);
+  }
+  if (_comp.featPrereq === 'none') {
+    filtered = filtered.filter(f => !f.prerequisite);
+  } else if (_comp.featPrereq === 'has') {
+    filtered = filtered.filter(f => !!f.prerequisite);
+  }
+
+  const rows = filtered.map(f => {
+    const safeName = escHtml(f.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="comp-row ${_comp.selected===f.name?'comp-row-active':''}"
+      onclick="_comp.selected='${safeName}'; renderCompendium()">
+      <span class="comp-row-name">${escHtml(f.name)}</span>
+      <span class="comp-row-meta">${f.prerequisite ? escHtml(f.prerequisite) : '<span class="comp-no-prereq">No prerequisite</span>'}</span>
+    </div>`;
+  }).join('') || '<div class="comp-empty">No feats match your search.</div>';
+
+  let detail = '';
+  if (_comp.selected && DND_FEAT_DATA[_comp.selected]) {
+    const f = DND_FEAT_DATA[_comp.selected];
+    const bonusLines = Object.entries(f.bonuses || {}).map(([k, v]) => {
+      if (k === 'statChoice') return `+1 to ${v.map(s=>s.toUpperCase()).join(' or ')}`;
+      if (k === 'initiative') return `+${v} Initiative`;
+      return `+${v} ${k.toUpperCase()}`;
+    }).join(', ');
+
+    detail = `
+      <div class="comp-detail">
+        <div class="comp-detail-name">${escHtml(f.name)}</div>
+        ${f.prerequisite
+          ? `<div class="comp-detail-sub">Prerequisite: ${escHtml(f.prerequisite)}</div>`
+          : '<div class="comp-detail-sub comp-no-prereq">No prerequisite</div>'}
+        ${bonusLines ? `<div class="comp-feat-bonus">Grants: ${escHtml(bonusLines)}</div>` : ''}
+        <div class="comp-detail-desc">${escHtml(f.desc)}</div>
+      </div>`;
+  }
+
+  return `
+    <div class="comp-pane">
+      <div class="comp-list-col">
+        <div class="comp-filters">
+          <input class="comp-search" placeholder="Search feats…" value="${escHtml(_comp.featSearch)}"
+            oninput="_comp.featSearch=this.value;_comp.selected=null;renderCompendium()">
+          <select class="comp-filter" onchange="_comp.featPrereq=this.value;_comp.selected=null;renderCompendium()">
+            <option value="all" ${_comp.featPrereq==='all'?'selected':''}>All feats</option>
+            <option value="none" ${_comp.featPrereq==='none'?'selected':''}>No prerequisite</option>
+            <option value="has"  ${_comp.featPrereq==='has'?'selected':''}>Has prerequisite</option>
+          </select>
+        </div>
+        <div class="comp-count">${filtered.length} of ${all.length} feats</div>
+        <div class="comp-list">${rows}</div>
+      </div>
+      <div class="comp-detail-col">${detail || '<div class="comp-detail-placeholder">Select a feat to see its description.</div>'}</div>
+    </div>`;
+}
+
+// ── BACKGROUNDS TAB ───────────────────────────────────────
+
+function renderCompBackgrounds() {
+  if (typeof DND_BACKGROUND_DATA === 'undefined')
+    return '<div class="comp-empty">Background data not loaded.</div>';
+
+  const all = Object.entries(DND_BACKGROUND_DATA)
+    .filter(([, v]) => typeof v === 'object' && v.name)
+    .map(([key, v]) => ({ key, ...v }));
+
+  const filtered = _comp.bgSearch
+    ? all.filter(b =>
+        b.name.toLowerCase().includes(_comp.bgSearch.toLowerCase()) ||
+        b.desc.toLowerCase().includes(_comp.bgSearch.toLowerCase()) ||
+        b.feature.name.toLowerCase().includes(_comp.bgSearch.toLowerCase())
+      )
+    : all;
+
+  const rows = filtered.map(b => {
+    const safeKey = escHtml(b.key).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="comp-row ${_comp.selected===b.key?'comp-row-active':''}"
+      onclick="_comp.selected='${safeKey}'; renderCompendium()">
+      <span class="comp-row-name">${escHtml(b.name)}</span>
+      <span class="comp-row-meta">${escHtml(b.skillProficiencies.join(', '))}</span>
+    </div>`;
+  }).join('') || '<div class="comp-empty">No backgrounds match.</div>';
+
+  let detail = '';
+  if (_comp.selected) {
+    const b = DND_BACKGROUND_DATA[_comp.selected];
+    if (b) {
+      const profParts = [];
+      if (b.skillProficiencies?.length) profParts.push('Skills: ' + b.skillProficiencies.join(', '));
+      if (b.toolProficiencies?.length)  profParts.push('Tools: '  + b.toolProficiencies.join(', '));
+      if (b.languages > 0)              profParts.push('Languages: +' + b.languages);
+      const equipList = (b.equipment || []).map(e => `<li>${escHtml(e)}</li>`).join('');
+
+      detail = `
+        <div class="comp-detail">
+          <div class="comp-detail-name">${escHtml(b.name)}</div>
+          <div class="comp-detail-desc">${escHtml(b.desc)}</div>
+          <div class="comp-detail-section-lbl">Proficiencies &amp; Languages</div>
+          <div class="comp-detail-desc">${escHtml(profParts.join(' · '))}</div>
+          <div class="comp-detail-section-lbl">Equipment</div>
+          <ul class="comp-detail-list">${equipList}</ul>
+          <div class="comp-detail-section-lbl">Feature — ${escHtml(b.feature.name)}</div>
+          <div class="comp-detail-desc">${escHtml(b.feature.desc)}</div>
+          ${b.variants ? `<div class="comp-detail-section-lbl">Variant</div><div class="comp-detail-desc">${escHtml(b.variants.join('; '))}</div>` : ''}
+        </div>`;
+    }
+  }
+
+  return `
+    <div class="comp-pane">
+      <div class="comp-list-col">
+        <div class="comp-filters">
+          <input class="comp-search" placeholder="Search backgrounds…" value="${escHtml(_comp.bgSearch)}"
+            oninput="_comp.bgSearch=this.value;_comp.selected=null;renderCompendium()">
+        </div>
+        <div class="comp-count">${filtered.length} of ${all.length} backgrounds</div>
+        <div class="comp-list">${rows}</div>
+      </div>
+      <div class="comp-detail-col">${detail || '<div class="comp-detail-placeholder">Select a background to see its feature and proficiencies.</div>'}</div>
+    </div>`;
+}
+
+// ── MONSTERS TAB ──────────────────────────────────────────
+
+function renderCompMonsters() {
+  if (typeof DND_MONSTER_DATA === 'undefined')
+    return '<div class="comp-empty">Monster data not loaded.</div>';
+
+  const all = DND_MONSTER_DATA.getAll();
+
+  const crToNum = cr => {
+    if (cr === '1/8') return 0.125;
+    if (cr === '1/4') return 0.25;
+    if (cr === '1/2') return 0.5;
+    return parseFloat(cr) || 0;
+  };
+
+  const allCRs   = [...new Set(all.map(m => m.cr))].sort((a, b) => crToNum(a) - crToNum(b));
+  const allTypes = [...new Set(all.map(m => m.type.split(' ')[0].toLowerCase()))].sort();
+
+  let filtered = all;
+  if (_comp.monSearch) {
+    const q = _comp.monSearch.toLowerCase();
+    filtered = filtered.filter(m => m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q));
+  }
+  if (_comp.monCR   !== 'all') filtered = filtered.filter(m => m.cr === _comp.monCR);
+  if (_comp.monType !== 'all') filtered = filtered.filter(m => m.type.toLowerCase().startsWith(_comp.monType));
+
+  const crOpts = ['<option value="all">All CRs</option>']
+    .concat(allCRs.map(cr => `<option value="${escHtml(cr)}" ${_comp.monCR===cr?'selected':''}>CR ${escHtml(cr)}</option>`))
+    .join('');
+  const typeOpts = ['<option value="all">All Types</option>']
+    .concat(allTypes.map(t => `<option value="${escHtml(t)}" ${_comp.monType===t?'selected':''}>${escHtml(t.charAt(0).toUpperCase()+t.slice(1))}</option>`))
+    .join('');
+
+  const rows = filtered.map(m => {
+    const safeName = escHtml(m.name).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="comp-row ${_comp.selected===m.name?'comp-row-active':''}"
+      onclick="_comp.selected='${safeName}'; renderCompendium()">
+      <span class="comp-row-lvl">CR ${escHtml(m.cr)}</span>
+      <span class="comp-row-name">${escHtml(m.name)}</span>
+      <span class="comp-row-meta comp-hide-narrow">${escHtml(m.type)}</span>
+    </div>`;
+  }).join('') || '<div class="comp-empty">No monsters match your filters.</div>';
+
+  let detail = '';
+  if (_comp.selected) {
+    const key = Object.keys(DND_MONSTER_DATA).find(k =>
+      typeof DND_MONSTER_DATA[k] === 'object' &&
+      DND_MONSTER_DATA[k].name === _comp.selected
+    );
+    const m = key ? DND_MONSTER_DATA[key] : null;
+
+    if (m) {
+      const statLabels = {str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'};
+      const mod = v => { const n = Math.floor((v-10)/2); return (n>=0?'+':'')+n; };
+
+      const statsHtml = Object.entries(m.stats||{}).map(([k,v]) =>
+        `<div class="comp-stat-cell">
+          <div class="comp-stat-val">${v}</div>
+          <div class="comp-stat-mod">${mod(v)}</div>
+          <div class="comp-stat-key">${statLabels[k]||k}</div>
+        </div>`).join('');
+
+      const saveStr  = Object.entries(m.saves||{}).filter(([,v])=>v!==0).map(([k,v])=>`${k.toUpperCase()} ${v>=0?'+'+v:v}`).join(', ');
+      const skillStr = Object.entries(m.skills||{}).map(([k,v])=>`${k} ${v>=0?'+'+v:v}`).join(', ');
+      const speedStr = Object.entries(m.speed||{}).map(([k,v])=>k==='walk'?`${v} ft`:`${k} ${v} ft`).join(', ');
+      const senseStr = Object.entries(m.senses||{}).map(([k,v])=>k==='passivePerception'?`Passive Perception ${v}`:`${k} ${v} ft`).join(', ');
+
+      const actionsHtml = (m.actions||[]).map(a => `
+        <div class="comp-action">
+          <div class="comp-action-header">
+            <span class="comp-action-name">${escHtml(a.name)}</span>
+            ${a.attackBonus ? `<span class="comp-action-stat">+${a.attackBonus} to hit</span>` : ''}
+            ${a.damageDice  ? `<span class="comp-action-stat">${escHtml(a.damageDice)}${a.damageBonus?'+'+a.damageBonus:''} ${escHtml(a.damageType||'')}</span>` : ''}
+          </div>
+          <div class="comp-action-desc">${escHtml(a.desc)}</div>
+        </div>`).join('');
+
+      const traitsHtml = (m.traits||[]).map(t =>
+        `<div class="comp-action">
+          <div class="comp-action-header"><span class="comp-action-name">${escHtml(t.name)}</span></div>
+          <div class="comp-action-desc">${escHtml(t.desc)}</div>
+        </div>`).join('');
+
+      const legendaryHtml = m.legendaryActions ? `
+        <div class="comp-detail-section-lbl">Legendary Actions (${m.legendaryActions.count}/turn)</div>
+        ${m.legendaryActions.options.map(o =>
+          `<div class="comp-action">
+            <div class="comp-action-header">
+              <span class="comp-action-name">${escHtml(o.name)}${o.cost>1?` (Costs ${o.cost})`:''}.</span>
+            </div>
+            <div class="comp-action-desc">${escHtml(o.desc)}</div>
+          </div>`).join('')}` : '';
+
+      detail = `
+        <div class="comp-detail">
+          <div class="comp-detail-name">${escHtml(m.name)}</div>
+          <div class="comp-detail-sub">${escHtml(m.size)} ${escHtml(m.type)} · ${escHtml(m.alignment)}</div>
+          <div class="comp-monster-stats-bar">
+            <span><strong>AC</strong> ${m.ac}${m.acNote?` (${escHtml(m.acNote)})`:''}</span>
+            <span><strong>HP</strong> ${m.hp} (${escHtml(m.hpDice||'')})</span>
+            <span><strong>Speed</strong> ${escHtml(speedStr)}</span>
+            <span><strong>CR</strong> ${escHtml(m.cr)} · ${escHtml(String(m.xp))} XP</span>
+          </div>
+          <div class="comp-stats-row">${statsHtml}</div>
+          ${saveStr  ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Saving Throws</span><span>${escHtml(saveStr)}</span></div>` : ''}
+          ${skillStr ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Skills</span><span>${escHtml(skillStr)}</span></div>` : ''}
+          ${m.resistances?.length    ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Resistances</span><span>${escHtml(m.resistances.join(', '))}</span></div>` : ''}
+          ${m.immunities?.length     ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Immunities</span><span>${escHtml(m.immunities.join(', '))}</span></div>` : ''}
+          ${m.vulnerabilities?.length ? `<div class="comp-detail-row"><span class="comp-detail-lbl">Vulnerabilities</span><span>${escHtml(m.vulnerabilities.join(', '))}</span></div>` : ''}
+          <div class="comp-detail-row"><span class="comp-detail-lbl">Senses</span><span>${escHtml(senseStr)}</span></div>
+          <div class="comp-detail-row"><span class="comp-detail-lbl">Languages</span><span>${escHtml((m.languages||[]).join(', ')||'—')}</span></div>
+          ${traitsHtml   ? `<div class="comp-detail-section-lbl">Traits</div>${traitsHtml}` : ''}
+          <div class="comp-detail-section-lbl">Actions</div>
+          ${actionsHtml}
+          ${legendaryHtml}
+        </div>`;
+    }
+  }
+
+  return `
+    <div class="comp-pane">
+      <div class="comp-list-col">
+        <div class="comp-filters">
+          <input class="comp-search" placeholder="Search monsters…" value="${escHtml(_comp.monSearch)}"
+            oninput="_comp.monSearch=this.value;_comp.selected=null;renderCompendium()">
+          <select class="comp-filter" onchange="_comp.monCR=this.value;_comp.selected=null;renderCompendium()">${crOpts}</select>
+          <select class="comp-filter" onchange="_comp.monType=this.value;_comp.selected=null;renderCompendium()">${typeOpts}</select>
+        </div>
+        <div class="comp-count">${filtered.length} of ${all.length} monsters</div>
+        <div class="comp-list">${rows}</div>
+      </div>
+      <div class="comp-detail-col">${detail || '<div class="comp-detail-placeholder">Select a monster to see its full stat block.</div>'}</div>
+    </div>`;
+}
+</script>
 
 <!-- DICE ANIMATION OVERLAY -->
 <div id="dice-anim-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:300;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
