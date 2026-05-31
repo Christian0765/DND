@@ -458,9 +458,28 @@ function luStepAsi(){
     `<option value="${s.key}" ${w.asiStat2===s.key?'selected':''}>${s.name} (${s.val})</option>`
   ).join('');
 
-  const featOptions = LU_FEATS.map(f =>
-    `<option value="${escHtml(f)}" ${w.featChoice===f?'selected':''}>${escHtml(f)}</option>`
-  ).join('');
+  const featList = (typeof DND_FEAT_DATA !== 'undefined')
+    ? DND_FEAT_DATA.getAll()
+    : LU_FEATS.map(name => ({ name, prerequisite: null, desc: '' }));
+
+  const featOptions = featList.map(f => {
+    const prereq = f.prerequisite ? ` [Req: ${f.prerequisite}]` : '';
+    return `<option value="${escHtml(f.name)}" ${w.featChoice===f.name?'selected':''}>${escHtml(f.name)}${escHtml(prereq)}</option>`;
+  }).join('');
+
+  const chosenFeat = (typeof DND_FEAT_DATA !== 'undefined' && w.featChoice)
+    ? DND_FEAT_DATA[w.featChoice]
+    : null;
+
+  const featDescHtml = chosenFeat ? `
+    <div class="lu-feat-desc" id="lu-feat-desc-panel">
+      <div class="lu-feat-desc-name">${escHtml(chosenFeat.name)}</div>
+      ${chosenFeat.prerequisite
+        ? `<div class="lu-feat-prereq">Prerequisite: ${escHtml(chosenFeat.prerequisite)}</div>`
+        : ''}
+      <div class="lu-feat-desc-text">${escHtml(chosenFeat.desc)}</div>
+    </div>
+  ` : `<div class="lu-feat-desc lu-feat-desc-empty" id="lu-feat-desc-panel">Select a feat to see its description.</div>`;
 
   return `
     <p class="lup-step-desc">Choose your Ability Score Improvement or Feat:</p>
@@ -486,10 +505,11 @@ function luStepAsi(){
         <div class="lup-radio-dot${w.asiChoice==='feat'?' lup-radio-checked':''}"></div>
         <div class="lup-asi-body">
           <div class="lup-asi-title">Take a Feat</div>
-          <select class="lup-asi-select" id="lu-asi-feat" onchange="_luWizard.featChoice=this.value;luSetAsi('feat')">
+          <select class="lup-asi-select" id="lu-asi-feat" onchange="_luWizard.featChoice=this.value; renderLuModal()">
             <option value="">— Choose feat —</option>
             ${featOptions}
           </select>
+          ${featDescHtml}
         </div>
       </div>
     </div>
@@ -1040,6 +1060,37 @@ async function luApplyLevelUp(){
     .lup-asi-select:focus { outline:none; border-color:#c9a84c; }
     .lup-asi-pair { display:flex; gap:8px; }
     .lup-asi-pair select { flex:1; }
+    .lu-feat-desc {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.15);
+      border-radius: 6px;
+      border-left: 2px solid rgba(201,168,76,0.35);
+    }
+    .lu-feat-desc-empty {
+      color: rgba(245,230,200,0.4);
+      font-style: italic;
+      font-size: 12px;
+    }
+    .lu-feat-desc-name {
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #c9a84c;
+      margin-bottom: 4px;
+    }
+    .lu-feat-prereq {
+      font-size: 11px;
+      color: rgba(245,230,200,0.5);
+      font-style: italic;
+      margin-bottom: 6px;
+    }
+    .lu-feat-desc-text {
+      font-family: 'Crimson Text', Georgia, serif;
+      font-size: 13px;
+      color: rgba(245,230,200,0.75);
+      line-height: 1.5;
+    }
 
     /* Subclass step */
     .lup-subclass-list { display:flex; flex-direction:column; gap:8px; }

@@ -2060,7 +2060,17 @@
         <div class="form-field"><label>Player Name</label><input type="text" id="cf-player" placeholder="Your name"></div>
         <div class="form-field"><label>Class &amp; Level</label><input type="text" id="cf-class" placeholder="e.g. Fighter 3"></div>
         <div class="form-field"><label>Race</label><input type="text" id="cf-race" placeholder="e.g. Dragonborn"></div>
-        <div class="form-field"><label>Background</label><input type="text" id="cf-bg" placeholder="e.g. Soldier"></div>
+        <div class="form-field">
+          <label>Background</label>
+          <select id="f-background" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.85);border:1px solid #bbb;border-radius:2px;color:#1a1209;padding:6px 8px;width:100%;outline:none;">
+            <option value="">— Choose background —</option>
+          </select>
+          <div id="bg-feature-panel" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,0,0,0.06);border-radius:4px;border-left:2px solid rgba(201,168,76,0.4);">
+            <div id="bg-feature-name" style="font-family:'Cinzel',serif;font-weight:700;font-size:11px;color:#7a5500;margin-bottom:3px;"></div>
+            <div id="bg-feature-desc" style="font-size:12px;color:#4a3010;line-height:1.4;"></div>
+            <div id="bg-skills" style="font-size:11px;margin-top:5px;color:#6a4a20;font-style:italic;"></div>
+          </div>
+        </div>
         <div class="form-field"><label>Alignment</label><input type="text" id="cf-align" placeholder="e.g. Chaotic Good"></div>
       </div>
 
@@ -2941,7 +2951,10 @@ async function loadMyCharacter() {
       const rawClass = d['f-class'] || '';
       const cleanClass = rawClass.replace(/\s*\d+$/, '').trim();
       const charLevel = parseInt(d['f-level']) || parseInt(rawClass.match(/\d+$/)?.[0]) || 1;
-      const classSubtitle = [cleanClass, charLevel ? `Level ${charLevel}` : '', d['f-race'] || ''].filter(Boolean).join(' · ');
+      const bgKey = d['f-background'] || '';
+      const bgName = (typeof DND_BACKGROUND_DATA !== 'undefined' && bgKey)
+        ? (DND_BACKGROUND_DATA[bgKey]?.name || bgKey) : bgKey;
+      const classSubtitle = [cleanClass, charLevel ? `Level ${charLevel}` : '', d['f-race'] || '', bgName || null].filter(Boolean).join(' · ');
 
       container.innerHTML = `
         <a class="player-card" href="${escHtml(sheetUrl)}">
@@ -2958,6 +2971,7 @@ async function loadMyCharacter() {
           <div class="card-link">View &amp; Edit Sheet →</div>
         </a>
         <div id="char-race-container"></div>
+        <div id="char-background-panel"></div>
         <div style="margin-top:8px;">
           <button class="nav-btn" onclick="toggleInventoryPanel()" id="inv-toggle-btn" style="font-size:0.6rem;padding:5px 14px;">🎒 Inventory</button>
         </div>
@@ -3008,6 +3022,7 @@ async function loadMyCharacter() {
       }
       renderRacialTraitsPanel(d, document.getElementById('char-race-container'));
       renderRacialCooldowns(d, _myCharSlot, document.getElementById('char-race-container'));
+      renderBackgroundPanel(d, document.getElementById('char-background-panel'));
       // Guard: prevent .roadmap-btn clicks from activating the parent <a> link
       const playerCard = container.querySelector('.player-card');
       if (playerCard) {
@@ -3264,7 +3279,77 @@ function switchCharMode(mode) {
   document.getElementById('char-mode-choice').style.display  = mode === 'choice'  ? '' : 'none';
   document.getElementById('char-mode-ai').style.display      = mode === 'ai'      ? '' : 'none';
   document.getElementById('char-mode-manual').style.display  = mode === 'manual'  ? '' : 'none';
+  if (mode === 'manual') populateBackgroundDropdown();
 }
+function populateBackgroundDropdown() {
+  const sel = document.getElementById('f-background');
+  if (!sel || typeof DND_BACKGROUND_DATA === 'undefined') return;
+  if (sel.options.length > 1) {
+    updateBackgroundPanel(sel.value);
+    return;
+  }
+  const keys = Object.keys(DND_BACKGROUND_DATA).filter(k => typeof DND_BACKGROUND_DATA[k] === 'object');
+  keys.forEach(key => {
+    const bg = DND_BACKGROUND_DATA[key];
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = bg.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', () => updateBackgroundPanel(sel.value));
+  updateBackgroundPanel(sel.value);
+}
+
+function updateBackgroundPanel(bgKey) {
+  const panel = document.getElementById('bg-feature-panel');
+  const nameEl = document.getElementById('bg-feature-name');
+  const descEl = document.getElementById('bg-feature-desc');
+  const skillsEl = document.getElementById('bg-skills');
+  if (!panel) return;
+  if (!bgKey || typeof DND_BACKGROUND_DATA === 'undefined') {
+    panel.style.display = 'none';
+    return;
+  }
+  const bg = DND_BACKGROUND_DATA[bgKey];
+  if (!bg) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  nameEl.textContent = bg.feature.name;
+  descEl.textContent = bg.feature.desc;
+  const parts = [];
+  if (bg.skillProficiencies?.length) parts.push('Skills: ' + bg.skillProficiencies.join(', '));
+  if (bg.toolProficiencies?.length)  parts.push('Tools: ' + bg.toolProficiencies.join(', '));
+  if (bg.languages > 0)              parts.push(`Languages: +${bg.languages}`);
+  skillsEl.textContent = parts.join(' · ');
+}
+
+function renderBackgroundPanel(charData, containerEl) {
+  if (!containerEl) return;
+  const bgKey = charData['f-background'] || '';
+  if (!bgKey || typeof DND_BACKGROUND_DATA === 'undefined') {
+    containerEl.style.display = 'none';
+    return;
+  }
+  const bg = DND_BACKGROUND_DATA[bgKey];
+  if (!bg) { containerEl.style.display = 'none'; return; }
+  const skillParts = [];
+  if (bg.skillProficiencies?.length) skillParts.push('Skills: ' + bg.skillProficiencies.join(', '));
+  if (bg.toolProficiencies?.length)  skillParts.push('Tools: ' + bg.toolProficiencies.join(', '));
+  if (bg.languages > 0)              skillParts.push(`Languages: +${bg.languages}`);
+  containerEl.innerHTML = `
+    <div style="margin-top:10px;background:linear-gradient(160deg,#1a0e04,#0d0802);border:1px solid var(--border);border-radius:3px;padding:14px 18px;">
+      <div style="font-family:'Cinzel',serif;font-size:0.5rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Background</div>
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;font-weight:700;color:var(--gold-light);margin-bottom:3px;">${escHtml(bg.name)}</div>
+      <div style="font-size:0.78rem;color:var(--border-light);font-style:italic;margin-bottom:8px;">${escHtml(bg.desc)}</div>
+      ${skillParts.length ? `<div style="font-size:0.7rem;color:var(--border-light);margin-bottom:10px;">${escHtml(skillParts.join(' · '))}</div>` : ''}
+      <div style="padding:8px 12px;background:rgba(0,0,0,0.2);border-radius:3px;border-left:2px solid rgba(154,112,0,0.4);">
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;font-weight:700;color:var(--gold);margin-bottom:4px;">${escHtml(bg.feature.name)}</div>
+        <div style="font-family:'Crimson Text',serif;font-size:0.82rem;color:var(--parchment-dark);line-height:1.5;">${escHtml(bg.feature.desc)}</div>
+      </div>
+    </div>
+  `;
+  containerEl.style.display = 'block';
+}
+
 function openCreateModal() {
   document.getElementById('create-modal').classList.add('open');
   document.getElementById('submit-msg').textContent = '';
@@ -3281,7 +3366,7 @@ const CF_MAP = {
   'f-class':   'cf-class',
   'f-level':   'cf-level',
   'f-race':    'cf-race',
-  'f-bg':      'cf-bg',
+  'f-bg':      'f-background',
   'f-align':   'cf-align',
   'f-player':  'cf-player',
   'f-prof':    'cf-prof',
@@ -3408,7 +3493,21 @@ function handleSheetFile(file) {
         const val = sanitizeSheetField(raw, sheetId);
         if (val) {
           const formEl = document.getElementById(formId);
-          if (formEl) { formEl.value = val; filled++; }
+          if (formEl) {
+            if (formEl.tagName === 'SELECT') {
+              // Try exact match first, then case-insensitive key match
+              formEl.value = val;
+              if (!formEl.value) {
+                const lower = val.toLowerCase().replace(/\s+/g, '_');
+                const opt = Array.from(formEl.options).find(o => o.value === lower || o.textContent.toLowerCase() === val.toLowerCase());
+                if (opt) formEl.value = opt.value;
+              }
+              if (formEl.value) { updateBackgroundPanel(formEl.value); filled++; }
+              else missing.push(sheetId);
+            } else {
+              formEl.value = val; filled++;
+            }
+          }
         } else {
           missing.push(sheetId);
         }
@@ -3471,7 +3570,7 @@ async function submitCharacter() {
   // Warn if the sheet looks too sparse (only name+class filled, nothing else)
   const FIELDS_MAP = {
     'f-name':   'cf-name',   'f-class':  'cf-class',  'f-level':  'cf-level',
-    'f-race':   'cf-race',   'f-bg':     'cf-bg',     'f-align':  'cf-align',
+    'f-race':   'cf-race',   'f-align':  'cf-align',
     'f-player': 'cf-player', 'f-prof':   'cf-prof',   'f-ac':     'cf-ac',
     'f-init':   'cf-init',   'f-speed':  'cf-speed',  'f-curhp':  'cf-curhp',
     'f-maxhp':  'cf-maxhp',  'f-hd':     'cf-hd',     'f-pp':     'cf-pp',
@@ -3503,6 +3602,8 @@ async function submitCharacter() {
     const el = document.getElementById(formId);
     data[fieldId] = el ? el.value.trim() : '';
   });
+  const bgEl = document.getElementById('f-background');
+  if (bgEl && bgEl.value) data['f-background'] = bgEl.value;
   // Derive level from the class string if the Level field was left blank
   if (!data['f-level']) {
     const match = (data['f-class'] || '').match(/\s*(\d+)\s*$/);
@@ -7218,6 +7319,12 @@ window.loadPartyRoster = loadPlayersTab;
 <script src="levelup-warlock.js"></script>
 <script src="levelup-wizard.js"></script>
 <script src="levelup-artificer.js"></script>
+<script src="dnd-spells-1.js"></script>
+<script src="dnd-spells-2.js"></script>
+<script src="dnd-spells-3.js"></script>
+<script src="dnd-feats.js"></script>
+<script src="dnd-backgrounds.js"></script>
+<script src="dnd-monsters.js"></script>
 <script src="levelup-wizard-core.js"></script>
 
 <!-- FLOATING COMBAT BUTTON (players only, when combat active) -->
