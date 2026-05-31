@@ -136,8 +136,7 @@ function luGetFeatures(cls, lvl, subclassName){
 function luDetermineSteps(){
   const w = _luWizard;
   let steps = [0]; // confirm always first
-  // Skip HP step if DM chose full recalc or keep — no player choice needed
-  if (w.dmHealthChoice !== 'full' && w.dmHealthChoice !== 'keep') steps.push(1);
+  steps.push(1); // HP — always shown; content adapts to dmHealthChoice
   steps.push(2); // features
   if(luIsSubclassLevel(w.className, w.newLevel)) steps.push(6); // subclass picker
   if(luHasSpells(w.className)) steps.push(3);                   // spell slots
@@ -310,11 +309,38 @@ function luStepHp(){
   const w = _luWizard;
   const hd = LU_HIT_DIE[w.className] || 8;
   const conMod = luModifier(luGetField(w.charData,'con'));
+  const currentMaxHp = parseInt(luGetField(w.charData,'maxhp')||0);
+
+  if (w.dmHealthChoice === 'full') {
+    const newMax = luCalculateCorrectHpMax(w.className, w.newLevel, conMod);
+    return `
+      <p class="lup-step-desc">Your DM chose full HP recalculation for this level-up.</p>
+      <div class="lup-warning-box" style="border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.07);">
+        <span>⚡</span>
+        <div class="lup-warning-text">
+          <strong style="color:#c9a84c;">Full Health Recalculation</strong><br>
+          Your HP max will be recalculated from scratch at level ${w.newLevel}:
+          <strong style="color:#f5e6c8;">${currentMaxHp} → ${newMax}</strong>
+        </div>
+      </div>`;
+  }
+
+  if (w.dmHealthChoice === 'keep') {
+    return `
+      <p class="lup-step-desc">Your DM chose to keep your current HP for this level-up.</p>
+      <div class="lup-warning-box" style="border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.07);">
+        <span>🛡️</span>
+        <div class="lup-warning-text">
+          <strong style="color:#c9a84c;">HP Unchanged</strong><br>
+          Your HP max will stay at <strong style="color:#f5e6c8;">${currentMaxHp}</strong>.
+        </div>
+      </div>`;
+  }
+
   const conStr = conMod >= 0 ? `+${conMod}` : `${conMod}`;
   const avg = Math.ceil(hd / 2) + 1;
   const totalAvg = avg + conMod;
   const totalRoll = w.hpRoll !== null ? (w.hpRoll + conMod) : null;
-  const currentMaxHp = parseInt(luGetField(w.charData,'maxhp')||0);
 
   return `
     <p class="lup-step-desc">Roll your hit die or take the average HP increase.</p>
