@@ -497,20 +497,6 @@ function luStepAsi(){
     return `<option value="${escHtml(f.name)}" ${w.featChoice===f.name?'selected':''}>${escHtml(f.name)}${escHtml(prereq)}</option>`;
   }).join('');
 
-  const chosenFeat = (typeof DND_FEAT_DATA !== 'undefined' && w.featChoice)
-    ? DND_FEAT_DATA[w.featChoice]
-    : null;
-
-  const featDescHtml = chosenFeat ? `
-    <div class="lu-feat-desc" id="lu-feat-desc-panel">
-      <div class="lu-feat-desc-name">${escHtml(chosenFeat.name)}</div>
-      ${chosenFeat.prerequisite
-        ? `<div class="lu-feat-prereq">Prerequisite: ${escHtml(chosenFeat.prerequisite)}</div>`
-        : ''}
-      <div class="lu-feat-desc-text">${escHtml(chosenFeat.desc)}</div>
-    </div>
-  ` : `<div class="lu-feat-desc lu-feat-desc-empty" id="lu-feat-desc-panel">Select a feat to see its description.</div>`;
-
   return `
     <p class="lup-step-desc">Choose your Ability Score Improvement or Feat:</p>
     <div class="lup-asi-options">
@@ -518,31 +504,50 @@ function luStepAsi(){
         <div class="lup-radio-dot${w.asiChoice==='plus2'?' lup-radio-checked':''}"></div>
         <div class="lup-asi-body">
           <div class="lup-asi-title">+2 to One Stat</div>
-          <select class="lup-asi-select" id="lu-asi-stat1" onchange="_luWizard.asiStat1=this.value;luSetAsi('plus2')">${statOpts1}</select>
+          ${w.asiChoice === 'plus2' ? `
+            <select class="lup-asi-select" id="lu-asi-stat1"
+              onchange="event.stopPropagation(); _luWizard.asiStat1=this.value;">${statOpts1}</select>` : ''}
         </div>
       </div>
       <div class="lup-asi-option${w.asiChoice==='plus11'?' lup-selected':''}" onclick="luSetAsi('plus11')">
         <div class="lup-radio-dot${w.asiChoice==='plus11'?' lup-radio-checked':''}"></div>
         <div class="lup-asi-body">
           <div class="lup-asi-title">+1 to Two Stats</div>
-          <div class="lup-asi-pair">
-            <select class="lup-asi-select" id="lu-asi-stat2a" onchange="_luWizard.asiStat1=this.value;luSetAsi('plus11')">${statOpts1}</select>
-            <select class="lup-asi-select" id="lu-asi-stat2b" onchange="_luWizard.asiStat2=this.value;luSetAsi('plus11')">${statOpts2}</select>
-          </div>
+          ${w.asiChoice === 'plus11' ? `
+            <div class="lup-asi-pair">
+              <select class="lup-asi-select" id="lu-asi-stat2a"
+                onchange="event.stopPropagation(); _luWizard.asiStat1=this.value;">${statOpts1}</select>
+              <select class="lup-asi-select" id="lu-asi-stat2b"
+                onchange="event.stopPropagation(); _luWizard.asiStat2=this.value;">${statOpts2}</select>
+            </div>` : ''}
         </div>
       </div>
       <div class="lup-asi-option${w.asiChoice==='feat'?' lup-selected':''}" onclick="luSetAsi('feat')">
         <div class="lup-radio-dot${w.asiChoice==='feat'?' lup-radio-checked':''}"></div>
         <div class="lup-asi-body">
           <div class="lup-asi-title">Take a Feat</div>
-          <select class="lup-asi-select" id="lu-asi-feat" onchange="_luWizard.featChoice=this.value; renderLuModal()">
-            <option value="">— Choose feat —</option>
-            ${featOptions}
-          </select>
-          ${featDescHtml}
         </div>
       </div>
     </div>
+    ${w.asiChoice === 'feat' ? `
+      <div class="lu-asi-feat-picker">
+        <select class="lup-asi-select" id="lu-asi-feat"
+          onchange="event.stopPropagation(); luUpdateFeatDesc(this.value);">
+          <option value="">— Choose feat —</option>
+          ${featOptions}
+        </select>
+        <div id="lu-feat-desc-panel" class="lu-feat-desc${w.featChoice ? '' : ' lu-feat-desc-empty'}">
+          ${w.featChoice && (typeof DND_FEAT_DATA !== 'undefined') && DND_FEAT_DATA[w.featChoice]
+            ? `<div class="lu-feat-desc-name">${escHtml(DND_FEAT_DATA[w.featChoice].name)}</div>
+               ${DND_FEAT_DATA[w.featChoice].prerequisite
+                 ? `<div class="lu-feat-prereq">Prerequisite: ${escHtml(DND_FEAT_DATA[w.featChoice].prerequisite)}</div>`
+                 : ''}
+               <div class="lu-feat-desc-text">${escHtml(DND_FEAT_DATA[w.featChoice].desc)}</div>`
+            : 'Select a feat to see its description.'
+          }
+        </div>
+      </div>
+    ` : ''}
   `;
 }
 
@@ -654,8 +659,28 @@ function luRollHp(){
 }
 
 function luSetAsi(val){
+  if (_luWizard.asiChoice === val) return;
+  if (val !== 'feat') _luWizard.featChoice = '';
   _luWizard.asiChoice = val;
   renderLuModal();
+}
+
+function luUpdateFeatDesc(featName) {
+  _luWizard.featChoice = featName;
+  const panel = document.getElementById('lu-feat-desc-panel');
+  if (!panel) return;
+  if (!featName || typeof DND_FEAT_DATA === 'undefined' || !DND_FEAT_DATA[featName]) {
+    panel.className = 'lu-feat-desc lu-feat-desc-empty';
+    panel.innerHTML = 'Select a feat to see its description.';
+    return;
+  }
+  const f = DND_FEAT_DATA[featName];
+  panel.className = 'lu-feat-desc';
+  panel.innerHTML = `
+    <div class="lu-feat-desc-name">${escHtml(f.name)}</div>
+    ${f.prerequisite ? `<div class="lu-feat-prereq">Prerequisite: ${escHtml(f.prerequisite)}</div>` : ''}
+    <div class="lu-feat-desc-text">${escHtml(f.desc)}</div>
+  `;
 }
 
 function luSetSubclass(val){
@@ -1092,6 +1117,7 @@ async function luApplyLevelUp(){
     .lup-asi-select:focus { outline:none; border-color:#c9a84c; }
     .lup-asi-pair { display:flex; gap:8px; }
     .lup-asi-pair select { flex:1; }
+    .lu-asi-feat-picker { padding:10px 14px 12px; background:rgba(0,0,0,.1); border-radius:0 0 6px 6px; border:2px solid #c9a84c; border-top:none; margin-top:-2px; }
     .lu-feat-desc {
       margin-top: 10px;
       padding: 10px 12px;
