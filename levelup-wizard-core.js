@@ -325,24 +325,24 @@ function luStepHp(){
       </div>`;
   }
 
-  if (w.dmHealthChoice === 'keep') {
-    return `
-      <p class="lup-step-desc">Your DM chose to keep your current HP for this level-up.</p>
-      <div class="lup-warning-box" style="border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.07);">
-        <span>🛡️</span>
-        <div class="lup-warning-text">
-          <strong style="color:#c9a84c;">HP Unchanged</strong><br>
-          Your HP max will stay at <strong style="color:#f5e6c8;">${currentMaxHp}</strong>.
-        </div>
-      </div>`;
-  }
-
   const conStr = conMod >= 0 ? `+${conMod}` : `${conMod}`;
   const avg = Math.ceil(hd / 2) + 1;
   const totalAvg = avg + conMod;
   const totalRoll = w.hpRoll !== null ? (w.hpRoll + conMod) : null;
 
+  const keepNote = w.dmHealthChoice === 'keep'
+    ? `<div class="lup-warning-box" style="border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.07);margin-bottom:12px;">
+        <span>🩹</span>
+        <div class="lup-warning-text">
+          <strong style="color:#c9a84c;">Staying Injured</strong><br>
+          Your HP Max will increase but your <strong>current HP stays the same</strong> (${currentMaxHp > 0 ? currentMaxHp : '?'}).
+          Roll or take average to set how much your max grows.
+        </div>
+      </div>`
+    : '';
+
   return `
+    ${keepNote}
     <p class="lup-step-desc">Roll your hit die or take the average HP increase.</p>
     <div class="lup-hp-options">
       <div class="lup-hp-option${w.hpChoice==='average'?' lup-selected':''}" onclick="luSetHpChoice('average')">
@@ -569,7 +569,8 @@ function luStepSummary(){
   } else if (dmHC === 'add') {
     items.push({ icon:'❤️', text:`HP Max: <strong>+${hpGain}</strong> (${w.hpChoice==='average'?'average':'rolled '+w.hpRoll})`, hl:true });
   } else {
-    items.push({ icon:'❤️', text:`HP Max: <strong>no change</strong>`, hl:false });
+    // 'keep' — max grows, current HP stays
+    items.push({ icon:'❤️', text:`HP Max: <strong>+${hpGain}</strong> (${w.hpChoice==='average'?'average':'rolled '+w.hpRoll}) · current HP unchanged`, hl:true });
   }
   if (profNew > profOld) items.push({ icon:'🛡️', text:`Proficiency Bonus: <strong>+${profNew}</strong>`, hl:true });
   if (w.subclassChoice) items.push({ icon:'🎭', text:`Subclass: <strong>${escHtml(w.subclassChoice)}</strong>`, hl:true });
@@ -678,8 +679,8 @@ function luDmHealthSection(){
       desc:`Set HP max to ${fullHp} — full recalculation from scratch (level 1 max + averages × ${w.newLevel} levels)` },
     { val:'add',  icon:'➕', label:'Add HP',
       desc:`Player chooses average (+${avg}) or rolls d${hd} — standard 5e level-up` },
-    { val:'keep', icon:'🔒', label:'Keep HP',
-      desc:'HP stays the same — all other level-up benefits still apply' },
+    { val:'keep', icon:'🩹', label:'Keep Current HP',
+      desc:`HP Max increases (player rolls or takes average) but current HP stays unchanged — character stays injured` },
   ];
   return `
     <div class="lu-dm-health-section">
@@ -907,8 +908,12 @@ async function luApplyLevelUp(){
     const hpGain = w.hpChoice==='roll' && w.hpRoll!==null ? w.hpRoll + conMod : avg + conMod;
     updates['f-maxhp'] = String(currentMaxHp + hpGain);
     updates['f-hp']    = String(currentHp + hpGain);
+  } else if (dmHC === 'keep') {
+    // Max HP grows but current HP stays (character stays injured)
+    const hpGain = w.hpChoice==='roll' && w.hpRoll!==null ? w.hpRoll + conMod : avg + conMod;
+    updates['f-maxhp'] = String(currentMaxHp + hpGain);
+    // f-hp intentionally not updated
   }
-  // dmHC === 'keep': no HP fields added — HP unchanged
 
   // ASI stat bumps
   if(w.asiChoice === 'plus2'){
