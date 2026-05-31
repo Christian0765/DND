@@ -1014,7 +1014,7 @@ async function luApplyLevelUp(){
   const conMod = luModifier(luGetField(w.charData,'con'));
   const avg = Math.ceil(hd/2)+1;
   const currentMaxHp = parseInt(luGetField(w.charData,'maxhp')||0);
-  const currentHp    = parseInt(luGetField(w.charData,'hp')||0);
+  const currentHp    = parseInt(luGetField(w.charData,'curhp')||luGetField(w.charData,'hp')||0);
   const profNew = LU_PROF_BONUS[w.newLevel]||2;
   const dmHC = w.dmHealthChoice || 'add';
 
@@ -1028,14 +1028,17 @@ async function luApplyLevelUp(){
   const newMaxHp = currentMaxHp + hpGain;
   updates['f-maxhp'] = String(newMaxHp);
 
+  // Determine correct current-HP field name ('f-curhp' is what the character sheet uses)
+  const curHpField = w.charData['f-curhp'] !== undefined ? 'f-curhp' : 'f-hp';
+
   if (dmHC === 'full') {
     // Roll for HP, then set current HP = new max (fully healed)
-    updates['f-hp'] = String(newMaxHp);
+    updates[curHpField] = String(newMaxHp);
   } else if (dmHC === 'add') {
     // Current HP increases by the same amount as max
-    updates['f-hp'] = String(currentHp + hpGain);
+    updates[curHpField] = String(currentHp + hpGain);
   }
-  // 'keep': f-maxhp updated above, f-hp intentionally not set (stays unchanged)
+  // 'keep': f-maxhp updated above, current HP intentionally not set (stays unchanged)
 
   // ASI stat bumps
   if(w.asiChoice === 'plus2'){
