@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Character Sheet — Player 2</title>
+<title>Dracula — Character Sheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -6592,7 +6592,8 @@ CONDITIONS.forEach(c => {
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-const PLAYER_ID = 'player2';
+const params = new URLSearchParams(window.location.search);
+const PLAYER_ID = params.get('player') || 'player1';
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -6710,7 +6711,7 @@ const FIELD_LABELS = {
   'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
   'f-notes':'Session Notes','f-gold2':'Gold (Equipment)'
 };
-const HISTORY_KEY = 'edit-history-player2';
+const HISTORY_KEY = 'edit-history-player1';
 const MAX_HISTORY = 100;
 
 function recordEdit(fieldId, oldVal, newVal) {

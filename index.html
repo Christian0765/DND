@@ -3341,7 +3341,7 @@ async function loadMyCharacter() {
       _myCharApproved = true;
       const d = charDoc.data();
       const sheetNum = _myCharSlot.replace('player','');
-      const sheetUrl = 'sheet-' + sheetNum + '.html?c=' + campaignId;
+      const sheetUrl = 'sheet.html?player=player' + sheetNum + '&c=' + campaignId;
       const curhp = d['f-curhp'] || '—';
       const maxhp = d['f-maxhp'] || '—';
       const pct = (curhp !== '—' && maxhp !== '—') ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0 : 0;
@@ -5998,7 +5998,7 @@ async function loadPlayersTab() {
       const c = charSnap.exists ? charSnap.data() : {};
       const hasChar = !!(c['f-name']);
       const slotNum = info.slot.replace('player', '');
-      const sheetUrl = `sheet-${slotNum}.html?c=${campaignId}`;
+      const sheetUrl = `sheet.html?player=player${slotNum}&c=${campaignId}`;
       const charName = hasChar ? escHtml(c['f-name']) : '—';
       const rawCls = c['f-class'] || '';
       const cleanCls = rawCls.replace(/\s*\d+$/, '').trim();
