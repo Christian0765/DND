@@ -2830,9 +2830,9 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     ⚔
   </div>
   <div>
-    <div class="sheet-eyebrow">Your Character · Player 1</div>
+    <div class="sheet-eyebrow" id="sheet-eyebrow">Your Character</div>
     <input class="sheet-name" id="sheet-name-input" placeholder="Character Name" oninput="document.getElementById('f-name').value=this.value;debouncedSave()">
-    <div class="sheet-subtitle" id="sheet-subtitle">Fighter 11 · Dragonborn · Chaotic Good</div>
+    <div class="sheet-subtitle" id="sheet-subtitle"></div>
   </div>
   <div class="sheet-meta-grid">
     <div class="sheet-meta-item">
@@ -2874,12 +2874,12 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
 
     <!-- TRADITIONAL ability grid (shown in traditional mode) -->
     <div class="trad-ability-grid">
-      <div class="trad-ab"><div class="trad-ab-name">Strength</div><span class="trad-ab-score">22</span><span class="trad-ab-mod">+6</span></div>
-      <div class="trad-ab"><div class="trad-ab-name">Dexterity</div><span class="trad-ab-score">13</span><span class="trad-ab-mod">+1</span></div>
-      <div class="trad-ab"><div class="trad-ab-name">Constitution</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
-      <div class="trad-ab"><div class="trad-ab-name">Intelligence</div><span class="trad-ab-score">11</span><span class="trad-ab-mod">+0</span></div>
-      <div class="trad-ab"><div class="trad-ab-name">Wisdom</div><span class="trad-ab-score">8</span><span class="trad-ab-mod">−1</span></div>
-      <div class="trad-ab"><div class="trad-ab-name">Charisma</div><span class="trad-ab-score">18</span><span class="trad-ab-mod">+4</span></div>
+      <div class="trad-ab" data-ability="str"><div class="trad-ab-name">Strength</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
+      <div class="trad-ab" data-ability="dex"><div class="trad-ab-name">Dexterity</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
+      <div class="trad-ab" data-ability="con"><div class="trad-ab-name">Constitution</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
+      <div class="trad-ab" data-ability="int"><div class="trad-ab-name">Intelligence</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
+      <div class="trad-ab" data-ability="wis"><div class="trad-ab-name">Wisdom</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
+      <div class="trad-ab" data-ability="cha"><div class="trad-ab-name">Charisma</div><span class="trad-ab-score">10</span><span class="trad-ab-mod">+0</span></div>
     </div>
     <div class="ability-grid">
       <!-- STR -->
@@ -3042,9 +3042,9 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     <div class="sec">Hit Points</div>
     <div class="hp-display" onclick="toggleHpCalc()">
       <div class="hp-nums">
-        <span class="hp-cur" id="hp-cur">125</span>
+        <span class="hp-cur" id="hp-cur">0</span>
         <span class="hp-sep">/</span>
-        <span class="hp-max-val" id="hp-max-val">125</span>
+        <span class="hp-max-val" id="hp-max-val">0</span>
       </div>
       <div class="hp-track"><div class="hp-fill hi" id="hp-fill" style="width:100%"></div></div>
       <div class="hp-hint">tap to adjust</div>
@@ -3052,9 +3052,9 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
 
     <!-- TRADITIONAL HP -->
     <div class="trad-hp-row">
-      <span class="trad-hp-val" id="trad-hp-cur">125</span>
+      <span class="trad-hp-val" id="trad-hp-cur">0</span>
       <span class="trad-hp-sep">/</span>
-      <span class="trad-hp-max" id="trad-hp-max">125</span>
+      <span class="trad-hp-max" id="trad-hp-max">0</span>
       <div class="trad-hp-track"><div class="trad-hp-fill" id="trad-hp-fill" style="width:100%;background:var(--success-color);"></div></div>
     </div>
 
@@ -3064,7 +3064,7 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
         <span class="calc-title">⚔ Adjust HP</span>
         <button class="calc-x" onclick="toggleHpCalc()">✕</button>
       </div>
-      <div class="calc-preview" id="hp-preview">125 / 125</div>
+      <div class="calc-preview" id="hp-preview">0 / 0</div>
       <div class="calc-bar-track"><div class="calc-bar-fill hi" id="calc-bar" style="width:100%"></div></div>
       <div class="calc-stepper">
         <button class="step-btn" onclick="hpStep(-5)">−5</button>
@@ -3347,14 +3347,7 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     <!-- TRADITIONAL weapons table -->
     <table class="trad-weapon-table">
       <thead><tr><th>Weapon</th><th>Attack</th><th>Damage</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Ash</strong> (Bonded)</td><td class="trad-atk">+10</td><td>1d4+6 slashing</td><td>Dual wield, reach 10 ft</td></tr>
-        <tr><td>Handaxe</td><td class="trad-atk">+10</td><td>1d6+6 slashing</td><td>Off-hand bonus action</td></tr>
-        <tr><td>Longsword</td><td class="trad-atk">+10</td><td>1d8+6 slashing</td><td>Solo, versatile</td></tr>
-        <tr><td>Skullcrusher</td><td class="trad-atk">+10</td><td>2d6+6 slashing</td><td>Two-handed</td></tr>
-        <tr><td>Longbow</td><td class="trad-atk">+5</td><td>1d8+1 piercing</td><td>Ranged 150 ft</td></tr>
-        <tr><td>Acid Breath</td><td class="trad-atk">—</td><td>2d6 acid</td><td>5×30 ft, DC 10 DEX save</td></tr>
-      </tbody>
+      <tbody id="trad-weapon-tbody"></tbody>
     </table>
 
     <div class="chip-row" id="weapon-chip-row"></div>
@@ -3571,16 +3564,24 @@ let _weaponAdvantage    = 'normal';
 
 function renderWeaponChips() {
   const row = document.getElementById('weapon-chip-row');
-  if (!row) return;
-  row.innerHTML = Object.entries(WEAPONS).map(([key, w]) => {
-    const icon      = w.isSave ? '🧪' : (w.range?.includes('ft line') ? '🌬' : w.range?.includes('600') ? '🏹' : '⚔');
-    const ammoItem  = w.ammoId ? ITEMS.find(i => i.id === w.ammoId) : null;
-    const outOfAmmo = ammoItem && ammoItem.qty <= 0;
-    return `<button class="chip chip-weapon ${outOfAmmo ? 'used' : ''}" id="wchip-${key}"
-      onclick="${outOfAmmo ? '' : `openInlineWeapon('${key}')`}"
-      ${outOfAmmo ? 'disabled title="Out of ammo"' : ''}
-      >${icon} ${w.name}${outOfAmmo ? ' 🚫' : ''}</button>`;
-  }).join('');
+  if (row) {
+    row.innerHTML = Object.entries(WEAPONS).map(([key, w]) => {
+      const icon      = w.isSave ? '🧪' : (w.range?.includes('ft line') ? '🌬' : w.range?.includes('600') ? '🏹' : '⚔');
+      const ammoItem  = w.ammoId ? ITEMS.find(i => i.id === w.ammoId) : null;
+      const outOfAmmo = ammoItem && ammoItem.qty <= 0;
+      return `<button class="chip chip-weapon ${outOfAmmo ? 'used' : ''}" id="wchip-${key}"
+        onclick="${outOfAmmo ? '' : `openInlineWeapon('${key}')`}"
+        ${outOfAmmo ? 'disabled title="Out of ammo"' : ''}
+        >${icon} ${w.name}${outOfAmmo ? ' 🚫' : ''}</button>`;
+    }).join('');
+  }
+  const tbody = document.getElementById('trad-weapon-tbody');
+  if (tbody) {
+    tbody.innerHTML = Object.entries(WEAPONS).map(([, w]) => {
+      const dmg = (w.dmgDice || '1d6') + (w.dmgBonus ? '+'+w.dmgBonus : '') + ' ' + (w.dmgType || '');
+      return `<tr><td><strong>${w.name}</strong></td><td class="trad-atk">${w.atk || w.atkBonus !== undefined ? (w.atkBonus >= 0 ? '+'+w.atkBonus : w.atkBonus) : '—'}</td><td>${dmg.trim()}</td><td>${w.notes || ''}</td></tr>`;
+    }).join('');
+  }
 }
 
 function openInlineWeapon(key) {
@@ -4201,6 +4202,11 @@ const CHARACTER = {
 };
 
 function populateCharacterFromFields() {
+  // Guard: don't render empty defaults before Firestore data arrives
+  const _guardName = document.getElementById('sheet-name-input')?.value || document.getElementById('f-name')?.value || '';
+  const _guardCls  = document.getElementById('f-class')?.value || '';
+  if (!_guardName && !_guardCls) return;
+
   CHARACTER.name      = document.getElementById('sheet-name-input')?.value || document.getElementById('f-name')?.value || CHARACTER.name;
   CHARACTER.race      = document.getElementById('f-race')?.value      || CHARACTER.race;
   CHARACTER.bg        = document.getElementById('f-bg')?.value        || CHARACTER.bg;
@@ -4237,6 +4243,13 @@ function populateCharacterFromFields() {
 
   window.curHp = CHARACTER.curHp;
   window.maxHp = CHARACTER.maxHp;
+
+  // Update eyebrow with player slot
+  const _eyebrow = document.getElementById('sheet-eyebrow');
+  if (_eyebrow && typeof PLAYER_ID !== 'undefined') {
+    const _slotNum = PLAYER_ID.replace('player', '');
+    _eyebrow.textContent = 'Your Character · Player ' + _slotNum;
+  }
 
   // Sync visible header immediately so the sheet header is never blank
   const _nameInp = document.getElementById('sheet-name-input');
