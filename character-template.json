@@ -1,0 +1,118 @@
+{
+  "_instructions": {
+    "_version": 1,
+    "_help": "Fill in your character details below. Fields marked with * are required. Remove any _note fields before uploading. All number fields should be plain numbers (no quotes).",
+    "_download": "Download this file, fill it in (or have an AI fill it), then upload it on your character sheet page.",
+    "_ai_prompt": "Please fill in this D&D 5e character template for me. Ask me questions about my character concept first, then fill in every field. Use only plain numbers for numeric fields and keep descriptions concise."
+  },
+  "identity": {
+    "name": "",
+    "player": "",
+    "class": "",
+    "level": 1,
+    "race": "",
+    "background": "",
+    "alignment": ""
+  },
+  "combat": {
+    "maxHp": 0,
+    "curHp": 0,
+    "ac": 10,
+    "initiative": 0,
+    "speed": 30,
+    "hitDice": "1d8",
+    "passivePerception": 10
+  },
+  "stats": {
+    "str": 10,
+    "strMod": 0,
+    "dex": 10,
+    "dexMod": 0,
+    "con": 10,
+    "conMod": 0,
+    "int": 10,
+    "intMod": 0,
+    "wis": 10,
+    "wisMod": 0,
+    "cha": 10,
+    "chaMod": 0
+  },
+  "currency": {
+    "gold": 0,
+    "silver": 0,
+    "copper": 0,
+    "electrum": 0,
+    "platinum": 0
+  },
+  "personality": {
+    "traits": "",
+    "ideals": "",
+    "bonds": "",
+    "flaws": "",
+    "backstory": "",
+    "notes": ""
+  },
+  "proficiencies": {
+    "armor": [],
+    "weapons": [],
+    "tools": [],
+    "languages": [],
+    "skills": [],
+    "savingThrows": [],
+    "bonus": 2
+  },
+  "features": [
+    {
+      "_note": "Remove this _note field. Add one object per class feature.",
+      "name": "",
+      "description": "",
+      "source": "class"
+    }
+  ],
+  "weapons": [
+    {
+      "_note": "Remove this _note field. Add one object per weapon.",
+      "name": "",
+      "atkBonus": 0,
+      "dmgDice": "1d6",
+      "dmgBonus": 0,
+      "dmgType": "slashing",
+      "range": "5 ft",
+      "properties": []
+    }
+  ],
+  "inventory": [
+    {
+      "_note": "Remove this _note field. Add one object per inventory item.",
+      "name": "",
+      "qty": 1,
+      "category": "misc",
+      "desc": ""
+    }
+  ],
+  "spells": {
+    "spellcastingAbility": "",
+    "spellSaveDC": 0,
+    "spellAttackBonus": 0,
+    "slots": {
+      "1": { "total": 0, "used": 0 },
+      "2": { "total": 0, "used": 0 },
+      "3": { "total": 0, "used": 0 },
+      "4": { "total": 0, "used": 0 },
+      "5": { "total": 0, "used": 0 }
+    },
+    "known": [
+      {
+        "_note": "Remove this _note field. Add one object per known spell.",
+        "name": "",
+        "level": 0,
+        "school": "",
+        "castingTime": "1 action",
+        "range": "",
+        "components": "",
+        "duration": "",
+        "description": ""
+      }
+    ]
+  }
+}

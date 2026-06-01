@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Character Sheet Template</title>
+<title>Dracula — Character Sheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2729,21 +2729,54 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
   animation: slideDown 0.3s ease;
 }
 @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
-.rest-banner-short { background: rgb(var(--accent-rgb)/0.15); color: var(--accent); border-bottom: 1px solid var(--accent); }
-.rest-banner-long  { background: rgb(var(--success-rgb)/0.15); color: var(--success-color); border-bottom: 1px solid var(--success-color); }
+.rest-banner-short  { background: rgb(var(--accent-rgb)/0.15); color: var(--accent); border-bottom: 1px solid var(--accent); }
+.rest-banner-long   { background: rgb(var(--success-rgb)/0.15); color: var(--success-color); border-bottom: 1px solid var(--success-color); }
+.rest-banner-danger { background: rgba(180,30,30,0.15); color: #e05050; border-bottom: 1px solid #b41e1e; }
+.rest-banner-info   { background: rgba(80,130,200,0.15); color: #80aadd; border-bottom: 1px solid #4070b0; }
 .rest-banner button { background:none; border:none; cursor:pointer; color:inherit; font-size:0.8rem; opacity:0.6; }
 .rest-banner button:hover { opacity:1; }
+
+/* ── CHARACTER IMPORT MODAL ── */
+.import-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:3000; display:flex; align-items:center; justify-content:center; padding:16px; }
+.import-modal-box { background:linear-gradient(160deg,#1a0e04 0%,#0d0802 100%); border:1px solid var(--border); border-radius:4px; padding:24px 28px; max-width:560px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 12px 48px rgba(0,0,0,0.9); }
+.import-modal-title { font-family:'Cinzel',serif; font-size:0.85rem; font-weight:600; color:var(--gold-light); border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; }
+.import-modal-close { background:none; border:none; cursor:pointer; color:var(--border-light); font-size:1.1rem; line-height:1; }
+.import-modal-close:hover { color:var(--gold-light); }
+.import-tabs { display:flex; gap:0; margin-bottom:16px; border-bottom:1px solid var(--border); }
+.import-tab { background:none; border:none; cursor:pointer; font-family:'Cinzel',serif; font-size:0.58rem; text-transform:uppercase; letter-spacing:0.12em; padding:8px 16px; color:var(--border-light); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s; }
+.import-tab.active { color:var(--gold-light); border-bottom-color:var(--gold); }
+.import-tab:hover:not(.active) { color:var(--parchment-dark); }
+.import-drop-zone { border:2px dashed var(--border); border-radius:3px; padding:28px 20px; text-align:center; cursor:pointer; transition:border-color 0.15s, background 0.15s; position:relative; margin-bottom:12px; }
+.import-drop-zone:hover, .import-drop-zone.drag-active { border-color:var(--gold); background:rgba(154,112,0,0.06); }
+.import-drop-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.import-drop-icon { font-size:2rem; margin-bottom:8px; }
+.import-drop-label { font-family:'Cinzel',serif; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--parchment-dark); }
+.import-drop-hint { display:block; font-family:'Crimson Text',serif; font-size:0.8rem; text-transform:none; letter-spacing:0; margin-top:4px; color:var(--border-light); }
+.import-paste-area { width:100%; min-height:120px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--parchment-dark); font-family:monospace; font-size:0.75rem; padding:10px; resize:vertical; box-sizing:border-box; margin-bottom:12px; }
+.import-paste-area:focus { outline:none; border-color:var(--gold); }
+.import-validation-ok    { background:rgba(30,120,60,0.15); border:1px solid rgba(30,120,60,0.4); border-radius:3px; padding:8px 12px; font-size:0.78rem; color:#6dbf8a; margin-bottom:10px; }
+.import-validation-warn  { background:rgba(180,130,0,0.12); border:1px solid rgba(180,130,0,0.35); border-radius:3px; padding:8px 12px; font-size:0.78rem; color:#c8a840; margin-bottom:10px; }
+.import-validation-error { background:rgba(160,30,30,0.15); border:1px solid rgba(160,30,30,0.4); border-radius:3px; padding:8px 12px; font-size:0.78rem; color:#e05050; margin-bottom:10px; }
+.import-preview-table { width:100%; border-collapse:collapse; margin-bottom:12px; }
+.import-preview-table th { font-family:'Cinzel',serif; font-size:0.52rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--border-light); padding:4px 8px; text-align:left; border-bottom:1px solid var(--border); }
+.import-preview-table td { font-family:'Crimson Text',serif; font-size:0.85rem; padding:3px 8px; color:var(--parchment-dark); border-bottom:1px solid rgba(122,90,40,0.1); }
+.import-preview-table td:first-child { color:var(--border-light); font-size:0.72rem; white-space:nowrap; }
+.import-section-label { font-family:'Cinzel',serif; font-size:0.55rem; text-transform:uppercase; letter-spacing:0.14em; color:var(--gold); margin:14px 0 6px; }
+.import-submit-btn { background:linear-gradient(135deg,rgba(154,112,0,0.3),rgba(100,70,0,0.3)); border:1px solid var(--gold); color:var(--gold-light); font-family:'Cinzel',serif; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; padding:10px 20px; border-radius:3px; cursor:pointer; width:100%; margin-top:8px; transition:all 0.15s; }
+.import-submit-btn:hover:not(:disabled) { background:rgba(154,112,0,0.45); }
+.import-submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.import-download-link { display:inline-block; font-family:'Cinzel',serif; font-size:0.58rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gold-light); border:1px solid var(--border); border-radius:3px; padding:6px 14px; text-decoration:none; margin-bottom:14px; transition:border-color 0.15s; }
+.import-download-link:hover { border-color:var(--gold); }
+.import-status-msg { font-family:'Crimson Text',serif; font-size:0.82rem; margin-top:10px; min-height:18px; }
+.import-status-msg.ok    { color:#6dbf8a; }
+.import-status-msg.error { color:#e05050; }
+.import-status-msg.info  { color:#80aadd; }
 </style>
 </head>
 <body>
 
 <!-- Hidden fields — bridge between Firestore and the interactive UI -->
 <input type="hidden" id="f-name">
-<input type="hidden" id="f-player">
-<input type="hidden" id="f-class">
-<input type="hidden" id="f-race">
-<input type="hidden" id="f-bg">
-<input type="hidden" id="f-align">
 <input type="hidden" id="f-prof">
 <input type="hidden" id="f-ac">
 <input type="hidden" id="f-init">
@@ -2779,6 +2812,7 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     <button class="quest-btn" onclick="openQuestsModal()">⚔ Quests</button>
     <button class="layout-edit-btn" id="display-mode-btn" onclick="cycleDisplayMode()" title="Switch display mode">☰ Traditional</button>
     <button class="layout-edit-btn" onclick="openCustomiseModal()">🎨 Customise Sheet</button>
+    <button class="layout-edit-btn" onclick="openImportModal()">📋 Import Character</button>
     <button class="quest-btn" onclick="saveToFirestore()">Save</button>
     <span class="sync-status offline" id="sync-status">Connecting...</span>
   </div>
@@ -2797,29 +2831,29 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
   </div>
   <div>
     <div class="sheet-eyebrow">Your Character · Player 1</div>
-    <input class="sheet-name" id="sheet-name-input" placeholder="Character Name" oninput="document.getElementById('f-name').value=this.value;saveToFirestore()">
+    <input class="sheet-name" id="sheet-name-input" placeholder="Character Name" oninput="document.getElementById('f-name').value=this.value;debouncedSave()">
     <div class="sheet-subtitle" id="sheet-subtitle">Fighter 11 · Dragonborn · Chaotic Good</div>
   </div>
   <div class="sheet-meta-grid">
     <div class="sheet-meta-item">
       <span class="sheet-meta-label">Class & Level</span>
-      <input class="sheet-meta-val" id="f-class" placeholder="Class &amp; Level" oninput="document.getElementById('f-class').value=this.value;updateProfBonus();updateSubtitle();saveToFirestore()">
+      <input class="sheet-meta-val" id="f-class" placeholder="Class &amp; Level" oninput="document.getElementById('f-class').value=this.value;updateProfBonus();updateSubtitle();debouncedSave()">
     </div>
     <div class="sheet-meta-item">
       <span class="sheet-meta-label">Race</span>
-      <input class="sheet-meta-val" id="f-race" placeholder="Race" oninput="document.getElementById('f-race').value=this.value;updateSubtitle();saveToFirestore()">
+      <input class="sheet-meta-val" id="f-race" placeholder="Race" oninput="document.getElementById('f-race').value=this.value;updateSubtitle();debouncedSave()">
     </div>
     <div class="sheet-meta-item">
       <span class="sheet-meta-label">Background</span>
-      <input class="sheet-meta-val" id="f-bg" placeholder="Background" oninput="document.getElementById('f-bg').value=this.value;saveToFirestore()">
+      <input class="sheet-meta-val" id="f-bg" placeholder="Background" oninput="document.getElementById('f-bg').value=this.value;debouncedSave()">
     </div>
     <div class="sheet-meta-item">
       <span class="sheet-meta-label">Alignment</span>
-      <input class="sheet-meta-val" id="f-align" placeholder="Alignment" oninput="document.getElementById('f-align').value=this.value;updateSubtitle();saveToFirestore()">
+      <input class="sheet-meta-val" id="f-align" placeholder="Alignment" oninput="document.getElementById('f-align').value=this.value;updateSubtitle();debouncedSave()">
     </div>
     <div class="sheet-meta-item">
       <span class="sheet-meta-label">Player</span>
-      <input class="sheet-meta-val" id="f-player" placeholder="Player" oninput="document.getElementById('f-player').value=this.value;saveToFirestore()">
+      <input class="sheet-meta-val" id="f-player" placeholder="Player" oninput="document.getElementById('f-player').value=this.value;debouncedSave()">
     </div>
     <div class="sheet-meta-item">
       <span class="sheet-meta-label">Prof. Bonus</span>
@@ -2830,6 +2864,8 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
 
 <!-- BODY -->
 <div class="sheet-body">
+
+<div id="import-status-banner" class="rest-banner" style="display:none;"></div>
 
   <!-- LEFT COLUMN -->
   <div class="sheet-col sheet-col-left">
@@ -3067,7 +3103,7 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
       </div>
       <div class="money-row gp-row">
         <span class="mr-lbl">GP</span>
-        <input class="mr-inp" id="m-gp" type="number" value="82" min="0" oninput="syncMoney()">
+        <input class="mr-inp" id="m-gp" type="number" value="0" min="0" oninput="syncMoney()">
         <button class="mr-adj" onclick="adj('gp',-1)">−</button>
         <button class="mr-adj" onclick="adj('gp',1)">+</button>
       </div>
@@ -3110,38 +3146,38 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     <div class="lore-block" id="personality-view">
       <div class="lore-row">
         <span class="lore-lbl">Traits</span>
-        <p class="lore-text" id="view-traits">On Smoke — laid back, unbothered, moves at his own pace.</p>
+        <p class="lore-text" id="view-traits">—</p>
       </div>
       <div class="lore-row">
         <span class="lore-lbl">Ideals</span>
-        <p class="lore-text" id="view-ideals">Trust actions, not words. Betrayed by promises once — never again.</p>
+        <p class="lore-text" id="view-ideals">—</p>
       </div>
       <div class="lore-row">
         <span class="lore-lbl">Bonds</span>
-        <p class="lore-text" id="view-bonds">Ash — his daughter's name, carried into every fight.</p>
+        <p class="lore-text" id="view-bonds">—</p>
       </div>
       <div class="lore-row">
         <span class="lore-lbl">Flaws</span>
-        <p class="lore-text" id="view-flaws">Carries deep guilt for those he couldn't save from Dragon Veil.</p>
+        <p class="lore-text" id="view-flaws">—</p>
       </div>
     </div>
 
     <div class="lore-edit-block" id="personality-edit" style="display:none;">
       <div class="trait-row">
         <span class="trait-lbl">Traits</span>
-        <textarea class="sta" id="edit-traits" rows="2">On Smoke — laid back, unbothered, moves at his own pace.</textarea>
+        <textarea class="sta" id="edit-traits" rows="2"></textarea>
       </div>
       <div class="trait-row">
         <span class="trait-lbl">Ideals</span>
-        <textarea class="sta" id="edit-ideals" rows="2">Trust actions, not words. Betrayed by promises once — never again.</textarea>
+        <textarea class="sta" id="edit-ideals" rows="2"></textarea>
       </div>
       <div class="trait-row">
         <span class="trait-lbl">Bonds</span>
-        <textarea class="sta" id="edit-bonds" rows="2">Ash — his daughter's name, carried into every fight.</textarea>
+        <textarea class="sta" id="edit-bonds" rows="2"></textarea>
       </div>
       <div class="trait-row">
         <span class="trait-lbl">Flaws</span>
-        <textarea class="sta" id="edit-flaws" rows="2">Carries deep guilt for those he couldn't save from Dragon Veil.</textarea>
+        <textarea class="sta" id="edit-flaws" rows="2"></textarea>
       </div>
       <div style="text-align:right;margin-top:6px;">
         <button class="edit-btn edit-btn-save" onclick="saveEdit('personality')">✓ Done</button>
@@ -3276,21 +3312,11 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     </div>
 
     <div class="lore-block" id="backstory-view">
-      <p class="lore-text lore-text-long" id="view-backstory">Black Dragonborn from Dragon Veil — distorted by the Giants.
-Weedgrower &amp; tool maker before taking up arms.
-
-Fled as a refugee. Pirates offered safe passage — revealed themselves as enemies. Dracula eliminated their captain, took Skullcrusher as a trophy.
-
-In progress: Learning swordsmithing. Needs 2 more lessons.</p>
+      <p class="lore-text lore-text-long" id="view-backstory">—</p>
     </div>
 
     <div class="lore-edit-block" id="backstory-edit" style="display:none;">
-      <textarea class="sta" id="edit-backstory" rows="7">Black Dragonborn from Dragon Veil — distorted by the Giants.
-Weedgrower & tool maker before taking up arms.
-
-Fled as a refugee. Pirates offered safe passage — revealed themselves as enemies. Dracula eliminated their captain, took Skullcrusher as a trophy.
-
-In progress: Learning swordsmithing. Needs 2 more lessons.</textarea>
+      <textarea class="sta" id="edit-backstory" rows="7"></textarea>
       <div style="text-align:right;margin-top:6px;">
         <button class="edit-btn edit-btn-save" onclick="saveEdit('backstory')">✓ Done</button>
       </div>
@@ -3666,6 +3692,32 @@ function rollInlineWeapon(type, key) {
       if (ammoItem.qty <= 0) openInlineWeapon(key); // re-render panel
     }
   } else {
+function rollFormula(formula) {
+  if (!formula || typeof formula !== 'string') {
+    return { total: 0, breakdown: '—' };
+  }
+  try {
+    const clean = formula.trim();
+    const match = clean.match(/^(\d+)d(\d+)\s*([+-]\s*\d+)?$/i);
+    if (!match) {
+      const n = parseInt(clean);
+      return isNaN(n) ? { total: 0, breakdown: '—' } : { total: n, breakdown: String(n) };
+    }
+    const count = parseInt(match[1]);
+    const sides = parseInt(match[2]);
+    const bonus = match[3] ? parseInt(match[3].replace(/\s/g, '')) : 0;
+    const rolls = [];
+    for (let i = 0; i < count; i++) {
+      rolls.push(Math.floor(Math.random() * sides) + 1);
+    }
+    const total = rolls.reduce((a, b) => a + b, 0) + bonus;
+    const breakdown = rolls.join('+') + (bonus !== 0 ? (bonus > 0 ? '+' : '') + bonus : '');
+    return { total, breakdown };
+  } catch (e) {
+    console.warn('rollFormula error:', formula, e);
+    return { total: 0, breakdown: '—' };
+  }
+}
     const result = rollFormula(w.dmgDice + (w.dmgBonus ? '+' + w.dmgBonus : ''));
     resultEl.textContent = `${result.total} ${w.dmgType} (${result.breakdown})`;
     resultEl.style.color = 'var(--accent)';
@@ -3914,7 +3966,7 @@ function renderProficiencies() {
 }
 
 // ── COSMETIC PERSISTENCE ──────────────────────────────────
-const COSMETIC_KEY = 'dnd-sheet-cosmetics';
+const COSMETIC_KEY = 'dnd-sheet-cosmetics-' + PLAYER_ID;
 
 function saveCosmetics() {
   const s  = document.documentElement.style;
@@ -3954,46 +4006,49 @@ function saveCosmetics() {
   };
 
   try { localStorage.setItem(COSMETIC_KEY, JSON.stringify(data)); } catch(e) {}
+  // Sync to Firestore so preferences follow the player across devices
+  try {
+    if (typeof db !== 'undefined' && typeof CAMPAIGN_ID !== 'undefined') {
+      db.collection('campaigns').doc(CAMPAIGN_ID)
+        .collection('characters').doc(PLAYER_ID)
+        .collection('preferences').doc('ui')
+        .set({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    }
+  } catch(e) { /* non-critical */ }
 }
 
-function loadCosmetics() {
-  let data;
-  try { data = JSON.parse(localStorage.getItem(COSMETIC_KEY) || 'null'); } catch(e) {}
+function applyCosmetics(data) {
   if (!data) return;
-
-  // Restore CSS variables
   const s = document.documentElement.style;
   if (data.vars) {
     Object.entries(data.vars).forEach(([v, val]) => s.setProperty(v, val));
   }
-
-  // Restore JS state
-  if (data.displayMode)    _displayMode    = data.displayMode;
-  if (data.currentTheme)   _currentTheme   = data.currentTheme;
-  if (data.activePresetId) _activePresetId = data.activePresetId;
-  if (data.customHex)      _customHex      = data.customHex;
-  if (data.outerBgHex)     _outerBgHex     = data.outerBgHex;
-  if (data.sheetBgHex)     _sheetBgHex     = data.sheetBgHex;
+  if (data.displayMode)           _displayMode           = data.displayMode;
+  if (data.currentTheme)          _currentTheme          = data.currentTheme;
+  if (data.activePresetId)        _activePresetId        = data.activePresetId;
+  if (data.customHex)             _customHex             = data.customHex;
+  if (data.outerBgHex)            _outerBgHex            = data.outerBgHex;
+  if (data.sheetBgHex)            _sheetBgHex            = data.sheetBgHex;
   if (data.myThemes)              _myThemes              = data.myThemes;
   if (data.portraitSrc)           _portraitSrc           = data.portraitSrc;
   if (data.sectionModeOverrides)  _sectionModeOverrides  = data.sectionModeOverrides;
-
-  // Apply body class for dark mode
   document.body.classList.toggle('dark-body', _currentTheme === 'dark');
-
-  // Apply portrait
   if (_portraitSrc) {
     const portrait = document.getElementById('sheet-portrait');
     if (portrait) portrait.src = _portraitSrc;
     const prev = document.getElementById('cust-portrait-preview');
     if (prev) prev.innerHTML = `<img src="${_portraitSrc}" alt="portrait">`;
   }
-
-  // Apply display mode class
   document.body.classList.remove('mode-modern','mode-traditional');
   document.body.classList.add('mode-' + _displayMode);
   const modeBtn = document.getElementById('display-mode-btn');
   if (modeBtn) modeBtn.textContent = _displayMode === 'modern' ? '◈ Modern' : '☰ Traditional';
+}
+
+function loadCosmetics() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(COSMETIC_KEY) || 'null'); } catch(e) {}
+  applyCosmetics(data);
 }
 
 function clearCosmetics() {
@@ -4120,12 +4175,6 @@ function syncTradElements() {
   }
 }
 
-// Patch updateHp to also sync trad view when in trad mode
-const _origUpdateHp = typeof updateHp === 'function' ? updateHp : null;
-function updateHp() {
-  if (_origUpdateHp) _origUpdateHp();
-  if (_displayMode === 'traditional') syncTradElements();
-}
 
 // ── CHARACTER DATA ────────────────────────────────────────
 // Single source of truth for all character stats.
@@ -4152,7 +4201,7 @@ const CHARACTER = {
 };
 
 function populateCharacterFromFields() {
-  CHARACTER.name      = document.getElementById('f-name')?.value      || CHARACTER.name;
+  CHARACTER.name      = document.getElementById('sheet-name-input')?.value || document.getElementById('f-name')?.value || CHARACTER.name;
   CHARACTER.classLvl  = document.getElementById('f-class')?.value     || CHARACTER.classLvl;
   CHARACTER.race      = document.getElementById('f-race')?.value      || CHARACTER.race;
   CHARACTER.bg        = document.getElementById('f-bg')?.value        || CHARACTER.bg;
@@ -4319,20 +4368,27 @@ function updateProfBonus() {
 }
 
 // ── HP ──────────────────────────────────────────────────────
-let curHp = CHARACTER?.curHp ?? 125;
-let maxHp = CHARACTER?.maxHp ?? 125;
+let curHp = CHARACTER?.curHp ?? 0;
+let maxHp = CHARACTER?.maxHp ?? 0;
 
 function updateHp() {
   document.getElementById('hp-cur').textContent = curHp;
   document.getElementById('hp-max-val').textContent = maxHp;
   document.getElementById('hp-preview').textContent = curHp + ' / ' + maxHp;
-  document.getElementById('gp-display');
   const pct = maxHp > 0 ? Math.max(0, Math.min(100, (curHp / maxHp) * 100)) : 0;
   const cls = pct <= 25 ? 'low' : pct <= 50 ? 'mid' : 'hi';
   ['hp-fill','calc-bar'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.style.width = pct + '%'; el.className = el.className.replace(/\b(hi|mid|low)\b/g,'').trim() + ' ' + cls; }
   });
+  // Sync trad view
+  if (typeof syncTradElements === 'function' && _displayMode === 'traditional') syncTradElements();
+  // Write back to hidden fields so Firestore saves them
+  const curhpEl = document.getElementById('f-curhp');
+  const maxhpEl = document.getElementById('f-maxhp');
+  if (curhpEl) curhpEl.value = curHp;
+  if (maxhpEl) maxhpEl.value = maxHp;
+  if (typeof saveToFirestore === 'function') saveToFirestore();
 }
 
 function toggleHpCalc() {
@@ -4366,7 +4422,19 @@ function toggleMoney() {
 }
 function syncMoney() {
   const gp = parseInt(document.getElementById('m-gp').value) || 0;
-  document.getElementById('gp-display').textContent = gp;
+  const gpDisp = document.getElementById('gp-display');
+  if (gpDisp) gpDisp.textContent = gp;
+  // Write back to hidden Firestore fields
+  const fGold = document.getElementById('f-gold');
+  if (fGold) fGold.value = gp;
+  const extra = {
+    pp: parseInt(document.getElementById('m-pp')?.value) || 0,
+    sp: parseInt(document.getElementById('m-sp')?.value) || 0,
+    cp: parseInt(document.getElementById('m-cp')?.value) || 0,
+  };
+  const fGold2 = document.getElementById('f-gold2');
+  if (fGold2) fGold2.value = JSON.stringify(extra);
+  if (typeof saveToFirestore === 'function') saveToFirestore();
 }
 function adj(type, delta) {
   const el = document.getElementById('m-' + type);
@@ -4656,12 +4724,23 @@ const CLASS_RESOURCES = [
 function getResource(id) { return CLASS_RESOURCES.find(r => r.id === id); }
 function isResourceExhausted(id) { const r = getResource(id); return r ? r.used >= r.total : false; }
 
+function saveResourcesUsed() {
+  const usedMap = {};
+  CLASS_RESOURCES.forEach(r => { usedMap[r.id] = r.used; });
+  try {
+    db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .update({ resourcesUsed: usedMap });
+  } catch(e) { /* non-critical */ }
+}
+
 function spendResource(id) {
   const r = getResource(id);
   if (!r) return;
   r.used = Math.min(r.total, r.used + 1);
   renderResources();
   syncAbilityChips();
+  saveResourcesUsed();
 }
 
 function renderResources() {
@@ -4686,6 +4765,7 @@ function toggleResource(ri, i) {
   r.used = (i < r.used) ? i : i + 1;
   renderResources();
   syncAbilityChips();
+  saveResourcesUsed();
 }
 
 function syncAbilityChips() {
@@ -6070,14 +6150,14 @@ function escText(str) {
 const LORE_FIELDS = {
   personality: {
     fields: [
-      { editId: 'edit-traits',   viewId: 'view-traits'   },
-      { editId: 'edit-ideals',   viewId: 'view-ideals'   },
-      { editId: 'edit-bonds',    viewId: 'view-bonds'    },
-      { editId: 'edit-flaws',    viewId: 'view-flaws'    },
+      { editId: 'edit-traits',   viewId: 'view-traits',   fieldId: 'f-traits'   },
+      { editId: 'edit-ideals',   viewId: 'view-ideals',   fieldId: 'f-ideals'   },
+      { editId: 'edit-bonds',    viewId: 'view-bonds',    fieldId: 'f-bonds'    },
+      { editId: 'edit-flaws',    viewId: 'view-flaws',    fieldId: 'f-flaws'    },
     ]
   },
   backstory: {
-    fields: [{ editId: 'edit-backstory', viewId: 'view-backstory' }]
+    fields: [{ editId: 'edit-backstory', viewId: 'view-backstory', fieldId: 'f-backstory' }]
   }
 };
 
@@ -6090,13 +6170,15 @@ function toggleEdit(section) {
   if (isEditing) {
     saveEdit(section);
   } else {
-    // Sync textarea values from view before showing
+    // Populate textareas from hidden f-* fields (source of truth)
     const cfg = LORE_FIELDS[section];
     if (cfg) {
       cfg.fields.forEach(f => {
-        const viewP = document.getElementById(f.viewId);
         const editTA = document.getElementById(f.editId);
-        if (viewP && editTA) editTA.value = viewP.textContent;
+        if (editTA) {
+          const hidden = f.fieldId ? document.getElementById(f.fieldId) : null;
+          editTA.value = (hidden ? hidden.value : '') || '';
+        }
       });
     }
     viewEl.style.display = 'none';
@@ -6120,21 +6202,21 @@ function saveEdit(section) {
       if (!viewP || !editTA) return;
       const val = editTA.value.trim();
       viewP.textContent = val || '—';
-      // Style empty notes differently
-      if (section === 'notes') {
-        viewP.style.fontStyle  = val ? 'normal' : 'italic';
-        viewP.style.color      = val ? 'var(--ink)' : 'var(--border-light)';
-        if (!val) viewP.textContent = 'No notes yet this session.';
+      // Write back to hidden f-* field so Firestore saves it
+      if (f.fieldId) {
+        const hidden = document.getElementById(f.fieldId);
+        if (hidden) hidden.value = val;
       }
     });
   }
 
   editEl.style.display = 'none';
   viewEl.style.display = 'block';
+  debouncedSave();
 }
 
 // ── ITEMS ─────────────────────────────────────────────────
-const ITEMS = [
+const DEFAULT_ITEMS = [
   { id: 'arrows',    name: 'Arrow',             icon: '🏹', qty: 20, category: 'resources', desc: 'Standard arrows for a longbow or shortbow.' },
   { id: 'backpack',  name: 'Backpack',           icon: '🎒', qty: 1,  category: 'misc',      desc: 'Holds 30 lbs of gear. Counts as a container.' },
   { id: 'bedroll',   name: 'Bedroll',            icon: '🛏',  qty: 1,  category: 'misc',      desc: 'Provides a comfortable rest while camping.' },
@@ -6149,6 +6231,52 @@ const ITEMS = [
   { id: 'club',      name: 'Club',               icon: '🪵', qty: 1,  category: 'weapons',   desc: '1d4 bludgeoning. Light, simple weapon.' },
   { id: 'scimitar',  name: 'Scimitar',           icon: '🗡',  qty: 1,  category: 'weapons',   desc: '1d6 slashing. Finesse, light.' },
 ];
+let ITEMS = DEFAULT_ITEMS.map(i => ({ ...i })); // mutable copy; overwritten by Firestore
+
+async function loadInventory() {
+  try {
+    const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('inventory').get();
+    if (snap.empty) {
+      await seedInventory();
+    } else {
+      ITEMS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderItems();
+    }
+  } catch(e) { console.warn('loadInventory failed:', e); }
+}
+
+async function seedInventory() {
+  const batch = db.batch();
+  const ref = db.collection('campaigns').doc(CAMPAIGN_ID)
+    .collection('characters').doc(PLAYER_ID).collection('inventory');
+  DEFAULT_ITEMS.forEach(item => {
+    batch.set(ref.doc(item.id), { ...item, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  });
+  await batch.commit();
+  ITEMS = DEFAULT_ITEMS.map(i => ({ ...i }));
+  renderItems();
+}
+
+async function saveInventoryItem(item) {
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('inventory').doc(item.id)
+      .set({ ...item, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  } catch(e) { console.warn('saveInventoryItem failed:', e); }
+}
+
+async function deleteInventoryItem(itemId) {
+  ITEMS = ITEMS.filter(i => i.id !== itemId);
+  renderItems();
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('inventory').doc(itemId).delete();
+  } catch(e) { console.warn('deleteInventoryItem failed:', e); }
+}
 
 const CATEGORY_ICONS = {
   weapons: '⚔️', armor: '🛡️', resources: '📦',
@@ -6277,6 +6405,7 @@ function adjustItemQty(delta) {
   item.qty = Math.max(0, item.qty + delta);
   document.getElementById('im-qty-display').textContent = item.qty;
   renderItems();
+  saveInventoryItem(item);
 }
 
 function setItemQty() {
@@ -6287,15 +6416,15 @@ function setItemQty() {
   document.getElementById('im-qty-display').textContent = item.qty;
   document.getElementById('im-qty-input').value = '';
   renderItems();
+  saveInventoryItem(item);
 }
 
 function removeItem() {
-  const idx = ITEMS.findIndex(i => i.id === _activeItem);
-  if (idx === -1) return;
-  if (!confirm('Remove ' + ITEMS[idx].name + ' from inventory?')) return;
-  ITEMS.splice(idx, 1);
+  const item = ITEMS.find(i => i.id === _activeItem);
+  if (!item) return;
+  if (!confirm('Remove ' + item.name + ' from inventory?')) return;
   closeItem();
-  renderItems();
+  deleteInventoryItem(item.id);
 }
 
 function saveItemNote() {
@@ -6307,6 +6436,7 @@ function saveItemNote() {
     : item.desc;
   closeItem();
   renderItems();
+  saveInventoryItem(item);
 }
 
 // ── ABILITY MODAL ──────────────────────────────────────────
@@ -6532,13 +6662,24 @@ updateHp();
 applyDisplayMode();
 
 CONDITIONS.forEach(c => {
-  document.documentElement.style.setProperty(c.varName, c.default);
+  // Only set default if not already set by loadCosmetics()
+  const existing = document.documentElement.style.getPropertyValue(c.varName);
+  if (!existing) {
+    document.documentElement.style.setProperty(c.varName, c.default);
+  }
 });
 
 (function() {
   const classEl = document.getElementById('f-class');
   if (!classEl) return;
-  const obs = new MutationObserver(() => { updateProfBonus(); updateSubtitle(); });
+  let _classChangeTimer = null;
+  const obs = new MutationObserver(() => {
+    clearTimeout(_classChangeTimer);
+    _classChangeTimer = setTimeout(() => {
+      updateProfBonus();
+      updateSubtitle();
+    }, 400);
+  });
   obs.observe(classEl, { attributes: true, characterData: true, subtree: true });
 })();
 </script>
@@ -6547,7 +6688,9 @@ CONDITIONS.forEach(c => {
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-const PLAYER_ID = 'player1';
+const params = new URLSearchParams(window.location.search);
+const PLAYER_ID  = params.get('player') || 'player1';
+const CAMPAIGN_ID = params.get('c') || 'campaign1';
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -6566,6 +6709,12 @@ function setStatus(type, text) {
   if (el) { el.className = 'sync-status ' + type; el.textContent = text; }
 }
 
+let _saveTimer = null;
+function debouncedSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => saveToFirestore(), 800);
+}
+
 async function saveToFirestore() {
   setStatus('saving', 'Saving...');
   const data = {};
@@ -6573,15 +6722,13 @@ async function saveToFirestore() {
     const el = document.getElementById(id);
     if (el) data[id] = el.value || '';
   });
-  // Sync visible inputs to hidden fields before save
+  // Sync name from visible input (uses separate id from f-name hidden field)
   const nameInp = document.getElementById('sheet-name-input');
   if (nameInp) data['f-name'] = nameInp.value || data['f-name'] || '';
-  ['f-class','f-race','f-bg','f-align','f-player'].forEach(fid => {
-    const vis = document.getElementById(fid);
-    if (vis && vis.tagName === 'INPUT') data[fid] = vis.value || '';
-  });
+  data.schemaVersion = 1;
   try {
-    await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID).set(data, { merge: true });
     setStatus('ok', 'Saved ✓');
     setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
   } catch (e) {
@@ -6589,9 +6736,11 @@ async function saveToFirestore() {
   }
 }
 
+let _prefsLoaded = false;
 function loadFromFirestore() {
   setStatus('saving', 'Connecting...');
-  db.collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+  db.collection('campaigns').doc(CAMPAIGN_ID)
+    .collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
     if (!doc.exists) { setStatus('ok', 'Ready'); return; }
     const data = doc.data();
     FIELDS.forEach(id => {
@@ -6600,21 +6749,72 @@ function loadFromFirestore() {
         if (el) el.value = data[id];
       }
     });
-    // Populate visible editable inputs in header
+    // Populate visible header name input
     const nameInp = document.getElementById('sheet-name-input');
     if (nameInp && data['f-name']) nameInp.value = data['f-name'];
     // Populate CHARACTER from fields and re-render
     populateCharacterFromFields();
     renderCharacterSheet();
-    updateHp();
+    // Force-populate curHp/maxHp from fields (updateHp reads window.curHp/maxHp)
+    window.curHp = parseInt(data['f-curhp']) || window.curHp || 0;
+    window.maxHp = parseInt(data['f-maxhp']) || window.maxHp || 0;
+    curHp = window.curHp;
+    maxHp = window.maxHp;
+    // Update HP display without triggering a save
+    (function() {
+      const pct = maxHp > 0 ? Math.max(0, Math.min(100, (curHp / maxHp) * 100)) : 0;
+      const cls = pct <= 25 ? 'low' : pct <= 50 ? 'mid' : 'hi';
+      const hcur = document.getElementById('hp-cur'); if (hcur) hcur.textContent = curHp;
+      const hmax = document.getElementById('hp-max-val'); if (hmax) hmax.textContent = maxHp;
+      const hprev = document.getElementById('hp-preview'); if (hprev) hprev.textContent = curHp + ' / ' + maxHp;
+      ['hp-fill','calc-bar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.width = pct + '%'; el.className = el.className.replace(/\b(hi|mid|low)\b/g,'').trim() + ' ' + cls; }
+      });
+    })();
+    // Money display
+    const gpVal = parseInt(data['f-gold']) || 0;
+    const gpDisp = document.getElementById('gp-display'); if (gpDisp) gpDisp.textContent = gpVal;
+    const mGp = document.getElementById('m-gp'); if (mGp) mGp.value = gpVal;
+    try {
+      const extra = JSON.parse(data['f-gold2'] || '{}');
+      ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
+    } catch(e) {}
+    // Lore view elements
+    [['f-traits','view-traits'],['f-ideals','view-ideals'],['f-bonds','view-bonds'],
+     ['f-flaws','view-flaws'],['f-backstory','view-backstory']].forEach(([fid, vid]) => {
+      if (data[fid] !== undefined) {
+        const el = document.getElementById(vid);
+        if (el) el.textContent = data[fid] || '—';
+      }
+    });
+    // Notes current textarea
+    if (data['f-notes'] !== undefined) {
+      const notesTa = document.getElementById('notes-current-ta');
+      if (notesTa && !notesTa.value) notesTa.value = data['f-notes'] || '';
+      if (typeof updateNotesPreview === 'function') updateNotesPreview();
+    }
+    // Restore resource used counts
+    if (data.resourcesUsed) {
+      CLASS_RESOURCES.forEach(r => { r.used = data.resourcesUsed[r.id] ?? 0; });
+      renderResources();
+      syncAbilityChips();
+    }
+    // Load Firestore preferences on first snapshot (overrides localStorage)
+    if (!_prefsLoaded) {
+      _prefsLoaded = true;
+      db.collection('campaigns').doc(CAMPAIGN_ID)
+        .collection('characters').doc(PLAYER_ID)
+        .collection('preferences').doc('ui').get()
+        .then(snap => { if (snap.exists) applyCosmetics(snap.data()); })
+        .catch(() => {});
+    }
     setStatus('ok', 'Live ✓');
   }, () => setStatus('error', 'Connection error'));
 
   // Listen for DM-triggered rests
-  db.collection('characters').doc(PLAYER_ID);
-  const CAMPAIGN_ID_VAL = 'campaign1';
   try {
-    db.collection('campaigns').doc(CAMPAIGN_ID_VAL)
+    db.collection('campaigns').doc(CAMPAIGN_ID)
       .collection('rest').doc('state')
       .onSnapshot(doc => {
         if (!doc.exists) return;
@@ -6639,7 +6839,7 @@ const FIELD_LABELS = {
   'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
   'f-notes':'Session Notes','f-gold2':'Gold (Equipment)'
 };
-const HISTORY_KEY = 'edit-history-player1';
+const HISTORY_KEY = 'edit-history-' + PLAYER_ID;
 const MAX_HISTORY = 100;
 
 function recordEdit(fieldId, oldVal, newVal) {
@@ -6652,7 +6852,255 @@ function recordEdit(fieldId, oldVal, newVal) {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadFromFirestore();
+  loadInventory();
+  listenForImportStatus();
+  // Wire paste textarea to auto-validate as user types
+  const pasteInput = document.getElementById('import-paste-input');
+  if (pasteInput) {
+    let _pasteTimer = null;
+    pasteInput.addEventListener('input', () => {
+      clearTimeout(_pasteTimer);
+      _pasteTimer = setTimeout(() => {
+        const raw = pasteInput.value.trim();
+        if (raw.startsWith('{') && raw.endsWith('}')) processImportJSON(raw);
+      }, 600);
+    });
+  }
 });
+
+// ── CHARACTER IMPORT ──────────────────────────────────────────
+let _importData = null;
+
+function openImportModal() {
+  _importData = null;
+  document.getElementById('import-validation').style.display = 'none';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-submit-btn').style.display = 'none';
+  document.getElementById('import-status').textContent = '';
+  document.getElementById('import-paste-input').value = '';
+  const fileInput = document.getElementById('import-file-input');
+  if (fileInput) fileInput.value = '';
+  document.getElementById('import-modal').classList.add('open');
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').classList.remove('open');
+}
+
+function switchImportTab(tab) {
+  document.getElementById('import-tab-upload').classList.toggle('active', tab === 'upload');
+  document.getElementById('import-tab-paste').classList.toggle('active', tab === 'paste');
+  document.getElementById('import-panel-upload').style.display = tab === 'upload' ? '' : 'none';
+  document.getElementById('import-panel-paste').style.display  = tab === 'paste'  ? '' : 'none';
+}
+
+function handleImportDrop(e) {
+  e.preventDefault();
+  document.getElementById('import-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) readImportFile(file);
+}
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (file) readImportFile(file);
+}
+
+function readImportFile(file) {
+  if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+    showImportError('Please upload a .json file.');
+    return;
+  }
+  if (file.size > 512 * 1024) {
+    showImportError('File too large — maximum 512 KB.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => processImportJSON(ev.target.result);
+  reader.onerror = () => showImportError('Could not read file.');
+  reader.readAsText(file);
+}
+
+function processImportJSON(raw) {
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch(e) {
+    showImportError('Invalid JSON — check the file for syntax errors. Tip: paste it into jsonlint.com to find the problem.');
+    return;
+  }
+  validateAndPreview(parsed);
+}
+
+function validateAndPreview(data) {
+  const errors   = [];
+  const warnings = [];
+
+  if (!data.identity?.name?.trim())
+    errors.push('Character name is required (identity.name)');
+  if (!data.identity?.class?.trim())
+    errors.push('Class is required (identity.class)');
+  if (!data.identity?.level || data.identity.level < 1 || data.identity.level > 20)
+    errors.push('Level must be between 1 and 20 (identity.level)');
+  if (!data.identity?.race?.trim())
+    errors.push('Race is required (identity.race)');
+  if (!data.combat?.maxHp || data.combat.maxHp < 1)
+    errors.push('Max HP must be greater than 0 (combat.maxHp)');
+
+  ['str','dex','con','int','wis','cha'].forEach(ab => {
+    const score = data.stats?.[ab];
+    if (score === undefined || score === null)
+      warnings.push('Ability score missing: ' + ab + ' — will default to 10');
+    else if (score < 1 || score > 30)
+      warnings.push(ab + ' score ' + score + ' is unusual (expected 1–30)');
+  });
+
+  if (data.combat?.curHp > data.combat?.maxHp)
+    warnings.push('Current HP is higher than Max HP — will be capped at Max HP');
+
+  (data.weapons || []).forEach((w, i) => {
+    if (w._note) return;
+    if (!w.name?.trim()) warnings.push('Weapon ' + (i+1) + ' has no name — will be skipped');
+  });
+
+  (data.inventory || []).forEach((item, i) => {
+    if (item._note) return;
+    if (!item.name?.trim()) warnings.push('Inventory item ' + (i+1) + ' has no name — will be skipped');
+  });
+
+  if (!data._instructions?._version)
+    warnings.push('Template version not detected — proceeding anyway');
+
+  const validEl = document.getElementById('import-validation');
+  validEl.style.display = '';
+  let html = '';
+
+  if (errors.length) {
+    html += '<div style="font-family:\'Cinzel\',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:#e05050;margin-bottom:6px;">Errors — fix before submitting</div>';
+    errors.forEach(e => { html += '<div class="import-validation-error">✕ ' + e + '</div>'; });
+  }
+  if (warnings.length) {
+    html += '<div style="font-family:\'Cinzel\',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:#c8a840;margin:' + (errors.length ? '10' : '0') + 'px 0 6px;">Warnings</div>';
+    warnings.forEach(w => { html += '<div class="import-validation-warn">⚠ ' + w + '</div>'; });
+  }
+  if (!errors.length && !warnings.length) {
+    html += '<div class="import-validation-ok">✓ Template looks good — ready to submit</div>';
+  }
+  validEl.innerHTML = html;
+
+  if (errors.length) {
+    document.getElementById('import-submit-btn').style.display = 'none';
+    _importData = null;
+    return;
+  }
+
+  _importData = data;
+  showImportPreview(data);
+  document.getElementById('import-submit-btn').style.display = '';
+}
+
+function showImportPreview(data) {
+  const id = data.identity  || {};
+  const c  = data.combat    || {};
+  const s  = data.stats     || {};
+  const rows = [
+    ['Name',        id.name        || '—'],
+    ['Class',       (id.class || '—') + ' ' + (id.level || '')],
+    ['Race',        id.race        || '—'],
+    ['Background',  id.background  || '—'],
+    ['Alignment',   id.alignment   || '—'],
+    ['Max HP',      c.maxHp        || '—'],
+    ['AC',          c.ac           || '—'],
+    ['STR / DEX / CON', (s.str||10) + ' / ' + (s.dex||10) + ' / ' + (s.con||10)],
+    ['INT / WIS / CHA', (s.int||10) + ' / ' + (s.wis||10) + ' / ' + (s.cha||10)],
+    ['Weapons',  (data.weapons  || []).filter(w => !w._note && w.name).length + ' weapon(s)'],
+    ['Items',    (data.inventory|| []).filter(i => !i._note && i.name).length + ' item(s)'],
+    ['Features', (data.features || []).filter(f => !f._note && f.name).length + ' feature(s)'],
+  ];
+  const el = document.getElementById('import-preview');
+  el.style.display = '';
+  el.innerHTML =
+    '<div style="font-family:\'Cinzel\',serif;font-size:0.46rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:8px;">Character Preview</div>' +
+    rows.map(([l, v]) =>
+      '<div class="import-preview-row">' +
+        '<span class="import-preview-label">' + l + '</span>' +
+        '<span class="import-preview-value">' + v + '</span>' +
+      '</div>'
+    ).join('');
+}
+
+async function submitImport() {
+  if (!_importData) return;
+  const currentUser = firebase.auth?.()?.currentUser;
+  if (!currentUser) {
+    showImportStatus('You must be signed in to submit.', 'error');
+    return;
+  }
+  const btn = document.getElementById('import-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('pendingCharacters').doc(PLAYER_ID)
+      .set({
+        submittedAt:     firebase.firestore.FieldValue.serverTimestamp(),
+        submittedBy:     currentUser.uid,
+        playerSlot:      PLAYER_ID,
+        status:          'pending',
+        data:            _importData,
+        validationErrors: [],
+        dmNotes:         '',
+      });
+    showImportStatus('✓ Submitted! Your DM will review and approve your character.', 'ok');
+    btn.style.display = 'none';
+    setTimeout(() => closeImportModal(), 3000);
+  } catch(e) {
+    console.error('Import submit error:', e);
+    showImportStatus('Error submitting — check your connection and try again.', 'error');
+    btn.disabled = false;
+    btn.textContent = '✓ Submit for DM Approval';
+  }
+}
+
+function showImportStatus(msg, type) {
+  const el = document.getElementById('import-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'import-status-msg ' + type;
+}
+
+function showImportError(msg) {
+  const validEl = document.getElementById('import-validation');
+  validEl.style.display = '';
+  validEl.innerHTML = '<div class="import-validation-error">✕ ' + msg + '</div>';
+  document.getElementById('import-submit-btn').style.display = 'none';
+  _importData = null;
+}
+
+function listenForImportStatus() {
+  try {
+    db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('pendingCharacters').doc(PLAYER_ID)
+      .onSnapshot(doc => {
+        const banner = document.getElementById('import-status-banner');
+        if (!banner) return;
+        if (!doc.exists) { banner.style.display = 'none'; return; }
+        const { status, dmNotes } = doc.data();
+        if (status === 'pending') {
+          banner.style.display = 'flex';
+          banner.className = 'rest-banner rest-banner-short';
+          banner.innerHTML = '<span>⏳ Character submission pending DM approval</span>';
+        } else if (status === 'rejected') {
+          banner.style.display = 'flex';
+          banner.className = 'rest-banner rest-banner-danger';
+          banner.innerHTML = '<span>✕ Character rejected by DM' + (dmNotes ? ': ' + dmNotes : '') + '</span>' +
+            '<button onclick="openImportModal()">Resubmit →</button>';
+        } else {
+          banner.style.display = 'none';
+        }
+      });
+  } catch(e) { /* non-critical */ }
+}
 
 let saveTimer;
 FIELDS.forEach(id => {
@@ -6664,7 +7112,7 @@ FIELDS.forEach(id => {
     el.addEventListener('input', () => {
       setStatus('saving', 'Unsaved changes');
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveToFirestore, 2000);
+      saveTimer = setTimeout(saveToFirestore, 800);
     });
   }
 });
@@ -6716,7 +7164,8 @@ FIELDS.forEach(id => {
 
     <!-- CURRENT SESSION TEXTAREA -->
     <textarea class="notes-current-ta" id="notes-current-ta"
-      placeholder="Write notes from this session — events, discoveries, important NPCs, loot found..."></textarea>
+      placeholder="Write notes from this session — events, discoveries, important NPCs, loot found..."
+      oninput="(function(ta){const f=document.getElementById('f-notes');if(f)f.value=ta.value;debouncedSave();})(this)"></textarea>
 
     <div class="notes-modal-actions">
       <button class="cta cta-full" onclick="saveCurrentSession()">💾 Save This Session</button>
@@ -7077,6 +7526,45 @@ FIELDS.forEach(id => {
       <button class="cta" style="flex:1;border:1px solid rgb(var(--border-rgb)/0.4);color:rgb(var(--light-text-rgb)/0.5);background:none;"
         onclick="tcApplyLive()">👁 Apply Preview</button>
     </div>
+  </div>
+</div>
+
+<!-- CHARACTER IMPORT MODAL -->
+<div class="modal-bg" id="import-modal">
+  <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto;">
+    <button class="modal-close" onclick="closeImportModal()">✕</button>
+    <div class="notes-modal-title">📋 Import Character</div>
+    <p style="font-family:'Crimson Text',serif;font-size:0.9rem;color:rgba(245,230,200,0.6);line-height:1.6;margin-bottom:14px;">
+      Download the character template, fill it out (or have an AI fill it from your paper sheet), then upload or paste it below. Your DM will review and approve it before it goes live.
+    </p>
+    <div style="margin-bottom:16px;">
+      <a class="edit-btn" href="character-template.json" download style="text-decoration:none;display:inline-block;">⬇ Download Template</a>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:1px solid rgba(201,168,76,0.2);margin-bottom:12px;">
+      <button class="cust-tab active" id="import-tab-upload" onclick="switchImportTab('upload')">Upload File</button>
+      <button class="cust-tab" id="import-tab-paste" onclick="switchImportTab('paste')">Paste JSON</button>
+    </div>
+    <div id="import-panel-upload">
+      <div class="import-drop-zone" id="import-drop-zone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleImportDrop(event)"
+        onclick="document.getElementById('import-file-input').click()">
+        <div style="font-size:2rem;margin-bottom:8px;pointer-events:none;">📄</div>
+        <div style="font-family:'Cinzel',serif;font-size:0.52rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(245,230,200,0.5);pointer-events:none;">Click or drag your JSON file here</div>
+        <div style="font-family:'Crimson Text',serif;font-size:0.78rem;font-style:italic;color:rgba(245,230,200,0.25);margin-top:4px;pointer-events:none;">character-template.json</div>
+      </div>
+      <input type="file" id="import-file-input" accept=".json,application/json" style="display:none" onchange="handleImportFile(event)">
+    </div>
+    <div id="import-panel-paste" style="display:none;">
+      <textarea id="import-paste-input" class="sta" style="height:180px;font-family:monospace;font-size:0.72rem;" placeholder="Paste your completed JSON here..."></textarea>
+    </div>
+    <div id="import-validation" style="display:none;margin-top:10px;"></div>
+    <div id="import-preview" style="display:none;margin-top:10px;"></div>
+    <div style="margin-top:14px;">
+      <button class="cta cta-full" id="import-submit-btn" style="display:none;" onclick="submitImport()">✓ Submit for DM Approval</button>
+    </div>
+    <div id="import-status" style="font-family:'Crimson Text',serif;font-size:0.82rem;text-align:center;margin-top:8px;min-height:20px;"></div>
   </div>
 </div>
 
