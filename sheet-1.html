@@ -2739,11 +2739,6 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
 
 <!-- Hidden fields — bridge between Firestore and the interactive UI -->
 <input type="hidden" id="f-name">
-<input type="hidden" id="f-player">
-<input type="hidden" id="f-class">
-<input type="hidden" id="f-race">
-<input type="hidden" id="f-bg">
-<input type="hidden" id="f-align">
 <input type="hidden" id="f-prof">
 <input type="hidden" id="f-ac">
 <input type="hidden" id="f-init">
@@ -4146,12 +4141,6 @@ function syncTradElements() {
   }
 }
 
-// Patch updateHp to also sync trad view when in trad mode
-const _origUpdateHp = typeof updateHp === 'function' ? updateHp : null;
-function updateHp() {
-  if (_origUpdateHp) _origUpdateHp();
-  if (_displayMode === 'traditional') syncTradElements();
-}
 
 // ── CHARACTER DATA ────────────────────────────────────────
 // Single source of truth for all character stats.
@@ -4378,13 +4367,20 @@ function updateHp() {
   document.getElementById('hp-cur').textContent = curHp;
   document.getElementById('hp-max-val').textContent = maxHp;
   document.getElementById('hp-preview').textContent = curHp + ' / ' + maxHp;
-  document.getElementById('gp-display');
   const pct = maxHp > 0 ? Math.max(0, Math.min(100, (curHp / maxHp) * 100)) : 0;
   const cls = pct <= 25 ? 'low' : pct <= 50 ? 'mid' : 'hi';
   ['hp-fill','calc-bar'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.style.width = pct + '%'; el.className = el.className.replace(/\b(hi|mid|low)\b/g,'').trim() + ' ' + cls; }
   });
+  // Sync trad view
+  if (typeof syncTradElements === 'function' && _displayMode === 'traditional') syncTradElements();
+  // Write back to hidden fields so Firestore saves them
+  const curhpEl = document.getElementById('f-curhp');
+  const maxhpEl = document.getElementById('f-maxhp');
+  if (curhpEl) curhpEl.value = curHp;
+  if (maxhpEl) maxhpEl.value = maxHp;
+  if (typeof saveToFirestore === 'function') saveToFirestore();
 }
 
 function toggleHpCalc() {
@@ -4418,7 +4414,19 @@ function toggleMoney() {
 }
 function syncMoney() {
   const gp = parseInt(document.getElementById('m-gp').value) || 0;
-  document.getElementById('gp-display').textContent = gp;
+  const gpDisp = document.getElementById('gp-display');
+  if (gpDisp) gpDisp.textContent = gp;
+  // Write back to hidden Firestore fields
+  const fGold = document.getElementById('f-gold');
+  if (fGold) fGold.value = gp;
+  const extra = {
+    pp: parseInt(document.getElementById('m-pp')?.value) || 0,
+    sp: parseInt(document.getElementById('m-sp')?.value) || 0,
+    cp: parseInt(document.getElementById('m-cp')?.value) || 0,
+  };
+  const fGold2 = document.getElementById('f-gold2');
+  if (fGold2) fGold2.value = JSON.stringify(extra);
+  if (typeof saveToFirestore === 'function') saveToFirestore();
 }
 function adj(type, delta) {
   const el = document.getElementById('m-' + type);
@@ -6642,13 +6650,9 @@ async function saveToFirestore() {
     const el = document.getElementById(id);
     if (el) data[id] = el.value || '';
   });
-  // Sync visible inputs to hidden fields before save
+  // Sync name from visible input (uses separate id from f-name hidden field)
   const nameInp = document.getElementById('sheet-name-input');
   if (nameInp) data['f-name'] = nameInp.value || data['f-name'] || '';
-  ['f-class','f-race','f-bg','f-align','f-player'].forEach(fid => {
-    const vis = document.getElementById(fid);
-    if (vis && vis.tagName === 'INPUT') data[fid] = vis.value || '';
-  });
   try {
     await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
     setStatus('ok', 'Saved ✓');
@@ -6669,13 +6673,37 @@ function loadFromFirestore() {
         if (el) el.value = data[id];
       }
     });
-    // Populate visible editable inputs in header
+    // Populate visible header name input
     const nameInp = document.getElementById('sheet-name-input');
     if (nameInp && data['f-name']) nameInp.value = data['f-name'];
     // Populate CHARACTER from fields and re-render
     populateCharacterFromFields();
     renderCharacterSheet();
-    updateHp();
+    // Force-populate curHp/maxHp from fields (updateHp reads window.curHp/maxHp)
+    window.curHp = parseInt(data['f-curhp']) || window.curHp || 0;
+    window.maxHp = parseInt(data['f-maxhp']) || window.maxHp || 0;
+    curHp = window.curHp;
+    maxHp = window.maxHp;
+    // Update HP display without triggering a save
+    (function() {
+      const pct = maxHp > 0 ? Math.max(0, Math.min(100, (curHp / maxHp) * 100)) : 0;
+      const cls = pct <= 25 ? 'low' : pct <= 50 ? 'mid' : 'hi';
+      const hcur = document.getElementById('hp-cur'); if (hcur) hcur.textContent = curHp;
+      const hmax = document.getElementById('hp-max-val'); if (hmax) hmax.textContent = maxHp;
+      const hprev = document.getElementById('hp-preview'); if (hprev) hprev.textContent = curHp + ' / ' + maxHp;
+      ['hp-fill','calc-bar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.width = pct + '%'; el.className = el.className.replace(/\b(hi|mid|low)\b/g,'').trim() + ' ' + cls; }
+      });
+    })();
+    // Money display
+    const gpVal = parseInt(data['f-gold']) || 0;
+    const gpDisp = document.getElementById('gp-display'); if (gpDisp) gpDisp.textContent = gpVal;
+    const mGp = document.getElementById('m-gp'); if (mGp) mGp.value = gpVal;
+    try {
+      const extra = JSON.parse(data['f-gold2'] || '{}');
+      ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
+    } catch(e) {}
     setStatus('ok', 'Live ✓');
   }, () => setStatus('error', 'Connection error'));
 
