@@ -4202,7 +4202,6 @@ const CHARACTER = {
 
 function populateCharacterFromFields() {
   CHARACTER.name      = document.getElementById('sheet-name-input')?.value || document.getElementById('f-name')?.value || CHARACTER.name;
-  CHARACTER.classLvl  = document.getElementById('f-class')?.value     || CHARACTER.classLvl;
   CHARACTER.race      = document.getElementById('f-race')?.value      || CHARACTER.race;
   CHARACTER.bg        = document.getElementById('f-bg')?.value        || CHARACTER.bg;
   CHARACTER.align     = document.getElementById('f-align')?.value     || CHARACTER.align;
@@ -4223,6 +4222,19 @@ function populateCharacterFromFields() {
     const mod   = document.getElementById('f-'+ab+'mod')?.value;
     if (!isNaN(score)) CHARACTER[ab] = [score, mod || '+0'];
   });
+
+  // Build classLvl display string.
+  // If CHARACTER.classes (schema v2 array) is loaded from Firestore, use it.
+  // Otherwise fall back to the f-class text field (schema v1 / f-* compat).
+  if (Array.isArray(CHARACTER.classes) && CHARACTER.classes.length > 0) {
+    CHARACTER.classLvl = CHARACTER.classes.map(c => c.name + ' ' + c.level).join(' / ');
+    CHARACTER.totalLevel = CHARACTER.classes.reduce((s, c) => s + (c.level || 0), 0);
+  } else {
+    const raw = document.getElementById('f-class')?.value || CHARACTER.classLvl || '';
+    CHARACTER.classLvl  = raw;
+    CHARACTER.totalLevel = parseInt(raw.match(/\d+$/)?.[0]) || 1;
+  }
+
   window.curHp = CHARACTER.curHp;
   window.maxHp = CHARACTER.maxHp;
 }
@@ -4351,10 +4363,13 @@ function calcProfBonus(level) {
 }
 
 function updateProfBonus() {
-  // Read level from the Class & Level field (e.g. "Fighter 11" → 11)
-  const classRaw = document.getElementById('f-class')?.value || document.querySelector('.sheet-meta-val')?.value || document.querySelector('.sheet-meta-val')?.textContent || '';
-  const level    = parseInt(classRaw.match(/\d+$/)?.[0]) || 1;
-  const prof     = calcProfBonus(level);
+  // Use totalLevel from multiclass array if available, else parse f-class field
+  let level = CHARACTER.totalLevel || 0;
+  if (!level) {
+    const classRaw = document.getElementById('f-class')?.value || '';
+    level = parseInt(classRaw.match(/\d+$/)?.[0]) || 1;
+  }
+  const prof = calcProfBonus(level);
 
   // Update header display
   const display = document.getElementById('prof-bonus-display');
@@ -4715,16 +4730,50 @@ function editAttunement(i) {
 }
 
 // ── CLASS RESOURCES ───────────────────────────────────────
-const CLASS_RESOURCES = [
-  { id: 'superiority-dice', name: 'Superiority Dice', total: 4, used: 0, die: 'd8',  recover: 'Short rest' },
-  { id: 'second-wind',      name: 'Second Wind',      total: 1, used: 0, die: null,  recover: 'Short rest' },
-  { id: 'action-surge',     name: 'Action Surge',     total: 1, used: 0, die: null,  recover: 'Short rest' },
+// CLASS_RESOURCES is loaded from Firestore subcollection (see loadResources())
+// Default seed used only when the subcollection is empty on first run
+const DEFAULT_CLASS_RESOURCES = [
+  { id: 'superiority-dice', name: 'Superiority Dice', total: 4, used: 0, dieType: 'd8',  recharge: 'Short rest', category: 'maneuver',  sourceClass: 'Fighter', custom: false, sortOrder: 0 },
+  { id: 'second-wind',      name: 'Second Wind',      total: 1, used: 0, dieType: null,  recharge: 'Short rest', category: 'action',    sourceClass: 'Fighter', custom: false, sortOrder: 1 },
+  { id: 'action-surge',     name: 'Action Surge',     total: 1, used: 0, dieType: null,  recharge: 'Short rest', category: 'action',    sourceClass: 'Fighter', custom: false, sortOrder: 2 },
 ];
+let CLASS_RESOURCES = DEFAULT_CLASS_RESOURCES.map(r => ({ ...r }));
 
 function getResource(id) { return CLASS_RESOURCES.find(r => r.id === id); }
 function isResourceExhausted(id) { const r = getResource(id); return r ? r.used >= r.total : false; }
 
+async function loadResources() {
+  try {
+    const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('resources')
+      .orderBy('sortOrder')
+      .get();
+    if (!snap.empty) {
+      CLASS_RESOURCES = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    // Ensure used is always a number
+    CLASS_RESOURCES.forEach(r => { if (typeof r.used !== 'number') r.used = 0; });
+    renderResources();
+    syncAbilityChips();
+  } catch(e) {
+    // subcollection may not exist yet — keep defaults
+  }
+}
+
+async function saveResource(id) {
+  const r = getResource(id);
+  if (!r) return;
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('resources').doc(id)
+      .set({ ...r, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  } catch(e) { /* non-critical */ }
+}
+
 function saveResourcesUsed() {
+  // Legacy flat-doc fallback — also update individual subcollection docs
   const usedMap = {};
   CLASS_RESOURCES.forEach(r => { usedMap[r.id] = r.used; });
   try {
@@ -4740,6 +4789,7 @@ function spendResource(id) {
   r.used = Math.min(r.total, r.used + 1);
   renderResources();
   syncAbilityChips();
+  saveResource(id);
   saveResourcesUsed();
 }
 
@@ -4752,10 +4802,11 @@ function renderResources() {
       `<div class="res-pip ${i < r.used ? 'filled' : ''}"
         onclick="toggleResource(${ri}, ${i})"></div>`
     ).join('');
+    const dieName = r.dieType || r.die || null;
     return `<div class="res-block ${exhausted ? 'res-exhausted' : ''}">
-      <span class="res-name">${r.name}${r.die ? ' (' + r.die + ')' : ''}</span>
+      <span class="res-name">${r.name}${dieName ? ' (' + dieName + ')' : ''}</span>
       <div class="res-pips">${pips}</div>
-      <span class="res-recover">${r.recover}</span>
+      <span class="res-recover">${r.recharge || r.recover || ''}</span>
     </div>`;
   }).join('');
 }
@@ -4765,7 +4816,102 @@ function toggleResource(ri, i) {
   r.used = (i < r.used) ? i : i + 1;
   renderResources();
   syncAbilityChips();
+  saveResource(r.id);
   saveResourcesUsed();
+}
+
+// ── SPELL SLOTS ───────────────────────────────────────────────
+// Spell slot state lives on CHARACTER.spellcasting (loaded from Firestore)
+// and falls back to zero if the character isn't a caster.
+function renderSpellSlots() {
+  const section  = document.getElementById('spell-slot-section');
+  const container= document.getElementById('spell-slots');
+  if (!container) return;
+
+  const sc = CHARACTER.spellcasting || {};
+  const total = sc.slotsTotal || {};
+  const used  = sc.slotsUsed  || {};
+  const hasPact = Array.isArray(CHARACTER.classes) &&
+    CHARACTER.classes.some(c => (c.name || '').toLowerCase() === 'warlock');
+
+  // Check if there are any spell slots at all
+  const hasSlots   = Object.keys(total).some(l => (total[l] || 0) > 0);
+  const hasPactSlot= hasPact && (sc.pactSlotsTotal || 0) > 0;
+
+  if (!hasSlots && !hasPactSlot) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+  if (section) section.style.display = '';
+
+  let html = '';
+
+  // Standard spell slots (1–9)
+  if (hasSlots) {
+    for (let lvl = 1; lvl <= 9; lvl++) {
+      const t = total[lvl] || total[String(lvl)] || 0;
+      if (!t) continue;
+      const u = used[lvl] || used[String(lvl)] || 0;
+      const pips = Array.from({length: t}, (_, i) =>
+        `<div class="res-pip ${i < u ? 'filled' : ''}"
+          onclick="toggleSpellSlot(${lvl}, ${i})"></div>`
+      ).join('');
+      html += `<div class="res-block">
+        <span class="res-name">Level ${lvl}</span>
+        <div class="res-pips">${pips}</div>
+        <span class="res-recover">Long rest</span>
+      </div>`;
+    }
+  }
+
+  // Warlock pact slots (short-rest recharge)
+  if (hasPactSlot) {
+    const pt = sc.pactSlotsTotal || 0;
+    const pu = sc.pactSlotsUsed  || 0;
+    const pl = sc.pactSlotLevel  || 1;
+    const pips = Array.from({length: pt}, (_, i) =>
+      `<div class="res-pip ${i < pu ? 'filled' : ''}"
+        onclick="togglePactSlot(${i})"></div>`
+    ).join('');
+    html += `<div class="res-block">
+      <span class="res-name">Pact Magic (L${pl})</span>
+      <div class="res-pips">${pips}</div>
+      <span class="res-recover">Short rest</span>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+async function _saveSpellcasting() {
+  if (!CHARACTER.spellcasting) return;
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .update({ spellcasting: CHARACTER.spellcasting });
+  } catch(e) { /* non-critical */ }
+}
+
+function toggleSpellSlot(level, idx) {
+  if (!CHARACTER.spellcasting) CHARACTER.spellcasting = {};
+  const sc = CHARACTER.spellcasting;
+  if (!sc.slotsUsed) sc.slotsUsed = {};
+  const key = String(level);
+  const current = sc.slotsUsed[key] || 0;
+  const total   = (sc.slotsTotal || {})[key] || 0;
+  sc.slotsUsed[key] = (idx < current) ? idx : Math.min(idx + 1, total);
+  renderSpellSlots();
+  _saveSpellcasting();
+}
+
+function togglePactSlot(idx) {
+  if (!CHARACTER.spellcasting) CHARACTER.spellcasting = {};
+  const sc = CHARACTER.spellcasting;
+  const current = sc.pactSlotsUsed  || 0;
+  const total   = sc.pactSlotsTotal || 0;
+  sc.pactSlotsUsed = (idx < current) ? idx : Math.min(idx + 1, total);
+  renderSpellSlots();
+  _saveSpellcasting();
 }
 
 function syncAbilityChips() {
@@ -6603,16 +6749,39 @@ function toggleHistory() {
 
 
 // ── REST SYSTEM ───────────────────────────────────────────
+function _resourceRechargesOn(r, type) {
+  const key = (r.recharge || r.recover || '').toLowerCase();
+  if (type === 'long') return true;  // long rest recharges everything
+  return key.includes('short');      // short rest only recharges short-rest resources
+}
+
 function handleRest(type, restRef) {
   if (type === 'short') {
     CLASS_RESOURCES.forEach(r => {
-      if (r.recover === 'Short rest' || r.recover === 'Short or Long rest') r.used = 0;
+      if (_resourceRechargesOn(r, 'short')) r.used = 0;
     });
+    // Pact slots recharge on short rest
+    if (CHARACTER.spellcasting && CHARACTER.spellcasting.pactSlotsTotal) {
+      CHARACTER.spellcasting.pactSlotsUsed = 0;
+      _saveSpellcasting();
+    }
     renderResources();
+    renderSpellSlots();
     syncAbilityChips();
+    saveResourcesUsed();
     showShortRestModal();
   } else if (type === 'long') {
     CLASS_RESOURCES.forEach(r => { r.used = 0; });
+    // Reset spell slots
+    if (CHARACTER.spellcasting) {
+      const sc = CHARACTER.spellcasting;
+      if (sc.slotsUsed)  { Object.keys(sc.slotsUsed).forEach(k  => { sc.slotsUsed[k]  = 0; }); }
+      // Pact slots recharge on SHORT rest, so don't reset them on long rest here —
+      // they are already reset by the short-rest branch above if included.
+      // But per RAW, pact slots also recharge on long rest.
+      sc.pactSlotsUsed = 0;
+      _saveSpellcasting();
+    }
     _activeConditions.clear();
     renderConditions();
     _exhaustion = Math.max(0, _exhaustion - 1);
@@ -6624,6 +6793,7 @@ function handleRest(type, restRef) {
     renderSpellSlots();
     renderResources();
     syncAbilityChips();
+    saveResourcesUsed();
     showLongRestNotification();
   }
   restRef.update({ acknowledged: firebase.firestore.FieldValue.arrayUnion(PLAYER_ID) });
@@ -6752,9 +6922,16 @@ function loadFromFirestore() {
     // Populate visible header name input
     const nameInp = document.getElementById('sheet-name-input');
     if (nameInp && data['f-name']) nameInp.value = data['f-name'];
-    // Populate CHARACTER from fields and re-render
+    // Load schema v2 structured fields into CHARACTER if present
+    if (Array.isArray(data.classes) && data.classes.length > 0) {
+      CHARACTER.classes    = data.classes;
+      CHARACTER.totalLevel = data.totalLevel || data.classes.reduce((s, c) => s + (c.level || 0), 0);
+    }
+    if (data.spellcasting) CHARACTER.spellcasting = data.spellcasting;
+    // Populate CHARACTER from f-* fields and re-render
     populateCharacterFromFields();
     renderCharacterSheet();
+    renderSpellSlots();
     // Force-populate curHp/maxHp from fields (updateHp reads window.curHp/maxHp)
     window.curHp = parseInt(data['f-curhp']) || window.curHp || 0;
     window.maxHp = parseInt(data['f-maxhp']) || window.maxHp || 0;
@@ -6794,11 +6971,15 @@ function loadFromFirestore() {
       if (notesTa && !notesTa.value) notesTa.value = data['f-notes'] || '';
       if (typeof updateNotesPreview === 'function') updateNotesPreview();
     }
-    // Restore resource used counts
+    // Restore resource used counts from flat doc (legacy fallback for resources
+    // not yet migrated to the subcollection)
     if (data.resourcesUsed) {
-      CLASS_RESOURCES.forEach(r => { r.used = data.resourcesUsed[r.id] ?? 0; });
-      renderResources();
-      syncAbilityChips();
+      let changed = false;
+      CLASS_RESOURCES.forEach(r => {
+        const legacy = data.resourcesUsed[r.id];
+        if (typeof legacy === 'number' && r.used !== legacy) { r.used = legacy; changed = true; }
+      });
+      if (changed) { renderResources(); syncAbilityChips(); }
     }
     // Load Firestore preferences on first snapshot (overrides localStorage)
     if (!_prefsLoaded) {
@@ -6853,6 +7034,7 @@ function recordEdit(fieldId, oldVal, newVal) {
 document.addEventListener('DOMContentLoaded', () => {
   loadFromFirestore();
   loadInventory();
+  loadResources();
   listenForImportStatus();
   // Wire paste textarea to auto-validate as user types
   const pasteInput = document.getElementById('import-paste-input');
