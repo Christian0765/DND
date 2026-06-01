@@ -653,6 +653,15 @@
       <div id="request-list" style="margin-top:12px;"></div>
     </div>
 
+    <div class="dm-section">
+      <div class="dm-section-title">Call a Rest</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="dm-btn" onclick="callRest('short')">⏱ Short Rest</button>
+        <button class="dm-btn" style="color:var(--border-light);border-color:var(--border);" onclick="callRest('long')">🌙 Long Rest</button>
+      </div>
+      <div style="margin-top:8px;font-size:0.75rem;font-style:italic;color:var(--border-light);" id="rest-status"></div>
+    </div>
+
   </div>
 </div>
 
@@ -980,6 +989,27 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   } catch(e) { /* Firebase unavailable — cards show static defaults */ }
 })();
+
+async function callRest(type) {
+  const label = type === 'short' ? 'Short' : 'Long';
+  if (!confirm('Call a ' + label + ' Rest for the whole party?')) return;
+  const CAMPAIGN_ID_VAL = 'campaign1';
+  try {
+    await firebase.firestore()
+      .collection('campaigns').doc(CAMPAIGN_ID_VAL)
+      .collection('rest').doc('state')
+      .set({
+        type,
+        triggeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+        triggeredBy: 'dm',
+        acknowledged: []
+      });
+    document.getElementById('rest-status').textContent = label + ' rest called — waiting for players...';
+  } catch(e) {
+    console.error('Rest error:', e);
+    document.getElementById('rest-status').textContent = 'Error: ' + e.message;
+  }
+}
 </script>
 </body>
 </html>
