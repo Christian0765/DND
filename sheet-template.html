@@ -3925,7 +3925,7 @@ function renderProficiencies() {
 }
 
 // ── COSMETIC PERSISTENCE ──────────────────────────────────
-const COSMETIC_KEY = 'dnd-sheet-cosmetics-' + PLAYER_ID;
+const COSMETIC_KEY = 'dnd-sheet-cosmetics-' + (new URLSearchParams(window.location.search).get('player') || 'player1');
 
 function saveCosmetics() {
   const s  = document.documentElement.style;
