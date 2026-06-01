@@ -3965,46 +3965,49 @@ function saveCosmetics() {
   };
 
   try { localStorage.setItem(COSMETIC_KEY, JSON.stringify(data)); } catch(e) {}
+  // Sync to Firestore so preferences follow the player across devices
+  try {
+    if (typeof db !== 'undefined' && typeof CAMPAIGN_ID !== 'undefined') {
+      db.collection('campaigns').doc(CAMPAIGN_ID)
+        .collection('characters').doc(PLAYER_ID)
+        .collection('preferences').doc('ui')
+        .set({ ...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    }
+  } catch(e) { /* non-critical */ }
 }
 
-function loadCosmetics() {
-  let data;
-  try { data = JSON.parse(localStorage.getItem(COSMETIC_KEY) || 'null'); } catch(e) {}
+function applyCosmetics(data) {
   if (!data) return;
-
-  // Restore CSS variables
   const s = document.documentElement.style;
   if (data.vars) {
     Object.entries(data.vars).forEach(([v, val]) => s.setProperty(v, val));
   }
-
-  // Restore JS state
-  if (data.displayMode)    _displayMode    = data.displayMode;
-  if (data.currentTheme)   _currentTheme   = data.currentTheme;
-  if (data.activePresetId) _activePresetId = data.activePresetId;
-  if (data.customHex)      _customHex      = data.customHex;
-  if (data.outerBgHex)     _outerBgHex     = data.outerBgHex;
-  if (data.sheetBgHex)     _sheetBgHex     = data.sheetBgHex;
+  if (data.displayMode)           _displayMode           = data.displayMode;
+  if (data.currentTheme)          _currentTheme          = data.currentTheme;
+  if (data.activePresetId)        _activePresetId        = data.activePresetId;
+  if (data.customHex)             _customHex             = data.customHex;
+  if (data.outerBgHex)            _outerBgHex            = data.outerBgHex;
+  if (data.sheetBgHex)            _sheetBgHex            = data.sheetBgHex;
   if (data.myThemes)              _myThemes              = data.myThemes;
   if (data.portraitSrc)           _portraitSrc           = data.portraitSrc;
   if (data.sectionModeOverrides)  _sectionModeOverrides  = data.sectionModeOverrides;
-
-  // Apply body class for dark mode
   document.body.classList.toggle('dark-body', _currentTheme === 'dark');
-
-  // Apply portrait
   if (_portraitSrc) {
     const portrait = document.getElementById('sheet-portrait');
     if (portrait) portrait.src = _portraitSrc;
     const prev = document.getElementById('cust-portrait-preview');
     if (prev) prev.innerHTML = `<img src="${_portraitSrc}" alt="portrait">`;
   }
-
-  // Apply display mode class
   document.body.classList.remove('mode-modern','mode-traditional');
   document.body.classList.add('mode-' + _displayMode);
   const modeBtn = document.getElementById('display-mode-btn');
   if (modeBtn) modeBtn.textContent = _displayMode === 'modern' ? '◈ Modern' : '☰ Traditional';
+}
+
+function loadCosmetics() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(COSMETIC_KEY) || 'null'); } catch(e) {}
+  applyCosmetics(data);
 }
 
 function clearCosmetics() {
@@ -4680,12 +4683,23 @@ const CLASS_RESOURCES = [
 function getResource(id) { return CLASS_RESOURCES.find(r => r.id === id); }
 function isResourceExhausted(id) { const r = getResource(id); return r ? r.used >= r.total : false; }
 
+function saveResourcesUsed() {
+  const usedMap = {};
+  CLASS_RESOURCES.forEach(r => { usedMap[r.id] = r.used; });
+  try {
+    db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .update({ resourcesUsed: usedMap });
+  } catch(e) { /* non-critical */ }
+}
+
 function spendResource(id) {
   const r = getResource(id);
   if (!r) return;
   r.used = Math.min(r.total, r.used + 1);
   renderResources();
   syncAbilityChips();
+  saveResourcesUsed();
 }
 
 function renderResources() {
@@ -4710,6 +4724,7 @@ function toggleResource(ri, i) {
   r.used = (i < r.used) ? i : i + 1;
   renderResources();
   syncAbilityChips();
+  saveResourcesUsed();
 }
 
 function syncAbilityChips() {
@@ -6160,7 +6175,7 @@ function saveEdit(section) {
 }
 
 // ── ITEMS ─────────────────────────────────────────────────
-const ITEMS = [
+const DEFAULT_ITEMS = [
   { id: 'arrows',    name: 'Arrow',             icon: '🏹', qty: 20, category: 'resources', desc: 'Standard arrows for a longbow or shortbow.' },
   { id: 'backpack',  name: 'Backpack',           icon: '🎒', qty: 1,  category: 'misc',      desc: 'Holds 30 lbs of gear. Counts as a container.' },
   { id: 'bedroll',   name: 'Bedroll',            icon: '🛏',  qty: 1,  category: 'misc',      desc: 'Provides a comfortable rest while camping.' },
@@ -6175,6 +6190,52 @@ const ITEMS = [
   { id: 'club',      name: 'Club',               icon: '🪵', qty: 1,  category: 'weapons',   desc: '1d4 bludgeoning. Light, simple weapon.' },
   { id: 'scimitar',  name: 'Scimitar',           icon: '🗡',  qty: 1,  category: 'weapons',   desc: '1d6 slashing. Finesse, light.' },
 ];
+let ITEMS = DEFAULT_ITEMS.map(i => ({ ...i })); // mutable copy; overwritten by Firestore
+
+async function loadInventory() {
+  try {
+    const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('inventory').get();
+    if (snap.empty) {
+      await seedInventory();
+    } else {
+      ITEMS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderItems();
+    }
+  } catch(e) { console.warn('loadInventory failed:', e); }
+}
+
+async function seedInventory() {
+  const batch = db.batch();
+  const ref = db.collection('campaigns').doc(CAMPAIGN_ID)
+    .collection('characters').doc(PLAYER_ID).collection('inventory');
+  DEFAULT_ITEMS.forEach(item => {
+    batch.set(ref.doc(item.id), { ...item, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  });
+  await batch.commit();
+  ITEMS = DEFAULT_ITEMS.map(i => ({ ...i }));
+  renderItems();
+}
+
+async function saveInventoryItem(item) {
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('inventory').doc(item.id)
+      .set({ ...item, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  } catch(e) { console.warn('saveInventoryItem failed:', e); }
+}
+
+async function deleteInventoryItem(itemId) {
+  ITEMS = ITEMS.filter(i => i.id !== itemId);
+  renderItems();
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('inventory').doc(itemId).delete();
+  } catch(e) { console.warn('deleteInventoryItem failed:', e); }
+}
 
 const CATEGORY_ICONS = {
   weapons: '⚔️', armor: '🛡️', resources: '📦',
@@ -6303,6 +6364,7 @@ function adjustItemQty(delta) {
   item.qty = Math.max(0, item.qty + delta);
   document.getElementById('im-qty-display').textContent = item.qty;
   renderItems();
+  saveInventoryItem(item);
 }
 
 function setItemQty() {
@@ -6313,15 +6375,15 @@ function setItemQty() {
   document.getElementById('im-qty-display').textContent = item.qty;
   document.getElementById('im-qty-input').value = '';
   renderItems();
+  saveInventoryItem(item);
 }
 
 function removeItem() {
-  const idx = ITEMS.findIndex(i => i.id === _activeItem);
-  if (idx === -1) return;
-  if (!confirm('Remove ' + ITEMS[idx].name + ' from inventory?')) return;
-  ITEMS.splice(idx, 1);
+  const item = ITEMS.find(i => i.id === _activeItem);
+  if (!item) return;
+  if (!confirm('Remove ' + item.name + ' from inventory?')) return;
   closeItem();
-  renderItems();
+  deleteInventoryItem(item.id);
 }
 
 function saveItemNote() {
@@ -6333,6 +6395,7 @@ function saveItemNote() {
     : item.desc;
   closeItem();
   renderItems();
+  saveInventoryItem(item);
 }
 
 // ── ABILITY MODAL ──────────────────────────────────────────
@@ -6585,7 +6648,8 @@ CONDITIONS.forEach(c => {
 <script src="firebase-config.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
-const PLAYER_ID = params.get('player') || 'player1';
+const PLAYER_ID  = params.get('player') || 'player1';
+const CAMPAIGN_ID = params.get('c') || 'campaign1';
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -6620,8 +6684,10 @@ async function saveToFirestore() {
   // Sync name from visible input (uses separate id from f-name hidden field)
   const nameInp = document.getElementById('sheet-name-input');
   if (nameInp) data['f-name'] = nameInp.value || data['f-name'] || '';
+  data.schemaVersion = 1;
   try {
-    await db.collection('characters').doc(PLAYER_ID).set(data, { merge: true });
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID).set(data, { merge: true });
     setStatus('ok', 'Saved ✓');
     setTimeout(() => setStatus('ok', 'Live ✓'), 2000);
   } catch (e) {
@@ -6629,9 +6695,11 @@ async function saveToFirestore() {
   }
 }
 
+let _prefsLoaded = false;
 function loadFromFirestore() {
   setStatus('saving', 'Connecting...');
-  db.collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+  db.collection('campaigns').doc(CAMPAIGN_ID)
+    .collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
     if (!doc.exists) { setStatus('ok', 'Ready'); return; }
     const data = doc.data();
     FIELDS.forEach(id => {
@@ -6685,14 +6753,27 @@ function loadFromFirestore() {
       if (notesTa && !notesTa.value) notesTa.value = data['f-notes'] || '';
       if (typeof updateNotesPreview === 'function') updateNotesPreview();
     }
+    // Restore resource used counts
+    if (data.resourcesUsed) {
+      CLASS_RESOURCES.forEach(r => { r.used = data.resourcesUsed[r.id] ?? 0; });
+      renderResources();
+      syncAbilityChips();
+    }
+    // Load Firestore preferences on first snapshot (overrides localStorage)
+    if (!_prefsLoaded) {
+      _prefsLoaded = true;
+      db.collection('campaigns').doc(CAMPAIGN_ID)
+        .collection('characters').doc(PLAYER_ID)
+        .collection('preferences').doc('ui').get()
+        .then(snap => { if (snap.exists) applyCosmetics(snap.data()); })
+        .catch(() => {});
+    }
     setStatus('ok', 'Live ✓');
   }, () => setStatus('error', 'Connection error'));
 
   // Listen for DM-triggered rests
-  db.collection('characters').doc(PLAYER_ID);
-  const CAMPAIGN_ID_VAL = 'campaign1';
   try {
-    db.collection('campaigns').doc(CAMPAIGN_ID_VAL)
+    db.collection('campaigns').doc(CAMPAIGN_ID)
       .collection('rest').doc('state')
       .onSnapshot(doc => {
         if (!doc.exists) return;
@@ -6730,6 +6811,7 @@ function recordEdit(fieldId, oldVal, newVal) {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadFromFirestore();
+  loadInventory();
 });
 
 let saveTimer;
