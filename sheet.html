@@ -6644,6 +6644,7 @@ CONDITIONS.forEach(c => {
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
@@ -6809,7 +6810,8 @@ function recordEdit(fieldId, oldVal, newVal) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) { window.location.href = 'home.html'; return; }
   loadFromFirestore();
   loadInventory();
 });
