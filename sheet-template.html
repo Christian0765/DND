@@ -4237,6 +4237,26 @@ function populateCharacterFromFields() {
 
   window.curHp = CHARACTER.curHp;
   window.maxHp = CHARACTER.maxHp;
+
+  // Sync visible header immediately so the sheet header is never blank
+  const _nameInp = document.getElementById('sheet-name-input');
+  if (_nameInp && CHARACTER.name) _nameInp.value = CHARACTER.name;
+  const _metaUpdates = {
+    'Class & Level': CHARACTER.classLvl,
+    'Race': CHARACTER.race,
+    'Background': CHARACTER.bg,
+    'Alignment': CHARACTER.align,
+    'Player': CHARACTER.player,
+  };
+  document.querySelectorAll('.sheet-meta-item').forEach(item => {
+    const lbl = item.querySelector('.sheet-meta-label')?.textContent?.trim();
+    const valEl = item.querySelector('.sheet-meta-val');
+    if (!lbl || !valEl || _metaUpdates[lbl] === undefined || valEl.id === 'prof-bonus-display') return;
+    if (valEl.tagName === 'INPUT') valEl.value = _metaUpdates[lbl] || '';
+    else valEl.textContent = _metaUpdates[lbl] || '';
+  });
+  const _subEl = document.getElementById('sheet-subtitle');
+  if (_subEl) _subEl.textContent = [CHARACTER.classLvl, CHARACTER.race, CHARACTER.align].filter(Boolean).join(' · ');
 }
 
 function renderCharacterSheet() {
@@ -7202,62 +7222,83 @@ function loadFromFirestore() {
       return; // migrateToV2 writes a new snapshot which re-triggers this callback
     }
     // ── v2 load path ──────────────────────────────────────
-    // Backfill f-* hidden inputs from v2 structured fields so the rest of the
-    // render pipeline (which reads f-* elements) continues to work seamlessly.
-    // f-* fields in the DB are preserved until manually cleaned up (Step 4).
-    if (data.name     !== undefined) { const el = document.getElementById('f-name');    if (el) el.value = data.name;     }
-    if (data.race     !== undefined) { const el = document.getElementById('f-race');    if (el) el.value = data.race;     }
-    if (data.background!==undefined) { const el = document.getElementById('f-bg');      if (el) el.value = data.background; }
-    if (data.alignment!== undefined) { const el = document.getElementById('f-align');   if (el) el.value = data.alignment;}
-    if (data.player   !== undefined) { const el = document.getElementById('f-player');  if (el) el.value = data.player;   }
-    if (data.profBonus!== undefined) { const el = document.getElementById('f-prof');    if (el) el.value = data.profBonus;}
-    if (data.ac       !== undefined) { const el = document.getElementById('f-ac');      if (el) el.value = data.ac;       }
-    if (data.initiative!==undefined) { const el = document.getElementById('f-init');    if (el) el.value = data.initiative;}
-    if (data.speed    !== undefined) { const el = document.getElementById('f-speed');   if (el) el.value = data.speed;    }
-    if (data.curHp    !== undefined) { const el = document.getElementById('f-curhp');   if (el) el.value = data.curHp;    }
-    if (data.maxHp    !== undefined) { const el = document.getElementById('f-maxhp');   if (el) el.value = data.maxHp;    }
-    if (data.passivePerception!==undefined) { const el=document.getElementById('f-pp'); if (el) el.value=data.passivePerception; }
-    if (data.currency !== undefined) { const el = document.getElementById('f-gold');    if (el) el.value = data.currency.gold || 0; }
-    ['str','dex','con','int','wis','cha'].forEach(ab => {
-      if (data[ab] !== undefined) {
-        const scoreEl = document.getElementById('f-'+ab);    if (scoreEl) scoreEl.value = data[ab];
-        const modKey  = ab+'Mod';
-        const modEl   = document.getElementById('f-'+ab+'mod');
-        if (modEl && data[modKey] !== undefined) modEl.value = data[modKey] >= 0 ? '+'+data[modKey] : String(data[modKey]);
-      }
-    });
-    // Lore fields
-    const LORE_MAP_V2 = [
-      ['traits','f-traits','view-traits'], ['ideals','f-ideals','view-ideals'],
-      ['bonds','f-bonds','view-bonds'],    ['flaws','f-flaws','view-flaws'],
-      ['backstory','f-backstory','view-backstory'],
-    ];
-    LORE_MAP_V2.forEach(([key, fid, vid]) => {
-      const val = data[key] ?? data[fid];
-      if (val !== undefined) {
-        const fEl = document.getElementById(fid); if (fEl) fEl.value = val;
-        const vEl = document.getElementById(vid);  if (vEl) vEl.textContent = val || '—';
-      }
-    });
-    // Also read any remaining f-* fields the v2 data hasn't covered yet
-    FIELDS.forEach(id => {
-      if (data[id] !== undefined) {
-        const el = document.getElementById(id);
-        if (el && !el.value) el.value = data[id]; // don't overwrite v2-populated values
-      }
-    });
-    // Populate visible header name input
-    const nameInp = document.getElementById('sheet-name-input');
-    if (nameInp) nameInp.value = data.name || data['f-name'] || '';
-    // Load schema v2 structured fields into CHARACTER
+    // Comprehensive backfill of f-* inputs from v2 structured fields.
+    // Uses data.x || data['f-x'] fallback so partially-migrated docs work too.
     if (Array.isArray(data.classes) && data.classes.length > 0) {
       CHARACTER.classes    = data.classes;
       CHARACTER.totalLevel = data.totalLevel || data.classes.reduce((s, c) => s + (c.level || 0), 0);
-      // Backfill f-class for any code still reading it
       const fcEl = document.getElementById('f-class');
       if (fcEl) fcEl.value = data.classes.map(c => c.name + ' ' + c.level).join(' / ');
     }
     if (data.spellcasting) CHARACTER.spellcasting = data.spellcasting;
+    const _directMap = {
+      'f-name':     data.name       || data['f-name']     || '',
+      'f-race':     data.race       || data['f-race']     || '',
+      'f-bg':       data.background || data['f-bg']       || '',
+      'f-align':    data.alignment  || data['f-align']    || '',
+      'f-player':   data.player     || data['f-player']   || '',
+      'f-prof':     data.profBonus  !== undefined ? String(data.profBonus)         : (data['f-prof']   || ''),
+      'f-ac':       data.ac         !== undefined ? String(data.ac)                : (data['f-ac']     || ''),
+      'f-init':     data.initiative !== undefined ? String(data.initiative)        : (data['f-init']   || ''),
+      'f-speed':    data.speed      !== undefined ? String(data.speed)             : (data['f-speed']  || ''),
+      'f-curhp':    data.curHp      !== undefined ? String(data.curHp)             : (data['f-curhp']  || ''),
+      'f-maxhp':    data.maxHp      !== undefined ? String(data.maxHp)             : (data['f-maxhp']  || ''),
+      'f-pp':       data.passivePerception !== undefined ? String(data.passivePerception) : (data['f-pp'] || ''),
+      'f-gold':     data.currency?.gold !== undefined ? String(data.currency.gold) : (data['f-gold']   || ''),
+      'f-traits':   data.traits    || data['f-traits']    || '',
+      'f-ideals':   data.ideals    || data['f-ideals']    || '',
+      'f-bonds':    data.bonds     || data['f-bonds']     || '',
+      'f-flaws':    data.flaws     || data['f-flaws']     || '',
+      'f-backstory':data.backstory || data['f-backstory'] || '',
+    };
+    Object.entries(_directMap).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+    // Ability scores — prefer v2 fields, fall back to f-* strings
+    ['str','dex','con','int','wis','cha'].forEach(ab => {
+      const score = data[ab] !== undefined ? data[ab] : parseInt(data['f-'+ab]);
+      const modVal = data[ab+'Mod'] !== undefined ? data[ab+'Mod'] : null;
+      const scoreEl = document.getElementById('f-'+ab);
+      if (scoreEl && score !== undefined && !isNaN(score)) scoreEl.value = score;
+      const modEl = document.getElementById('f-'+ab+'mod');
+      if (modEl) {
+        if (modVal !== null) modEl.value = modVal >= 0 ? '+'+modVal : String(modVal);
+        else if (data['f-'+ab+'mod']) modEl.value = data['f-'+ab+'mod'];
+      }
+    });
+    // Populate visible header name input directly
+    const nameInp = document.getElementById('sheet-name-input');
+    if (nameInp) nameInp.value = data.name || data['f-name'] || '';
+    // Lore view elements
+    [['traits','f-traits','view-traits'],['ideals','f-ideals','view-ideals'],
+     ['bonds','f-bonds','view-bonds'],['flaws','f-flaws','view-flaws'],
+     ['backstory','f-backstory','view-backstory']].forEach(([key, fid, vid]) => {
+      const val = data[key] ?? data[fid];
+      if (val !== undefined) {
+        const vEl = document.getElementById(vid); if (vEl) vEl.textContent = val || '—';
+      }
+    });
+    // Extra currency display
+    if (data.currency) {
+      const cur = data.currency;
+      const PP = document.getElementById('m-pp'); if (PP) PP.value = cur.platinum || 0;
+      const SP = document.getElementById('m-sp'); if (SP) SP.value = cur.silver   || 0;
+      const CP = document.getElementById('m-cp'); if (CP) CP.value = cur.copper   || 0;
+      const mGp = document.getElementById('m-gp'); if (mGp) mGp.value = cur.gold || 0;
+    } else {
+      try {
+        const extra = JSON.parse(data['f-gold2'] || '{}');
+        ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
+      } catch(e) {}
+    }
+    // Any remaining f-* fields not covered above
+    FIELDS.forEach(id => {
+      if (data[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = data[id];
+      }
+    });
     // Populate CHARACTER from f-* fields and re-render
     populateCharacterFromFields();
     renderCharacterSheet();
@@ -7282,18 +7323,6 @@ function loadFromFirestore() {
     // Money display (prefer v2 currency object)
     const gpVal = (data.currency?.gold !== undefined ? data.currency.gold : parseInt(data['f-gold'])) || 0;
     const gpDisp = document.getElementById('gp-display'); if (gpDisp) gpDisp.textContent = gpVal;
-    const mGp = document.getElementById('m-gp'); if (mGp) mGp.value = gpVal;
-    if (data.currency) {
-      const cur = data.currency;
-      const PP = document.getElementById('m-pp'); if (PP) PP.value = cur.platinum || 0;
-      const SP = document.getElementById('m-sp'); if (SP) SP.value = cur.silver   || 0;
-      const CP = document.getElementById('m-cp'); if (CP) CP.value = cur.copper   || 0;
-    } else {
-      try {
-        const extra = JSON.parse(data['f-gold2'] || '{}');
-        ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
-      } catch(e) {}
-    }
     // Notes current textarea
     if (data['f-notes'] !== undefined) {
       const notesTa = document.getElementById('notes-current-ta');
