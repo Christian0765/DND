@@ -3062,7 +3062,7 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
       </div>
       <div class="money-row gp-row">
         <span class="mr-lbl">GP</span>
-        <input class="mr-inp" id="m-gp" type="number" value="82" min="0" oninput="syncMoney()">
+        <input class="mr-inp" id="m-gp" type="number" value="0" min="0" oninput="syncMoney()">
         <button class="mr-adj" onclick="adj('gp',-1)">−</button>
         <button class="mr-adj" onclick="adj('gp',1)">+</button>
       </div>
@@ -3105,38 +3105,38 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     <div class="lore-block" id="personality-view">
       <div class="lore-row">
         <span class="lore-lbl">Traits</span>
-        <p class="lore-text" id="view-traits">On Smoke — laid back, unbothered, moves at his own pace.</p>
+        <p class="lore-text" id="view-traits">—</p>
       </div>
       <div class="lore-row">
         <span class="lore-lbl">Ideals</span>
-        <p class="lore-text" id="view-ideals">Trust actions, not words. Betrayed by promises once — never again.</p>
+        <p class="lore-text" id="view-ideals">—</p>
       </div>
       <div class="lore-row">
         <span class="lore-lbl">Bonds</span>
-        <p class="lore-text" id="view-bonds">Ash — his daughter's name, carried into every fight.</p>
+        <p class="lore-text" id="view-bonds">—</p>
       </div>
       <div class="lore-row">
         <span class="lore-lbl">Flaws</span>
-        <p class="lore-text" id="view-flaws">Carries deep guilt for those he couldn't save from Dragon Veil.</p>
+        <p class="lore-text" id="view-flaws">—</p>
       </div>
     </div>
 
     <div class="lore-edit-block" id="personality-edit" style="display:none;">
       <div class="trait-row">
         <span class="trait-lbl">Traits</span>
-        <textarea class="sta" id="edit-traits" rows="2">On Smoke — laid back, unbothered, moves at his own pace.</textarea>
+        <textarea class="sta" id="edit-traits" rows="2"></textarea>
       </div>
       <div class="trait-row">
         <span class="trait-lbl">Ideals</span>
-        <textarea class="sta" id="edit-ideals" rows="2">Trust actions, not words. Betrayed by promises once — never again.</textarea>
+        <textarea class="sta" id="edit-ideals" rows="2"></textarea>
       </div>
       <div class="trait-row">
         <span class="trait-lbl">Bonds</span>
-        <textarea class="sta" id="edit-bonds" rows="2">Ash — his daughter's name, carried into every fight.</textarea>
+        <textarea class="sta" id="edit-bonds" rows="2"></textarea>
       </div>
       <div class="trait-row">
         <span class="trait-lbl">Flaws</span>
-        <textarea class="sta" id="edit-flaws" rows="2">Carries deep guilt for those he couldn't save from Dragon Veil.</textarea>
+        <textarea class="sta" id="edit-flaws" rows="2"></textarea>
       </div>
       <div style="text-align:right;margin-top:6px;">
         <button class="edit-btn edit-btn-save" onclick="saveEdit('personality')">✓ Done</button>
@@ -3271,21 +3271,11 @@ input.sheet-meta-val:focus { border-bottom-color: var(--accent); background: rgb
     </div>
 
     <div class="lore-block" id="backstory-view">
-      <p class="lore-text lore-text-long" id="view-backstory">Black Dragonborn from Dragon Veil — distorted by the Giants.
-Weedgrower &amp; tool maker before taking up arms.
-
-Fled as a refugee. Pirates offered safe passage — revealed themselves as enemies. Dracula eliminated their captain, took Skullcrusher as a trophy.
-
-In progress: Learning swordsmithing. Needs 2 more lessons.</p>
+      <p class="lore-text lore-text-long" id="view-backstory">—</p>
     </div>
 
     <div class="lore-edit-block" id="backstory-edit" style="display:none;">
-      <textarea class="sta" id="edit-backstory" rows="7">Black Dragonborn from Dragon Veil — distorted by the Giants.
-Weedgrower & tool maker before taking up arms.
-
-Fled as a refugee. Pirates offered safe passage — revealed themselves as enemies. Dracula eliminated their captain, took Skullcrusher as a trophy.
-
-In progress: Learning swordsmithing. Needs 2 more lessons.</textarea>
+      <textarea class="sta" id="edit-backstory" rows="7"></textarea>
       <div style="text-align:right;margin-top:6px;">
         <button class="edit-btn edit-btn-save" onclick="saveEdit('backstory')">✓ Done</button>
       </div>
@@ -4167,7 +4157,7 @@ const CHARACTER = {
 };
 
 function populateCharacterFromFields() {
-  CHARACTER.name      = document.getElementById('f-name')?.value      || CHARACTER.name;
+  CHARACTER.name      = document.getElementById('sheet-name-input')?.value || document.getElementById('f-name')?.value || CHARACTER.name;
   CHARACTER.classLvl  = document.getElementById('f-class')?.value     || CHARACTER.classLvl;
   CHARACTER.race      = document.getElementById('f-race')?.value      || CHARACTER.race;
   CHARACTER.bg        = document.getElementById('f-bg')?.value        || CHARACTER.bg;
@@ -4334,8 +4324,8 @@ function updateProfBonus() {
 }
 
 // ── HP ──────────────────────────────────────────────────────
-let curHp = CHARACTER?.curHp ?? 125;
-let maxHp = CHARACTER?.maxHp ?? 125;
+let curHp = CHARACTER?.curHp ?? 0;
+let maxHp = CHARACTER?.maxHp ?? 0;
 
 function updateHp() {
   document.getElementById('hp-cur').textContent = curHp;
@@ -6104,14 +6094,14 @@ function escText(str) {
 const LORE_FIELDS = {
   personality: {
     fields: [
-      { editId: 'edit-traits',   viewId: 'view-traits'   },
-      { editId: 'edit-ideals',   viewId: 'view-ideals'   },
-      { editId: 'edit-bonds',    viewId: 'view-bonds'    },
-      { editId: 'edit-flaws',    viewId: 'view-flaws'    },
+      { editId: 'edit-traits',   viewId: 'view-traits',   fieldId: 'f-traits'   },
+      { editId: 'edit-ideals',   viewId: 'view-ideals',   fieldId: 'f-ideals'   },
+      { editId: 'edit-bonds',    viewId: 'view-bonds',    fieldId: 'f-bonds'    },
+      { editId: 'edit-flaws',    viewId: 'view-flaws',    fieldId: 'f-flaws'    },
     ]
   },
   backstory: {
-    fields: [{ editId: 'edit-backstory', viewId: 'view-backstory' }]
+    fields: [{ editId: 'edit-backstory', viewId: 'view-backstory', fieldId: 'f-backstory' }]
   }
 };
 
@@ -6124,13 +6114,15 @@ function toggleEdit(section) {
   if (isEditing) {
     saveEdit(section);
   } else {
-    // Sync textarea values from view before showing
+    // Populate textareas from hidden f-* fields (source of truth)
     const cfg = LORE_FIELDS[section];
     if (cfg) {
       cfg.fields.forEach(f => {
-        const viewP = document.getElementById(f.viewId);
         const editTA = document.getElementById(f.editId);
-        if (viewP && editTA) editTA.value = viewP.textContent;
+        if (editTA) {
+          const hidden = f.fieldId ? document.getElementById(f.fieldId) : null;
+          editTA.value = (hidden ? hidden.value : '') || '';
+        }
       });
     }
     viewEl.style.display = 'none';
@@ -6154,17 +6146,17 @@ function saveEdit(section) {
       if (!viewP || !editTA) return;
       const val = editTA.value.trim();
       viewP.textContent = val || '—';
-      // Style empty notes differently
-      if (section === 'notes') {
-        viewP.style.fontStyle  = val ? 'normal' : 'italic';
-        viewP.style.color      = val ? 'var(--ink)' : 'var(--border-light)';
-        if (!val) viewP.textContent = 'No notes yet this session.';
+      // Write back to hidden f-* field so Firestore saves it
+      if (f.fieldId) {
+        const hidden = document.getElementById(f.fieldId);
+        if (hidden) hidden.value = val;
       }
     });
   }
 
   editEl.style.display = 'none';
   viewEl.style.display = 'block';
+  debouncedSave();
 }
 
 // ── ITEMS ─────────────────────────────────────────────────
@@ -6679,6 +6671,20 @@ function loadFromFirestore() {
       const extra = JSON.parse(data['f-gold2'] || '{}');
       ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
     } catch(e) {}
+    // Lore view elements
+    [['f-traits','view-traits'],['f-ideals','view-ideals'],['f-bonds','view-bonds'],
+     ['f-flaws','view-flaws'],['f-backstory','view-backstory']].forEach(([fid, vid]) => {
+      if (data[fid] !== undefined) {
+        const el = document.getElementById(vid);
+        if (el) el.textContent = data[fid] || '—';
+      }
+    });
+    // Notes current textarea
+    if (data['f-notes'] !== undefined) {
+      const notesTa = document.getElementById('notes-current-ta');
+      if (notesTa && !notesTa.value) notesTa.value = data['f-notes'] || '';
+      if (typeof updateNotesPreview === 'function') updateNotesPreview();
+    }
     setStatus('ok', 'Live ✓');
   }, () => setStatus('error', 'Connection error'));
 
@@ -6711,7 +6717,7 @@ const FIELD_LABELS = {
   'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
   'f-notes':'Session Notes','f-gold2':'Gold (Equipment)'
 };
-const HISTORY_KEY = 'edit-history-player1';
+const HISTORY_KEY = 'edit-history-' + PLAYER_ID;
 const MAX_HISTORY = 100;
 
 function recordEdit(fieldId, oldVal, newVal) {
@@ -6788,7 +6794,8 @@ FIELDS.forEach(id => {
 
     <!-- CURRENT SESSION TEXTAREA -->
     <textarea class="notes-current-ta" id="notes-current-ta"
-      placeholder="Write notes from this session — events, discoveries, important NPCs, loot found..."></textarea>
+      placeholder="Write notes from this session — events, discoveries, important NPCs, loot found..."
+      oninput="(function(ta){const f=document.getElementById('f-notes');if(f)f.value=ta.value;debouncedSave();})(this)"></textarea>
 
     <div class="notes-modal-actions">
       <button class="cta cta-full" onclick="saveCurrentSession()">💾 Save This Session</button>
