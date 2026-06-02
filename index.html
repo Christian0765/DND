@@ -2516,6 +2516,26 @@
         <div class="form-field full"><label>Notes</label><textarea id="cf-notes" placeholder="Any extra notes..."></textarea></div>
       </div>
 
+      <!-- PROFICIENCIES & FEATURES -->
+      <div class="form-section-title">Proficiencies & Features</div>
+      <div class="form-grid">
+        <div class="form-field full"><label>Proficiencies &amp; Languages</label><textarea id="cf-profs" placeholder="Armor, weapons, tools, languages..." style="min-height:60px;"></textarea></div>
+        <div class="form-field full"><label>Features &amp; Abilities</label><textarea id="cf-features" placeholder="Class features, racial traits, feats..." style="min-height:80px;"></textarea></div>
+      </div>
+
+      <!-- WEAPONS & EQUIPMENT -->
+      <div class="form-section-title">Weapons &amp; Equipment</div>
+      <div class="form-grid">
+        <div class="form-field full"><label>Weapons &amp; Attacks</label><textarea id="cf-weapons" placeholder="e.g. Longsword +5 1d8+3 slashing" style="min-height:60px;"></textarea></div>
+        <div class="form-field full"><label>Equipment</label><textarea id="cf-equipment" placeholder="Armor, gear, and other items..." style="min-height:60px;"></textarea></div>
+      </div>
+
+      <!-- BACKSTORY -->
+      <div class="form-section-title">Backstory</div>
+      <div class="form-grid">
+        <div class="form-field full"><label>Backstory</label><textarea id="cf-backstory" placeholder="Your character's history and background..." style="min-height:100px;"></textarea></div>
+      </div>
+
       <div class="modal-submit-row">
         <button class="modal-btn" id="submit-char-btn" onclick="submitCharacter()">Submit for Approval</button>
         <span class="modal-msg" id="submit-msg"></span>
@@ -3788,11 +3808,16 @@ const CF_MAP = {
   'f-wismod':  'cf-wismod',
   'f-cha':     'cf-cha',
   'f-chamod':  'cf-chamod',
-  'f-traits':  'cf-traits',
-  'f-ideals':  'cf-ideals',
-  'f-bonds':   'cf-bonds',
-  'f-flaws':   'cf-flaws',
-  'f-notes':   'cf-notes',
+  'f-traits':    'cf-traits',
+  'f-ideals':    'cf-ideals',
+  'f-bonds':     'cf-bonds',
+  'f-flaws':     'cf-flaws',
+  'f-notes':     'cf-notes',
+  'f-profs':     'cf-profs',
+  'f-features':  'cf-features',
+  'f-weapons':   'cf-weapons',
+  'f-equipment': 'cf-equipment',
+  'f-backstory': 'cf-backstory',
 };
 
 // ─── SHEET IMPORT: CONSTANTS ─────────────────────────────────
@@ -3978,6 +4003,8 @@ async function submitCharacter() {
     'f-wis':    'cf-wis',    'f-wismod': 'cf-wismod', 'f-cha':    'cf-cha',
     'f-chamod': 'cf-chamod', 'f-traits': 'cf-traits', 'f-ideals': 'cf-ideals',
     'f-bonds':  'cf-bonds',  'f-flaws':  'cf-flaws',  'f-notes':  'cf-notes',
+    'f-profs':  'cf-profs',  'f-features': 'cf-features',
+    'f-weapons':'cf-weapons','f-equipment':'cf-equipment','f-backstory':'cf-backstory',
   };
   const filledCount = Object.values(FIELDS_MAP).filter(id => {
     const el = document.getElementById(id);
