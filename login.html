@@ -6,7 +6,12 @@
 <title>Campaign Tracker — Sign In</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
+<script>
+  // Replace these with your values from Supabase Dashboard → Settings → API Keys
+  // The anon key is a public key — safe to commit. Security is enforced by Row Level Security.
+  const SUPABASE_URL      = 'YOUR_PROJECT_URL_HERE';
+  const SUPABASE_ANON_KEY = 'YOUR_PUBLISHABLE_KEY_HERE';
+</script>
 <style>
   :root {
     --parchment: #f5ead2;
