@@ -4684,12 +4684,25 @@ function getResource(id) { return CLASS_RESOURCES.find(r => r.id === id); }
 function isResourceExhausted(id) { const r = getResource(id); return r ? r.used >= r.total : false; }
 
 function saveResourcesUsed() {
+  // Write used counts to individual subcollection docs (primary) and flat map (legacy)
   const usedMap = {};
   CLASS_RESOURCES.forEach(r => { usedMap[r.id] = r.used; });
   try {
     db.collection('campaigns').doc(CAMPAIGN_ID)
       .collection('characters').doc(PLAYER_ID)
       .update({ resourcesUsed: usedMap });
+  } catch(e) { /* non-critical */ }
+  CLASS_RESOURCES.forEach(r => saveResource(r.id));
+}
+
+async function saveResource(id) {
+  const r = getResource(id);
+  if (!r) return;
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('resources').doc(id)
+      .set({ ...r, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   } catch(e) { /* non-critical */ }
 }
 
@@ -4699,6 +4712,7 @@ function spendResource(id) {
   r.used = Math.min(r.total, r.used + 1);
   renderResources();
   syncAbilityChips();
+  saveResource(id);
   saveResourcesUsed();
 }
 
@@ -6685,7 +6699,26 @@ async function saveToFirestore() {
   // Sync name from visible input (uses separate id from f-name hidden field)
   const nameInp = document.getElementById('sheet-name-input');
   if (nameInp) data['f-name'] = nameInp.value || data['f-name'] || '';
-  data.schemaVersion = 1;
+  // Preserve schema version — don't downgrade a migrated document
+  data.schemaVersion = _detectedSchemaVersion > 1 ? _detectedSchemaVersion : 1;
+  // Also write v2 canonical fields alongside f-* for forward compatibility
+  if (nameInp) data.name = nameInp.value || data['f-name'] || '';
+  data.race       = data['f-race']  || '';
+  data.background = data['f-bg']    || '';
+  data.alignment  = data['f-align'] || '';
+  data.traits     = data['f-traits']    || '';
+  data.ideals     = data['f-ideals']    || '';
+  data.bonds      = data['f-bonds']     || '';
+  data.flaws      = data['f-flaws']     || '';
+  data.backstory  = data['f-backstory'] || '';
+  const gpEl = document.getElementById('f-gold');
+  if (gpEl) data.currency = {
+    gold:     parseInt(gpEl.value) || 0,
+    platinum: parseInt(document.getElementById('m-pp')?.value) || 0,
+    silver:   parseInt(document.getElementById('m-sp')?.value) || 0,
+    copper:   parseInt(document.getElementById('m-cp')?.value) || 0,
+    electrum: 0,
+  };
   try {
     await db.collection('campaigns').doc(CAMPAIGN_ID)
       .collection('characters').doc(PLAYER_ID).set(data, { merge: true });
@@ -6697,30 +6730,101 @@ async function saveToFirestore() {
 }
 
 let _prefsLoaded = false;
+let _detectedSchemaVersion = 1;
+
 function loadFromFirestore() {
   setStatus('saving', 'Connecting...');
   db.collection('campaigns').doc(CAMPAIGN_ID)
     .collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
     if (!doc.exists) { setStatus('ok', 'Ready'); return; }
     const data = doc.data();
-    FIELDS.forEach(id => {
-      if (data[id] !== undefined) {
-        const el = document.getElementById(id);
-        if (el) el.value = data[id];
+
+    // ── Schema version gate ───────────────────────────────
+    _detectedSchemaVersion = data.schemaVersion || 1;
+    if (_detectedSchemaVersion < 2) {
+      console.log('[Migration] ' + PLAYER_ID + ' is schema v' + _detectedSchemaVersion + ' — migrating...');
+      migrateToV2(data, doc.ref);
+      return; // migrateToV2 writes a new snapshot which re-triggers this callback
+    }
+
+    // ── v2 load path ──────────────────────────────────────
+    // Backfill f-* inputs from v2 fields so the render pipeline works.
+    if (Array.isArray(data.classes) && data.classes.length > 0) {
+      CHARACTER.classes    = data.classes;
+      CHARACTER.totalLevel = data.totalLevel || data.classes.reduce((s, c) => s + (c.level || 0), 0);
+      const fcEl = document.getElementById('f-class');
+      if (fcEl) fcEl.value = data.classes.map(c => c.name + ' ' + c.level).join(' / ');
+    }
+    if (data.spellcasting) CHARACTER.spellcasting = data.spellcasting;
+    const _directMap = {
+      'f-name':     data.name       || data['f-name']     || '',
+      'f-race':     data.race       || data['f-race']     || '',
+      'f-bg':       data.background || data['f-bg']       || '',
+      'f-align':    data.alignment  || data['f-align']    || '',
+      'f-player':   data.player     || data['f-player']   || '',
+      'f-prof':     data.profBonus  !== undefined ? String(data.profBonus)              : (data['f-prof']  || ''),
+      'f-ac':       data.ac         !== undefined ? String(data.ac)                     : (data['f-ac']    || ''),
+      'f-init':     data.initiative !== undefined ? String(data.initiative)             : (data['f-init']  || ''),
+      'f-speed':    data.speed      !== undefined ? String(data.speed)                  : (data['f-speed'] || ''),
+      'f-curhp':    data.curHp      !== undefined ? String(data.curHp)                  : (data['f-curhp'] || ''),
+      'f-maxhp':    data.maxHp      !== undefined ? String(data.maxHp)                  : (data['f-maxhp'] || ''),
+      'f-pp':       data.passivePerception !== undefined ? String(data.passivePerception) : (data['f-pp']  || ''),
+      'f-gold':     data.currency?.gold !== undefined ? String(data.currency.gold)      : (data['f-gold']  || ''),
+      'f-traits':   data.traits    || data['f-traits']    || '',
+      'f-ideals':   data.ideals    || data['f-ideals']    || '',
+      'f-bonds':    data.bonds     || data['f-bonds']     || '',
+      'f-flaws':    data.flaws     || data['f-flaws']     || '',
+      'f-backstory':data.backstory || data['f-backstory'] || '',
+    };
+    Object.entries(_directMap).forEach(([id, val]) => {
+      const el = document.getElementById(id); if (el) el.value = val;
+    });
+    // Ability scores
+    ['str','dex','con','int','wis','cha'].forEach(ab => {
+      const score = data[ab] !== undefined ? data[ab] : parseInt(data['f-'+ab]);
+      const modVal = data[ab+'Mod'] !== undefined ? data[ab+'Mod'] : null;
+      const scoreEl = document.getElementById('f-'+ab);
+      if (scoreEl && !isNaN(score)) scoreEl.value = score;
+      const modEl = document.getElementById('f-'+ab+'mod');
+      if (modEl) {
+        if (modVal !== null) modEl.value = modVal >= 0 ? '+'+modVal : String(modVal);
+        else if (data['f-'+ab+'mod']) modEl.value = data['f-'+ab+'mod'];
       }
     });
     // Populate visible header name input
     const nameInp = document.getElementById('sheet-name-input');
-    if (nameInp && data['f-name']) nameInp.value = data['f-name'];
-    // Populate CHARACTER from fields and re-render
+    if (nameInp) nameInp.value = data.name || data['f-name'] || '';
+    // Lore view elements
+    [['traits','f-traits','view-traits'],['ideals','f-ideals','view-ideals'],
+     ['bonds','f-bonds','view-bonds'],['flaws','f-flaws','view-flaws'],
+     ['backstory','f-backstory','view-backstory']].forEach(([key, fid, vid]) => {
+      const val = data[key] ?? data[fid];
+      if (val !== undefined) { const el = document.getElementById(vid); if (el) el.textContent = val || '—'; }
+    });
+    // Currency
+    if (data.currency) {
+      const cur = data.currency;
+      const PP = document.getElementById('m-pp'); if (PP) PP.value = cur.platinum || 0;
+      const SP = document.getElementById('m-sp'); if (SP) SP.value = cur.silver   || 0;
+      const CP = document.getElementById('m-cp'); if (CP) CP.value = cur.copper   || 0;
+      const mGp = document.getElementById('m-gp'); if (mGp) mGp.value = cur.gold  || 0;
+    } else {
+      try {
+        const extra = JSON.parse(data['f-gold2'] || '{}');
+        ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
+      } catch(e) {}
+    }
+    // Remaining f-* fields
+    FIELDS.forEach(id => {
+      if (data[id] !== undefined) { const el = document.getElementById(id); if (el && !el.value) el.value = data[id]; }
+    });
+    // Populate CHARACTER from f-* fields and re-render
     populateCharacterFromFields();
     renderCharacterSheet();
-    // Force-populate curHp/maxHp from fields (updateHp reads window.curHp/maxHp)
-    window.curHp = parseInt(data['f-curhp']) || window.curHp || 0;
-    window.maxHp = parseInt(data['f-maxhp']) || window.maxHp || 0;
-    curHp = window.curHp;
-    maxHp = window.maxHp;
-    // Update HP display without triggering a save
+    // Force-populate curHp/maxHp
+    window.curHp = (data.curHp !== undefined ? data.curHp : parseInt(data['f-curhp'])) || window.curHp || 0;
+    window.maxHp = (data.maxHp !== undefined ? data.maxHp : parseInt(data['f-maxhp'])) || window.maxHp || 0;
+    curHp = window.curHp; maxHp = window.maxHp;
     (function() {
       const pct = maxHp > 0 ? Math.max(0, Math.min(100, (curHp / maxHp) * 100)) : 0;
       const cls = pct <= 25 ? 'low' : pct <= 50 ? 'mid' : 'hi';
@@ -6733,34 +6837,24 @@ function loadFromFirestore() {
       });
     })();
     // Money display
-    const gpVal = parseInt(data['f-gold']) || 0;
+    const gpVal = (data.currency?.gold !== undefined ? data.currency.gold : parseInt(data['f-gold'])) || 0;
     const gpDisp = document.getElementById('gp-display'); if (gpDisp) gpDisp.textContent = gpVal;
-    const mGp = document.getElementById('m-gp'); if (mGp) mGp.value = gpVal;
-    try {
-      const extra = JSON.parse(data['f-gold2'] || '{}');
-      ['pp','sp','cp'].forEach(c => { const el = document.getElementById('m-'+c); if (el && extra[c] !== undefined) el.value = extra[c]; });
-    } catch(e) {}
-    // Lore view elements
-    [['f-traits','view-traits'],['f-ideals','view-ideals'],['f-bonds','view-bonds'],
-     ['f-flaws','view-flaws'],['f-backstory','view-backstory']].forEach(([fid, vid]) => {
-      if (data[fid] !== undefined) {
-        const el = document.getElementById(vid);
-        if (el) el.textContent = data[fid] || '—';
-      }
-    });
-    // Notes current textarea
+    // Notes
     if (data['f-notes'] !== undefined) {
       const notesTa = document.getElementById('notes-current-ta');
       if (notesTa && !notesTa.value) notesTa.value = data['f-notes'] || '';
       if (typeof updateNotesPreview === 'function') updateNotesPreview();
     }
-    // Restore resource used counts
+    // Restore resource used counts (legacy flat-doc fallback)
     if (data.resourcesUsed) {
-      CLASS_RESOURCES.forEach(r => { r.used = data.resourcesUsed[r.id] ?? 0; });
-      renderResources();
-      syncAbilityChips();
+      let changed = false;
+      CLASS_RESOURCES.forEach(r => {
+        const legacy = data.resourcesUsed[r.id];
+        if (typeof legacy === 'number' && r.used !== legacy) { r.used = legacy; changed = true; }
+      });
+      if (changed) { renderResources(); syncAbilityChips(); }
     }
-    // Load Firestore preferences on first snapshot (overrides localStorage)
+    // Load preferences from Firestore on first snapshot
     if (!_prefsLoaded) {
       _prefsLoaded = true;
       db.collection('campaigns').doc(CAMPAIGN_ID)
@@ -6784,6 +6878,249 @@ function loadFromFirestore() {
         handleRest(data.type, doc.ref);
       });
   } catch(e) { /* rest system unavailable */ }
+}
+
+// ── SUBCOLLECTION LOADERS ─────────────────────────────────────
+async function loadResources() {
+  try {
+    const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('resources').orderBy('sortOrder').get();
+    if (!snap.empty) {
+      CLASS_RESOURCES = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    CLASS_RESOURCES.forEach(r => { if (typeof r.used !== 'number') r.used = 0; });
+    renderResources();
+    syncAbilityChips();
+  } catch(e) { /* subcollection may not exist yet — keep defaults */ }
+}
+
+async function loadWeapons() {
+  try {
+    const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('weapons').orderBy('sortOrder').get();
+    if (snap.empty) return;
+    // Clear the in-memory WEAPONS map and repopulate from Firestore
+    Object.keys(WEAPONS).forEach(k => delete WEAPONS[k]);
+    snap.docs.forEach(d => {
+      const w = d.data();
+      WEAPONS[d.id] = { ...w };
+    });
+    if (typeof renderWeaponChips === 'function') renderWeaponChips();
+  } catch(e) { /* subcollection may not exist yet — keep defaults */ }
+}
+
+async function loadFeatures() {
+  try {
+    const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
+      .collection('characters').doc(PLAYER_ID)
+      .collection('features').orderBy('sortOrder').get();
+    if (snap.empty) return;
+    CLASS_FEATURES.length = 0;
+    snap.docs.forEach(d => CLASS_FEATURES.push({ id: d.id, ...d.data() }));
+    if (typeof renderAbilityChips === 'function') renderAbilityChips();
+  } catch(e) { /* subcollection may not exist yet — keep defaults */ }
+}
+
+// ── DATA MIGRATION: v1 flat f-* fields → v2 schema ───────────
+async function migrateToV2(oldData, docRef) {
+  try {
+    const classStr   = oldData['f-class'] || '';
+    const classMatch = classStr.match(/^(.+?)\s+(\d+)$/);
+    const className  = classMatch ? classMatch[1].trim() : classStr.trim() || 'Fighter';
+    const classLevel = classMatch ? parseInt(classMatch[2]) : 1;
+
+    const HIT_DICE = {
+      barbarian:'d12', fighter:'d10', paladin:'d10', ranger:'d10',
+      monk:'d8', rogue:'d8', bard:'d8', cleric:'d8',
+      druid:'d8', warlock:'d8', artificer:'d8',
+      sorcerer:'d6', wizard:'d6'
+    };
+    const hitDie = HIT_DICE[className.toLowerCase()] || 'd8';
+
+    const parseScore = k => parseInt(oldData[k]) || 10;
+    const parseMod   = k => parseInt(oldData[k]) || 0;
+
+    const parsedProfs = { armor:[], weapons:[], tools:[], languages:[] };
+    (oldData['f-profs'] || '').split('\n').forEach(line => {
+      const ci = line.indexOf(':');
+      if (ci < 0) return;
+      const key   = line.slice(0, ci).trim().toLowerCase();
+      const items = line.slice(ci + 1).split(',').map(s => s.trim()).filter(Boolean);
+      if (parsedProfs[key]) parsedProfs[key] = items;
+    });
+
+    let extra = { platinum:0, electrum:0, silver:0, copper:0 };
+    try {
+      const g2 = JSON.parse(oldData['f-gold2'] || '{}');
+      extra = { platinum:g2.pp||0, electrum:g2.ep||0, silver:g2.sp||0, copper:g2.cp||0 };
+    } catch(e) {}
+
+    const newCharData = {
+      name:       oldData['f-name']   || '',
+      player:     oldData['f-player'] || '',
+      classes:    [{ name:className, level:classLevel, subclass:'', hitDie }],
+      totalLevel: classLevel,
+      race:       oldData['f-race']   || '',
+      subrace:    '',
+      background: oldData['f-bg']     || '',
+      alignment:  oldData['f-align']  || '',
+      profBonus:         parseInt(oldData['f-prof'])  || 2,
+      ac:                parseInt(oldData['f-ac'])    || 10,
+      initiative:        parseInt(oldData['f-init'])  || 0,
+      speed:             parseInt(oldData['f-speed']) || 30,
+      passivePerception: parseInt(oldData['f-pp'])    || 10,
+      carryCapacity:     parseInt(oldData['f-carry']) || 0,
+      curHp: parseInt(oldData['f-curhp']) || 0,
+      maxHp: parseInt(oldData['f-maxhp']) || 0,
+      tempHp: 0,
+      hitDice: [{ dieType:hitDie, total:classLevel, spent:0 }],
+      str:parseScore('f-str'), strMod:parseMod('f-strmod'),
+      dex:parseScore('f-dex'), dexMod:parseMod('f-dexmod'),
+      con:parseScore('f-con'), conMod:parseMod('f-conmod'),
+      int:parseScore('f-int'), intMod:parseMod('f-intmod'),
+      wis:parseScore('f-wis'), wisMod:parseMod('f-wismod'),
+      cha:parseScore('f-cha'), chaMod:parseMod('f-chamod'),
+      proficiencies: parsedProfs,
+      currency: {
+        platinum: extra.platinum,
+        gold:     parseInt(oldData['f-gold']) || 0,
+        electrum: extra.electrum,
+        silver:   extra.silver,
+        copper:   extra.copper,
+      },
+      traits:    oldData['f-traits']    || '',
+      ideals:    oldData['f-ideals']    || '',
+      bonds:     oldData['f-bonds']     || '',
+      flaws:     oldData['f-flaws']     || '',
+      backstory: oldData['f-backstory'] || '',
+      spellcasting: {
+        ability:'', saveDC:0, atkBonus:0,
+        slotsTotal:{'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9':0},
+        slotsUsed: {'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0,'8':0,'9':0},
+        pactSlotsTotal:0, pactSlotsUsed:0, pactSlotLevel:0,
+      },
+      conditions:[], exhaustion:0, inspiration:false,
+      deathSaves:{ successes:0, failures:0 },
+      schemaVersion: 2,
+      updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      migratedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
+    await docRef.set(newCharData, { merge: true });
+    console.log('[Migration] Character document written (schema v2)');
+
+    await _migrateWeapons(oldData, docRef);
+    await _migrateInventory(oldData, docRef);
+    await _migrateFeatures(oldData, docRef);
+    await _createDefaultResources(className, classLevel, docRef);
+
+    console.log('[Migration] v1 → v2 complete for', PLAYER_ID);
+  } catch(e) {
+    console.error('[Migration] FAILED:', e);
+    setStatus('error', 'Migration error — see console');
+  }
+}
+
+async function _migrateWeapons(oldData, docRef) {
+  let weapons = [];
+  try { weapons = JSON.parse(oldData['f-weapons'] || '[]'); if (!Array.isArray(weapons)) weapons = []; }
+  catch(e) { const t = oldData['f-weapons']||''; if (t.trim()) weapons = [{id:'weapon-0',name:t.trim(),atkBonus:0,dmgDice:'1d6',dmgBonus:0,dmgType:'slashing',range:'5 ft'}]; }
+  if (!weapons.length) return;
+  const batch = db.batch();
+  weapons.forEach((w, i) => {
+    if (!w || !w.name) return;
+    const ref = docRef.collection('weapons').doc(w.id || 'weapon-' + i);
+    batch.set(ref, {
+      id:w.id||'weapon-'+i, name:w.name, icon:w.icon||'⚔',
+      atkBonus:w.atkBonus||0, dmgDice:w.dmgDice||'1d6', dmgBonus:w.dmgBonus||0,
+      dmgType:w.dmgType||'slashing', range:w.range||'5 ft',
+      properties:w.properties||[], notes:w.notes||'', ammoId:w.ammoId||null,
+      isSave:w.isSave||false, saveDC:w.saveDC||null, saveStat:w.saveStat||null,
+      source:'migrated', custom:false, sortOrder:i,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge:true });
+  });
+  await batch.commit();
+  console.log('[Migration] Weapons:', weapons.length);
+}
+
+async function _migrateInventory(oldData, docRef) {
+  let items = [];
+  try { items = JSON.parse(oldData['f-equipment'] || '[]'); if (!Array.isArray(items)) items = []; }
+  catch(e) { (oldData['f-equipment']||'').split('\n').forEach((l,i) => { if (l.trim()) items.push({id:'item-'+i,name:l.trim(),qty:1,category:'misc'}); }); }
+  if (!items.length) return;
+  const existing = await docRef.collection('inventory').limit(1).get();
+  if (!existing.empty) { console.log('[Migration] Inventory already exists — skipping'); return; }
+  const batch = db.batch();
+  items.forEach((item, i) => {
+    if (!item || !item.name) return;
+    batch.set(docRef.collection('inventory').doc(item.id || 'item-'+i), {
+      id:item.id||'item-'+i, name:item.name, icon:item.icon||'📦',
+      category:item.category||'misc', qty:item.qty??1, weight:item.weight||0,
+      notes:item.notes||'', source:'migrated', custom:false, sortOrder:i,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge:true });
+  });
+  await batch.commit();
+  console.log('[Migration] Inventory items:', items.length);
+}
+
+async function _migrateFeatures(oldData, docRef) {
+  const text = (oldData['f-features'] || '').trim();
+  if (!text) return;
+  const existing = await docRef.collection('features').limit(1).get();
+  if (!existing.empty) { console.log('[Migration] Features already exists — skipping'); return; }
+  const features = text.split('\n').filter(l => l.trim()).map((line, i) => {
+    const ci = line.indexOf(':');
+    return { id:'feature-'+i, name:ci>-1?line.slice(0,ci).trim():line.trim(), description:ci>-1?line.slice(ci+1).trim():'', category:'passive', sortOrder:i };
+  });
+  const batch = db.batch();
+  features.forEach(f => {
+    batch.set(docRef.collection('features').doc(f.id), {
+      ...f, abilityId:null, formula:null, recharge:null,
+      sourceClass:'', sourceLevel:1, source:'migrated', custom:false,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge:true });
+  });
+  await batch.commit();
+  console.log('[Migration] Features:', features.length);
+}
+
+async function _createDefaultResources(className, level, docRef) {
+  const existing = await docRef.collection('resources').limit(1).get();
+  if (!existing.empty) { console.log('[Migration] Resources already exists — skipping'); return; }
+  const cls = className.toLowerCase();
+  const RESOURCE_MAP = {
+    fighter: [
+      { id:'second-wind',      name:'Second Wind',      total:1, dieType:null, recharge:'Short rest', category:'action',   sourceClass:'Fighter' },
+      { id:'action-surge',     name:'Action Surge',     total:level>=17?2:1, dieType:null, recharge:'Short rest', category:'action', sourceClass:'Fighter' },
+      { id:'superiority-dice', name:'Superiority Dice', total:level>=15?6:level>=10?5:4, dieType:level>=20?'d12':level>=10?'d10':'d8', recharge:'Short rest', category:'maneuver', sourceClass:'Fighter' },
+    ],
+    barbarian: [{ id:'rage', name:'Rage', total:level>=20?99:level>=17?6:level>=12?5:level>=6?4:level>=3?3:2, dieType:null, recharge:'Long rest', category:'action', sourceClass:'Barbarian' }],
+    monk:      [{ id:'ki-points', name:'Ki Points', total:level, dieType:null, recharge:'Short rest', category:'action', sourceClass:'Monk' }],
+    sorcerer:  [{ id:'sorcery-points', name:'Sorcery Points', total:level, dieType:null, recharge:'Long rest', category:'action', sourceClass:'Sorcerer' }],
+    warlock:   [{ id:'pact-slots', name:'Pact Slots', total:level>=11?3:level>=2?2:1, dieType:null, recharge:'Short rest', category:'action', sourceClass:'Warlock' }],
+    paladin:   [
+      { id:'channel-divinity', name:'Channel Divinity', total:1, dieType:null, recharge:'Short rest', category:'action', sourceClass:'Paladin' },
+      { id:'lay-on-hands',     name:'Lay on Hands',     total:level*5, dieType:null, recharge:'Long rest', category:'action', sourceClass:'Paladin' },
+    ],
+    cleric:    [{ id:'channel-divinity', name:'Channel Divinity', total:level>=18?3:level>=6?2:1, dieType:null, recharge:'Short rest', category:'action', sourceClass:'Cleric' }],
+    druid:     [{ id:'wild-shape', name:'Wild Shape', total:2, dieType:null, recharge:'Short rest', category:'action', sourceClass:'Druid' }],
+    artificer: [{ id:'infusions', name:'Infusions', total:Math.floor(level/2)+2, dieType:null, recharge:'Long rest', category:'passive', sourceClass:'Artificer' }],
+  };
+  const defaults = RESOURCE_MAP[cls] || [];
+  if (!defaults.length) return;
+  const batch = db.batch();
+  defaults.forEach((r, i) => {
+    batch.set(docRef.collection('resources').doc(r.id), {
+      ...r, used:0, custom:false, sortOrder:i,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge:true });
+  });
+  await batch.commit();
+  console.log('[Migration] Default resources created:', defaults.length);
 }
 
 const FIELD_LABELS = {
@@ -6814,6 +7151,9 @@ firebase.auth().onAuthStateChanged(user => {
   if (!user) { window.location.href = 'home.html'; return; }
   loadFromFirestore();
   loadInventory();
+  loadResources();
+  loadWeapons();
+  loadFeatures();
 });
 
 let saveTimer;
