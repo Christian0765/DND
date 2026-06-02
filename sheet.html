@@ -6821,6 +6821,14 @@ function loadFromFirestore() {
     // Populate CHARACTER from f-* fields and re-render
     populateCharacterFromFields();
     renderCharacterSheet();
+    // Update proficiencies from Firestore structured data
+    if (data.proficiencies) {
+      PROFICIENCY_CATEGORIES.forEach(cat => {
+        const items = data.proficiencies[cat.id];
+        if (Array.isArray(items)) cat.items = items;
+      });
+      renderProficiencies();
+    }
     // Force-populate curHp/maxHp
     window.curHp = (data.curHp !== undefined ? data.curHp : parseInt(data['f-curhp'])) || window.curHp || 0;
     window.maxHp = (data.maxHp !== undefined ? data.maxHp : parseInt(data['f-maxhp'])) || window.maxHp || 0;
@@ -6940,7 +6948,7 @@ async function migrateToV2(oldData, docRef) {
     const hitDie = HIT_DICE[className.toLowerCase()] || 'd8';
 
     const parseScore = k => parseInt(oldData[k]) || 10;
-    const parseMod   = k => parseInt(oldData[k]) || 0;
+    const parseMod   = k => parseInt((oldData[k] || '0').replace('−', '-').replace('–', '-')) || 0;
 
     const parsedProfs = { armor:[], weapons:[], tools:[], languages:[] };
     (oldData['f-profs'] || '').split('\n').forEach(line => {
