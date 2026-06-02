@@ -6697,34 +6697,42 @@ async function saveToFirestore() {
 
 let _prefsLoaded = false;
 let _detectedSchemaVersion = 1;
+let _migrationInProgress = false;
 
 function loadFromFirestore() {
   setStatus('saving', 'Connecting...');
   db.collection('campaigns').doc(CAMPAIGN_ID)
     .collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
+    if (_migrationInProgress) return; // skip all callbacks during migration
     if (!doc.exists) {
-      // Check legacy flat collection path (pre-migration data)
+      if (_migrationInProgress) return;
+      _migrationInProgress = true;
+
       db.collection('characters').doc(PLAYER_ID).get().then(legacyDoc => {
         if (legacyDoc.exists) {
-          console.log('[Migration] Found legacy data for', PLAYER_ID, '— migrating to new path...');
+          console.log('[Migration] Found legacy data for', PLAYER_ID, '— migrating...');
           setStatus('saving', 'Migrating data...');
-          // Copy the legacy document to the new path — this will trigger onSnapshot again
+          const legacyData = legacyDoc.data();
+          legacyData.schemaVersion = 2;
+          legacyData._migratedFromLegacy = true;
           db.collection('campaigns').doc(CAMPAIGN_ID)
             .collection('characters').doc(PLAYER_ID)
-            .set(legacyDoc.data(), { merge: true })
+            .set(legacyData, { merge: true })
             .then(() => {
-              console.log('[Migration] Legacy data copied for', PLAYER_ID);
-              // onSnapshot will fire again automatically with the new data
+              console.log('[Migration] Done for', PLAYER_ID);
+              _migrationInProgress = false;
             })
             .catch(e => {
-              console.error('[Migration] Failed to copy legacy data:', e);
+              console.error('[Migration] Failed:', e);
+              _migrationInProgress = false;
               setStatus('error', 'Migration failed');
             });
         } else {
-          // Truly new player — no data anywhere
+          _migrationInProgress = false;
           setStatus('ok', 'Ready — fill in your character');
         }
       }).catch(() => {
+        _migrationInProgress = false;
         setStatus('ok', 'Ready');
       });
       return;
@@ -6733,7 +6741,7 @@ function loadFromFirestore() {
 
     // ── Schema version gate ───────────────────────────────
     _detectedSchemaVersion = data.schemaVersion || 1;
-    if (_detectedSchemaVersion < 2) {
+    if (_detectedSchemaVersion < 2 && !data._migratedFromLegacy) {
       console.log('[Migration] ' + PLAYER_ID + ' is schema v' + _detectedSchemaVersion + ' — migrating...');
       migrateToV2(data, doc.ref);
       return; // migrateToV2 writes a new snapshot which re-triggers this callback
