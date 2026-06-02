@@ -6176,17 +6176,22 @@ const DEFAULT_ITEMS = [];
 let ITEMS = DEFAULT_ITEMS.map(i => ({ ...i })); // mutable copy; overwritten by Firestore
 
 async function loadInventory() {
+  console.log('[loadInventory] path: campaigns/' + CAMPAIGN_ID + '/characters/' + PLAYER_ID + '/inventory');
+  ITEMS = [];
+  renderItems();
   try {
     const snap = await db.collection('campaigns').doc(CAMPAIGN_ID)
       .collection('characters').doc(PLAYER_ID)
       .collection('inventory').get();
-    if (snap.empty) {
-      renderItems(); // show empty inventory for new players
-    } else {
+    if (!snap.empty) {
       ITEMS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderItems();
     }
-  } catch(e) { console.warn('loadInventory failed:', e); }
+    renderItems();
+  } catch(e) {
+    console.error('[loadInventory] FAILED for', PLAYER_ID, '— path: campaigns/' + CAMPAIGN_ID + '/characters/' + PLAYER_ID + '/inventory', e);
+    ITEMS = [];
+    renderItems();
+  }
 }
 
 async function seedInventory() {
@@ -7123,14 +7128,12 @@ function recordEdit(fieldId, oldVal, newVal) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
-firebase.auth().onAuthStateChanged(user => {
-  if (!user) { window.location.href = 'home.html'; return; }
-  loadFromFirestore();
-  loadInventory();
-  loadResources();
-  loadWeapons();
-  loadFeatures();
-});
+// Load all character data directly — no auth required
+loadFromFirestore();
+loadInventory();
+loadResources();
+loadWeapons();
+loadFeatures();
 
 let saveTimer;
 FIELDS.forEach(id => {
