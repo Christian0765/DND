@@ -6697,7 +6697,33 @@ function loadFromFirestore() {
   setStatus('saving', 'Connecting...');
   db.collection('campaigns').doc(CAMPAIGN_ID)
     .collection('characters').doc(PLAYER_ID).onSnapshot(doc => {
-    if (!doc.exists) { setStatus('ok', 'Ready'); return; }
+    if (!doc.exists) {
+      // Check legacy flat collection path (pre-migration data)
+      db.collection('characters').doc(PLAYER_ID).get().then(legacyDoc => {
+        if (legacyDoc.exists) {
+          console.log('[Migration] Found legacy data for', PLAYER_ID, '— migrating to new path...');
+          setStatus('saving', 'Migrating data...');
+          // Copy the legacy document to the new path — this will trigger onSnapshot again
+          db.collection('campaigns').doc(CAMPAIGN_ID)
+            .collection('characters').doc(PLAYER_ID)
+            .set(legacyDoc.data(), { merge: true })
+            .then(() => {
+              console.log('[Migration] Legacy data copied for', PLAYER_ID);
+              // onSnapshot will fire again automatically with the new data
+            })
+            .catch(e => {
+              console.error('[Migration] Failed to copy legacy data:', e);
+              setStatus('error', 'Migration failed');
+            });
+        } else {
+          // Truly new player — no data anywhere
+          setStatus('ok', 'Ready — fill in your character');
+        }
+      }).catch(() => {
+        setStatus('ok', 'Ready');
+      });
+      return;
+    }
     const data = doc.data();
 
     // ── Schema version gate ───────────────────────────────
