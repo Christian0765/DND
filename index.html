@@ -924,17 +924,19 @@ window.addEventListener('DOMContentLoaded', () => {
         const name   = (d['f-name']   || '').trim();
         const cls    = (d['f-class']  || '').trim();
         const race   = (d['f-race']   || '').trim();
-        const curhp  = d['f-curhp']  || '—';
-        const maxhp  = d['f-maxhp']  || '';
+        const curHpRaw = (d['f-curhp'] || '').trim();
+        const maxHpRaw = (d['f-maxhp'] || '').trim();
+        const curHpNum = parseFloat(curHpRaw);
+        const maxHpNum = parseFloat(maxHpRaw);
+        const hpDisplay = curHpRaw || '—';
+        const hasValidHp = !isNaN(curHpNum) && !isNaN(maxHpNum) && maxHpNum > 0;
+        const pct = hasValidHp ? Math.min(100, Math.round((curHpNum / maxHpNum) * 100)) : 0;
+        const barCls = hasValidHp ? (pct < 25 ? ' low' : pct < 50 ? ' mid' : '') : '';
         const ac     = d['f-ac']     || '—';
         const gp     = d['f-gold']   || '—';
         const slotLabel = slot.replace('player', 'Player ');
 
         const hasName = name.length > 0;
-        const pct = (curhp !== '—' && maxhp)
-          ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0
-          : 0;
-        const barCls = pct < 25 ? ' low' : pct < 50 ? ' mid' : '';
         const clsLine = [cls, race].filter(Boolean).join(' · ') || '— awaiting character —';
 
         html += `
@@ -946,12 +948,12 @@ window.addEventListener('DOMContentLoaded', () => {
             <div class="card-class">${clsLine}</div>
             ${!hasName ? '<div class="empty-badge">Sheet not yet filled</div>' : ''}
             <div class="card-stats">
-              <div class="stat-box"><span class="sv hp">${curhp}</span><span class="sl">HP</span></div>
+              <div class="stat-box"><span class="sv hp">${hpDisplay}</span><span class="sl">HP</span></div>
               <div class="stat-box"><span class="sv">${ac}</span><span class="sl">AC</span></div>
               <div class="stat-box"><span class="sv gp">${gp}</span><span class="sl">GP</span></div>
             </div>
             <div class="hp-bar-wrap">
-              <div class="hp-bar${barCls}" style="width:${hasName ? pct : 0}%"></div>
+              <div class="hp-bar${barCls}" style="width:${pct}%"></div>
             </div>
             <div class="card-link">View Sheet →</div>
           </a>`;
