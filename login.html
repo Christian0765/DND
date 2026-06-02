@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Tracker — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+  :root {
+    --parchment: #f5ead2;
+    --parchment-dark: #e8d5a8;
+    --ink: #1a1208;
+    --ink-light: #4a3520;
+    --red: #7a1515;
+    --gold: #9a7000;
+    --gold-light: #c4920a;
+    --border: #7a5a28;
+    --border-light: #b08840;
+    --green: #285a18;
+    --bg: #111008;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
+    font-family: 'Crimson Text', serif;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px 60px;
+  }
+
+  /* HEADER */
+  .site-header {
+    text-align: center;
+    margin-bottom: 32px;
+    animation: fadeIn 0.8s ease;
+  }
+  .site-title {
+    font-family: 'Cinzel', serif;
+    font-size: 2.6rem;
+    font-weight: 900;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+    text-shadow: 0 2px 20px rgba(184,134,11,0.4);
+    line-height: 1;
+  }
+  .site-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--border-light);
+    margin-top: 8px;
+  }
+  .divider {
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 16px auto;
+  }
+
+  /* CARD */
+  .login-card {
+    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 2px #1a0e04, 0 8px 30px rgba(0,0,0,0.6);
+    border-radius: 3px;
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+    animation: fadeIn 0.8s ease 0.1s both;
+    position: relative;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 14px 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--ink-light);
+    background: var(--parchment-dark);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .tab-btn:first-child { border-right: 1px solid var(--border); }
+  .tab-btn.active {
+    background: var(--parchment);
+    color: var(--gold);
+  }
+  .tab-btn:hover:not(.active) {
+    background: #ddd0a8;
+  }
+
+  /* FORM PANELS */
+  .form-panel {
+    display: none;
+    padding: 28px 28px 24px;
+  }
+  .form-panel.active { display: block; }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+  label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: 'Crimson Text', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fdf6e8;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus {
+    border-color: var(--gold-light);
+    box-shadow: 0 0 0 2px rgba(196,146,10,0.18);
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 12px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--parchment);
+    background: var(--red);
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .submit-btn:hover { background: #921c1c; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled {
+    background: #a08060;
+    cursor: not-allowed;
+  }
+
+  /* ERROR / SUCCESS */
+  .error-msg {
+    display: none;
+    font-size: 0.9rem;
+    color: var(--red);
+    background: rgba(122,21,21,0.08);
+    border: 1px solid rgba(122,21,21,0.2);
+    border-radius: 2px;
+    padding: 8px 12px;
+    margin-bottom: 16px;
+  }
+  .error-msg.visible { display: block; }
+
+  .success-msg {
+    display: none;
+    font-size: 0.9rem;
+    color: var(--green);
+    background: rgba(40,90,24,0.08);
+    border: 1px solid rgba(40,90,24,0.2);
+    border-radius: 2px;
+    padding: 8px 12px;
+    margin-bottom: 16px;
+  }
+  .success-msg.visible { display: block; }
+
+  /* GUEST LINK */
+  .guest-link-wrap {
+    text-align: center;
+    padding: 14px 28px 20px;
+    border-top: 1px solid var(--parchment-dark);
+  }
+  .guest-link {
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    text-decoration: none;
+    font-style: italic;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: 'Crimson Text', serif;
+    transition: color 0.15s;
+  }
+  .guest-link:hover { color: var(--gold); }
+
+  /* SESSION BANNER */
+  #session-banner {
+    display: none;
+    background: var(--red);
+    color: #fff;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 8px 16px;
+    text-align: center;
+    width: 100%;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 100;
+  }
+  #session-banner a { color: var(--parchment); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="session-banner">
+  Session expired — <a href="login.html">sign in again</a>
+</div>
+
+<header class="site-header">
+  <div class="site-title">Campaign Tracker</div>
+  <div class="site-sub">Dungeons &amp; Dragons</div>
+  <div class="divider"></div>
+</header>
+
+<div class="login-card">
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+    <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+  </div>
+
+  <!-- SIGN IN -->
+  <div class="form-panel active" id="panel-signin">
+    <div class="error-msg" id="signin-error"></div>
+    <div class="success-msg" id="signin-success"></div>
+    <div class="form-group">
+      <label for="signin-email">Email</label>
+      <input type="email" id="signin-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="signin-password">Password</label>
+      <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="submit-btn" id="signin-btn" onclick="handleSignIn()">Enter the Campaign</button>
+  </div>
+
+  <!-- SIGN UP -->
+  <div class="form-panel" id="panel-signup">
+    <div class="error-msg" id="signup-error"></div>
+    <div class="success-msg" id="signup-success"></div>
+    <div class="form-group">
+      <label for="signup-name">Display Name</label>
+      <input type="text" id="signup-name" placeholder="Gandalf the Grey" autocomplete="nickname">
+    </div>
+    <div class="form-group">
+      <label for="signup-email">Email</label>
+      <input type="email" id="signup-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="signup-password">Password</label>
+      <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label for="signup-confirm">Confirm Password</label>
+      <input type="password" id="signup-confirm" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <button class="submit-btn" id="signup-btn" onclick="handleSignUp()">Create Account</button>
+  </div>
+
+  <div class="guest-link-wrap">
+    <button class="guest-link" onclick="continueAsGuest()">Continue as Guest →</button>
+  </div>
+</div>
+
+<script>
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Check if already logged in
+  async function checkSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) window.location.href = 'home.html';
+  }
+
+  function switchTab(tab) {
+    document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+    document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+    document.getElementById('panel-signin').classList.toggle('active', tab === 'signin');
+    document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
+    clearErrors();
+  }
+
+  function showError(panelId, message) {
+    const el = document.getElementById(panelId + '-error');
+    el.textContent = message;
+    el.classList.add('visible');
+  }
+
+  function showSuccess(panelId, message) {
+    const el = document.getElementById(panelId + '-success');
+    el.textContent = message;
+    el.classList.add('visible');
+  }
+
+  function clearErrors() {
+    ['signin-error', 'signin-success', 'signup-error', 'signup-success'].forEach(id => {
+      const el = document.getElementById(id);
+      el.textContent = '';
+      el.classList.remove('visible');
+    });
+  }
+
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Please wait...' : (btnId === 'signin-btn' ? 'Enter the Campaign' : 'Create Account');
+  }
+
+  async function handleSignIn() {
+    clearErrors();
+    const email    = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+
+    if (!email || !password) { showError('signin', 'Please enter your email and password.'); return; }
+
+    setLoading('signin-btn', true);
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error('[signIn] Failed:', error.message);
+      showError('signin', error.message);
+      setLoading('signin-btn', false);
+    } else {
+      window.location.href = 'home.html';
+    }
+  }
+
+  async function handleSignUp() {
+    clearErrors();
+    const displayName = document.getElementById('signup-name').value.trim();
+    const email       = document.getElementById('signup-email').value.trim();
+    const password    = document.getElementById('signup-password').value;
+    const confirm     = document.getElementById('signup-confirm').value;
+
+    if (!displayName) { showError('signup', 'Please enter a display name.'); return; }
+    if (!email)        { showError('signup', 'Please enter your email.'); return; }
+    if (!password)     { showError('signup', 'Please enter a password.'); return; }
+    if (password !== confirm) { showError('signup', 'Passwords do not match.'); return; }
+    if (password.length < 6)  { showError('signup', 'Password must be at least 6 characters.'); return; }
+
+    setLoading('signup-btn', true);
+    const { error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: displayName } }
+    });
+
+    if (error) {
+      console.error('[signUp] Failed:', error.message);
+      showError('signup', error.message);
+      setLoading('signup-btn', false);
+    } else {
+      showSuccess('signup', 'Account created! Check your email to confirm, then sign in.');
+      setLoading('signup-btn', false);
+    }
+  }
+
+  function continueAsGuest() {
+    sessionStorage.setItem('guest_mode', 'true');
+    window.location.href = 'home.html';
+  }
+
+  // Allow Enter key to submit
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const activePanel = document.querySelector('.form-panel.active').id;
+    if (activePanel === 'panel-signin') handleSignIn();
+    else handleSignUp();
+  });
+
+  // Auth state — redirect on sign-in, show banner on sign-out
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') window.location.href = 'home.html';
+    if (event === 'SIGNED_OUT') {
+      const banner = document.getElementById('session-banner');
+      if (banner) banner.style.display = 'block';
+    }
+  });
+
+  checkSession();
+</script>
+</body>
+</html>

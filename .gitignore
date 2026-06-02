@@ -1,0 +1,4 @@
+supabase-config.js
+serviceAccountKey.json
+migrate-to-supabase.js
+node_modules/

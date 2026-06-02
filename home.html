@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Tracker — Your Campaigns</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+  :root {
+    --parchment: #f5ead2;
+    --parchment-dark: #e8d5a8;
+    --ink: #1a1208;
+    --ink-light: #4a3520;
+    --red: #7a1515;
+    --gold: #9a7000;
+    --gold-light: #c4920a;
+    --border: #7a5a28;
+    --border-light: #b08840;
+    --green: #285a18;
+    --bg: #111008;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 50% 0%, #2a1a06 0%, #080604 100%);
+    font-family: 'Crimson Text', serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* SESSION BANNER */
+  #session-banner {
+    display: none;
+    background: var(--red);
+    color: #fff;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 8px 16px;
+    text-align: center;
+    position: relative;
+    z-index: 100;
+  }
+  #session-banner a { color: var(--parchment); }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(122,90,40,0.3);
+    background: rgba(0,0,0,0.2);
+    animation: fadeIn 0.5s ease;
+  }
+  .topbar-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+    text-decoration: none;
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #user-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--border-light);
+  }
+  .signout-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink-light);
+    background: var(--parchment-dark);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .signout-btn:hover { background: var(--parchment); color: var(--red); }
+
+  /* PAGE BODY */
+  .page-body {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    animation: fadeIn 0.8s ease 0.1s both;
+  }
+
+  /* PAGE HEADER */
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .page-title {
+    font-family: 'Cinzel', serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+    text-shadow: 0 2px 20px rgba(184,134,11,0.4);
+  }
+  .page-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--border-light);
+    margin-top: 8px;
+  }
+  .divider {
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 16px auto;
+  }
+
+  /* ACTION BUTTONS */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    padding: 12px 28px;
+    border-radius: 2px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .action-btn:active { transform: scale(0.98); }
+  .action-btn.primary {
+    color: var(--parchment);
+    background: var(--red);
+  }
+  .action-btn.primary:hover { background: #921c1c; }
+  .action-btn.secondary {
+    color: var(--ink);
+    background: var(--parchment-dark);
+    border: 1px solid var(--border);
+  }
+  .action-btn.secondary:hover { background: var(--parchment); }
+
+  /* CAMPAIGN GRID */
+  .campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .campaign-card {
+    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 2px #1a0e04, 0 8px 30px rgba(0,0,0,0.5);
+    border-radius: 3px;
+    text-decoration: none;
+    color: var(--ink);
+    display: block;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    cursor: pointer;
+  }
+  .campaign-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .campaign-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 2px #1a0e04, 0 16px 40px rgba(0,0,0,0.7);
+  }
+
+  .card-banner {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    display: block;
+    background: linear-gradient(135deg, #2a1a06, #1a1208);
+  }
+  .card-banner-placeholder {
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(135deg, #2a1a06 0%, #1a1208 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+  .card-role-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--red);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .card-meta {
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    font-style: italic;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--border-light);
+  }
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+  .empty-state p {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--border-light);
+  }
+
+  /* LOADING */
+  .loading-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--border-light);
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: linear-gradient(160deg, #f7edd8 0%, #ecdcb5 50%, #f2e6cc 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 2px #1a0e04, 0 24px 60px rgba(0,0,0,0.8);
+    border-radius: 3px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    overflow: hidden;
+    animation: modalIn 0.25s ease;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.94) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--parchment-dark);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--ink-light);
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 2px;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--red); }
+
+  .modal-body { padding: 20px 24px 24px; }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+  label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  input[type="text"],
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: 'Crimson Text', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fdf6e8;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, select:focus {
+    border-color: var(--gold-light);
+    box-shadow: 0 0 0 2px rgba(196,146,10,0.18);
+  }
+
+  .modal-submit {
+    width: 100%;
+    padding: 12px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--parchment);
+    background: var(--red);
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 4px;
+  }
+  .modal-submit:hover { background: #921c1c; }
+  .modal-submit:active { transform: scale(0.98); }
+  .modal-submit:disabled { background: #a08060; cursor: not-allowed; }
+
+  .modal-error {
+    display: none;
+    font-size: 0.9rem;
+    color: var(--red);
+    background: rgba(122,21,21,0.08);
+    border: 1px solid rgba(122,21,21,0.2);
+    border-radius: 2px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+  .modal-error.visible { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="session-banner">
+  Session expired — <a href="login.html">sign in again</a>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-brand">Campaign Tracker</span>
+  <div class="topbar-right">
+    <span id="user-name"></span>
+    <button class="signout-btn" onclick="signOut()">Sign Out</button>
+  </div>
+</div>
+
+<!-- PAGE BODY -->
+<div class="page-body">
+  <div class="page-header">
+    <div class="page-title">Your Campaigns</div>
+    <div class="page-sub">Choose a campaign or create a new one</div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn primary" onclick="openModal('create-modal')">+ Create Campaign</button>
+    <button class="action-btn secondary" onclick="openModal('join-modal')">Join Campaign</button>
+  </div>
+
+  <div id="campaign-list">
+    <div class="loading-state">Loading your campaigns…</div>
+  </div>
+</div>
+
+<!-- CREATE CAMPAIGN MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Create Campaign</span>
+      <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="create-error"></div>
+      <div class="form-group">
+        <label for="campaign-name">Campaign Name</label>
+        <input type="text" id="campaign-name" placeholder="The Dragon's Vale" maxlength="80">
+      </div>
+      <div class="form-group">
+        <label for="campaign-ruleset">Ruleset</label>
+        <select id="campaign-ruleset">
+          <option value="5e-2014">D&D 5e 2014</option>
+          <option value="5e-2024">D&D 5e 2024</option>
+        </select>
+      </div>
+      <button class="modal-submit" id="create-submit" onclick="handleCreateCampaign()">Create Campaign</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN CAMPAIGN MODAL -->
+<div class="modal-overlay" id="join-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Join Campaign</span>
+      <button class="modal-close" onclick="closeModal('join-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="join-error"></div>
+      <div class="form-group">
+        <label for="campaign-id-input">Campaign ID</label>
+        <input type="text" id="campaign-id-input" placeholder="Paste the campaign ID from your DM">
+      </div>
+      <button class="modal-submit" id="join-submit" onclick="handleJoinCampaign()">Join Campaign</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let currentUserId = null;
+
+  // Require auth — redirect to login if not signed in and not guest
+  async function requireAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      const isGuest = sessionStorage.getItem('guest_mode');
+      if (!isGuest) {
+        window.location.href = 'login.html';
+        return null;
+      }
+    }
+    return session;
+  }
+
+  // Load campaigns for current user
+  async function loadCampaigns(userId) {
+    const { data, error } = await supabaseClient
+      .from('memberships')
+      .select(`
+        id,
+        role,
+        accent_hex,
+        campaigns (
+          id,
+          name,
+          banner_url,
+          ruleset
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('[loadCampaigns] Failed:', error.message);
+      return [];
+    }
+    return data;
+  }
+
+  // Render campaign cards
+  function renderCampaigns(memberships) {
+    const container = document.getElementById('campaign-list');
+
+    if (!memberships || memberships.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🗺️</div>
+          <p>No campaigns yet — create one or ask your DM for the campaign ID</p>
+        </div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'campaign-grid';
+
+    memberships.forEach(({ role, campaigns: campaign }) => {
+      if (!campaign) return;
+
+      const card = document.createElement('a');
+      card.className = 'campaign-card';
+      card.href = 'index.html?c=' + campaign.id;
+
+      const roleLabel   = role === 'dm' ? 'Dungeon Master' : role === 'player' ? 'Player' : 'Guest';
+      const rulesetLabel = campaign.ruleset === '5e-2024' ? 'D&D 5e 2024' : 'D&D 5e 2014';
+
+      const banner = campaign.banner_url
+        ? `<img class="card-banner" src="${campaign.banner_url}" alt="${campaign.name} banner" loading="lazy">`
+        : `<div class="card-banner-placeholder">⚔️</div>`;
+
+      card.innerHTML = `
+        ${banner}
+        <div class="card-body">
+          <div class="card-role-badge">${roleLabel}</div>
+          <div class="card-name">${escapeHtml(campaign.name)}</div>
+          <div class="card-meta">${rulesetLabel}</div>
+        </div>`;
+
+      grid.appendChild(card);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(grid);
+  }
+
+  // Create a new campaign
+  async function createCampaign(name, ruleset, userId) {
+    const { data: campaign, error: campErr } = await supabaseClient
+      .from('campaigns')
+      .insert({ name, ruleset })
+      .select('id')
+      .single();
+
+    if (campErr) {
+      console.error('[createCampaign] Insert campaign failed:', campErr.message);
+      throw new Error(campErr.message);
+    }
+
+    const { error: memErr } = await supabaseClient
+      .from('memberships')
+      .insert({ user_id: userId, campaign_id: campaign.id, role: 'dm' });
+
+    if (memErr) {
+      console.error('[createCampaign] Insert membership failed:', memErr.message);
+      throw new Error(memErr.message);
+    }
+
+    return campaign.id;
+  }
+
+  // Join an existing campaign
+  async function joinCampaign(campaignId, userId) {
+    const { data: campaign, error: checkErr } = await supabaseClient
+      .from('campaigns')
+      .select('id, name')
+      .eq('id', campaignId)
+      .single();
+
+    if (checkErr || !campaign) {
+      throw new Error('Campaign not found. Check the ID and try again.');
+    }
+
+    const { data: existing } = await supabaseClient
+      .from('memberships')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existing) {
+      return campaignId;
+    }
+
+    const { error: memErr } = await supabaseClient
+      .from('memberships')
+      .insert({ user_id: userId, campaign_id: campaignId, role: 'player' });
+
+    if (memErr) {
+      console.error('[joinCampaign] Insert membership failed:', memErr.message);
+      throw new Error(memErr.message);
+    }
+
+    return campaignId;
+  }
+
+  // Sign out
+  async function signOut() {
+    await supabaseClient.auth.signOut();
+    sessionStorage.removeItem('guest_mode');
+    window.location.href = 'login.html';
+  }
+
+  // Modal helpers
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    clearModalErrors();
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    clearModalErrors();
+  }
+  function clearModalErrors() {
+    ['create-error', 'join-error'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = ''; el.classList.remove('visible'); }
+    });
+  }
+  function showModalError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+  function setModalLoading(btnId, loading, label) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Please wait…' : label;
+  }
+
+  // Handle create campaign form
+  async function handleCreateCampaign() {
+    clearModalErrors();
+    const name    = document.getElementById('campaign-name').value.trim();
+    const ruleset = document.getElementById('campaign-ruleset').value;
+
+    if (!name) { showModalError('create-error', 'Please enter a campaign name.'); return; }
+
+    setModalLoading('create-submit', true, 'Create Campaign');
+    try {
+      const id = await createCampaign(name, ruleset, currentUserId);
+      window.location.href = 'index.html?c=' + id;
+    } catch (err) {
+      showModalError('create-error', err.message || 'Something went wrong. Please try again.');
+      setModalLoading('create-submit', false, 'Create Campaign');
+    }
+  }
+
+  // Handle join campaign form
+  async function handleJoinCampaign() {
+    clearModalErrors();
+    const campaignId = document.getElementById('campaign-id-input').value.trim();
+
+    if (!campaignId) { showModalError('join-error', 'Please enter a campaign ID.'); return; }
+
+    setModalLoading('join-submit', true, 'Join Campaign');
+    try {
+      const id = await joinCampaign(campaignId, currentUserId);
+      window.location.href = 'index.html?c=' + id;
+    } catch (err) {
+      showModalError('join-error', err.message || 'Something went wrong. Please try again.');
+      setModalLoading('join-submit', false, 'Join Campaign');
+    }
+  }
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // Close modals on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+
+  // Token refresh / sign-out handler
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+      const banner = document.getElementById('session-banner');
+      if (banner) banner.style.display = 'block';
+      setTimeout(() => window.location.href = 'login.html', 2000);
+    }
+  });
+
+  // Escape HTML to prevent XSS
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Init
+  document.addEventListener('DOMContentLoaded', async () => {
+    const session = await requireAuth();
+    if (!session) return;
+
+    currentUserId = session.user.id;
+
+    // Load display name from profiles
+    const { data: profile, error: profileErr } = await supabaseClient
+      .from('profiles')
+      .select('display_name')
+      .eq('id', currentUserId)
+      .single();
+
+    if (profileErr) {
+      console.error('[init] Profile fetch failed:', profileErr.message);
+    }
+
+    const nameEl = document.getElementById('user-name');
+    if (profile && profile.display_name) {
+      nameEl.textContent = profile.display_name;
+    } else {
+      nameEl.textContent = session.user.email || '';
+    }
+
+    const memberships = await loadCampaigns(currentUserId);
+    renderCampaigns(memberships);
+  });
+</script>
+</body>
+</html>
