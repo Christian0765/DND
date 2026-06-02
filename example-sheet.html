@@ -317,8 +317,12 @@
   Fill every id="f-*" element, then update the JSON block at
   the very bottom of this file (id="char-inventory").
 
+  NOTE: Class, race, background, and alignment are selected when you
+  submit this sheet through the campaign tracker import screen — you
+  do not need to fill those in here.
+
   ALL FIELD IDs:
-    Identity  : f-name, f-class, f-race, f-bg, f-align, f-player
+    Identity  : f-name, f-player
     Combat    : f-prof, f-ac, f-init, f-speed, f-curhp, f-maxhp,
                 f-hd, f-pp, f-gold, f-gold2, f-carry
     Abilities : f-str, f-strmod, f-dex, f-dexmod, f-con, f-conmod,
@@ -350,31 +354,6 @@
     </div>
   </div>
 
-  <div class="field-group">
-    <!-- FIELD: f-class | TYPE: text input | DESCRIPTION: Character class and level, e.g. "Fighter 3" or "Wizard 5 / Rogue 2" -->
-    <div class="field medium">
-      <label for="f-class">Class &amp; Level</label>
-      <input type="text" id="f-class" placeholder="e.g. Fighter 3" value="">
-    </div>
-
-    <!-- FIELD: f-race | TYPE: text input | DESCRIPTION: Character race/species, e.g. "Human", "Elf", "Half-Orc" -->
-    <div class="field medium">
-      <label for="f-race">Race</label>
-      <input type="text" id="f-race" placeholder="e.g. Human" value="">
-    </div>
-
-    <!-- FIELD: f-bg | TYPE: text input | DESCRIPTION: Character background, e.g. "Soldier", "Noble", "Outlander" -->
-    <div class="field medium">
-      <label for="f-bg">Background</label>
-      <input type="text" id="f-bg" placeholder="e.g. Soldier" value="">
-    </div>
-
-    <!-- FIELD: f-align | TYPE: text input | DESCRIPTION: Alignment, e.g. "Lawful Good", "Chaotic Neutral", "True Neutral" -->
-    <div class="field medium">
-      <label for="f-align">Alignment</label>
-      <input type="text" id="f-align" placeholder="e.g. Chaotic Neutral" value="">
-    </div>
-  </div>
 
   <!-- ═══════════════════ ABILITY SCORES ═══════════════════ -->
   <div class="section-title">Ability Scores</div>
@@ -603,7 +582,8 @@
   </div>
 
   <div class="download-note">
-    D&D Campaign Tracker · example-sheet.html · Upload this file on the character creation screen
+    D&D Campaign Tracker · example-sheet.html · Upload this file on the character creation screen.<br>
+    Class, race, background, and alignment are chosen from dropdowns on the import screen — leave them blank here.
   </div>
 
 </div><!-- end .sheet -->
