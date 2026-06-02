@@ -6189,21 +6189,7 @@ function saveEdit(section) {
 }
 
 // ── ITEMS ─────────────────────────────────────────────────
-const DEFAULT_ITEMS = [
-  { id: 'arrows',    name: 'Arrow',             icon: '🏹', qty: 20, category: 'resources', desc: 'Standard arrows for a longbow or shortbow.' },
-  { id: 'backpack',  name: 'Backpack',           icon: '🎒', qty: 1,  category: 'misc',      desc: 'Holds 30 lbs of gear. Counts as a container.' },
-  { id: 'bedroll',   name: 'Bedroll',            icon: '🛏',  qty: 1,  category: 'misc',      desc: 'Provides a comfortable rest while camping.' },
-  { id: 'larmor',    name: 'Leather Armor',      icon: '🥋', qty: 1,  category: 'armor',     desc: 'AC 11 + DEX modifier. Light armor.' },
-  { id: 'rope',      name: 'Rope, Hempen',       icon: '🪢', qty: 1,  category: 'resources', desc: '50 ft. Has 2 HP and can be burst with a DC 17 STR check.' },
-  { id: 'rations',   name: 'Rations',            icon: '🥩', qty: 10, category: 'food',      desc: 'One day of trail food — dried meat, hardtack, dried fruit.' },
-  { id: 'torch',     name: 'Torch',              icon: '🔦', qty: 10, category: 'resources', desc: 'Burns for 1 hour. Bright light 20 ft, dim light 40 ft.' },
-  { id: 'pipe',      name: 'Magic Pipe',         icon: '🪄', qty: 1,  category: 'magical',   desc: '⚠️ USE NEXT SESSION. Magical pipe — effects unknown until used.', special: true },
-  { id: 'rod',       name: 'Rod of Falsehood',   icon: '🔮', qty: 1,  category: 'magical',   desc: 'Grows warm and vibrates gently when someone nearby speaks a lie. Range: 30 ft.', special: true },
-  { id: 'wickets',   name: 'Sticky Wickets',     icon: '💥', qty: 3,  category: 'resources', desc: 'Single use. Holds 200 lbs for 20 ft. Adhesive trap — DM to confirm exact mechanics.', special: true },
-  { id: 'costume',   name: 'Gnome Costume',      icon: '🎭', qty: 1,  category: 'misc',      desc: 'A convincing gnome disguise. Disadvantage on Perception to see through it.' },
-  { id: 'club',      name: 'Club',               icon: '🪵', qty: 1,  category: 'weapons',   desc: '1d4 bludgeoning. Light, simple weapon.' },
-  { id: 'scimitar',  name: 'Scimitar',           icon: '🗡',  qty: 1,  category: 'weapons',   desc: '1d6 slashing. Finesse, light.' },
-];
+const DEFAULT_ITEMS = [];
 let ITEMS = DEFAULT_ITEMS.map(i => ({ ...i })); // mutable copy; overwritten by Firestore
 
 async function loadInventory() {
@@ -6212,7 +6198,7 @@ async function loadInventory() {
       .collection('characters').doc(PLAYER_ID)
       .collection('inventory').get();
     if (snap.empty) {
-      await seedInventory();
+      renderItems(); // show empty inventory for new players
     } else {
       ITEMS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderItems();
@@ -6663,8 +6649,13 @@ CONDITIONS.forEach(c => {
 <script src="firebase-config.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
-const PLAYER_ID  = params.get('player') || 'player1';
+const PLAYER_ID  = params.get('player') || params.get('slot') || 'player1';
 const CAMPAIGN_ID = params.get('c') || 'campaign1';
+(function() {
+  const slotNum = PLAYER_ID.replace('player', '');
+  const eyebrow = document.querySelector('.sheet-eyebrow');
+  if (eyebrow) eyebrow.textContent = 'Your Character · Player ' + slotNum;
+})();
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
