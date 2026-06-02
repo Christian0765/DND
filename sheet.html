@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Character Sheet</title>
+<title>Character Sheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -50,7 +50,11 @@
   }
   .back-link:hover { color: var(--gold-light); border-color: var(--gold); }
 
-  .sync-bar { display: flex; align-items: center; gap: 8px; }
+  .sync-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .sync-status {
     font-family: 'Cinzel', serif;
     font-size: 0.55rem;
@@ -65,20 +69,20 @@
   .sync-status.error { color: var(--red); border-color: var(--red); background: rgba(122,21,21,0.1); }
   .sync-status.offline { color: var(--border-light); border-color: var(--border); background: rgba(122,90,40,0.1); }
 
-  .setup-banner {
-    max-width: 900px;
-    margin: 0 auto 14px;
-    background: rgba(154,112,0,0.12);
-    border: 1px solid var(--gold);
-    border-radius: 3px;
-    padding: 10px 16px;
+  .save-btn {
     font-family: 'Cinzel', serif;
-    font-size: 0.62rem;
+    font-size: 0.58rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     color: var(--gold-light);
-    text-align: center;
+    background: none;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
   }
+  .save-btn:hover { background: rgba(154,112,0,0.15); }
 
   .page {
     max-width: 900px;
@@ -203,6 +207,7 @@
 
   .footer { margin-top: 20px; padding-top: 14px; border-top: 3px double var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.8rem; }
   .backstory-note { padding: 10px 12px; background: rgba(255,255,255,0.2); border-left: 3px solid var(--red); line-height: 1.6; font-size: 0.81rem; }
+  .ash-box { padding: 10px 12px; background: rgba(255,255,255,0.2); border-left: 3px solid var(--gold); font-size: 0.79rem; line-height: 1.6; margin-top: 8px; }
 
   .save-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--green); cursor: pointer; display: inline-block; transition: background 0.15s; }
   .save-circle.fail { border-color: var(--red); }
@@ -218,20 +223,72 @@
     .footer { grid-template-columns: 1fr; }
   }
 
-  .history-panel { margin-top: 20px; border-top: 3px double var(--border); padding-top: 14px; }
-  .history-toggle { font-family: 'Cinzel', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--gold); cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; gap: 6px; }
+  .history-panel {
+    margin-top: 20px;
+    border-top: 3px double var(--border);
+    padding-top: 14px;
+  }
+  .history-toggle {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .history-toggle:hover { color: var(--gold-light); }
   .history-toggle .arrow { transition: transform 0.2s; display: inline-block; }
   .history-toggle.open .arrow { transform: rotate(90deg); }
   .history-body { display: none; margin-top: 10px; }
   .history-body.open { display: block; }
-  .history-entry { display: grid; grid-template-columns: 120px 140px 1fr; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px dotted var(--parchment-dark); font-size: 0.75rem; line-height: 1.4; }
+  .history-entry {
+    display: grid;
+    grid-template-columns: 120px 140px 1fr;
+    gap: 8px;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--parchment-dark);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
   .history-entry:last-child { border-bottom: none; }
-  .history-time { font-family: 'Cinzel', serif; font-size: 0.5rem; color: var(--border-light); letter-spacing: 0.04em; }
-  .history-field { font-family: 'Cinzel', serif; font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-light); }
-  .history-clear { font-family: 'Cinzel', serif; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); background: none; border: 1px solid var(--red); border-radius: 2px; padding: 2px 7px; cursor: pointer; float: right; margin-top: -2px; }
+  .history-time {
+    font-family: 'Cinzel', serif;
+    font-size: 0.5rem;
+    color: var(--border-light);
+    letter-spacing: 0.04em;
+  }
+  .history-field {
+    font-family: 'Cinzel', serif;
+    font-size: 0.56rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-light);
+  }
+  .history-clear {
+    font-family: 'Cinzel', serif;
+    font-size: 0.52rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    background: none;
+    border: 1px solid var(--red);
+    border-radius: 2px;
+    padding: 2px 7px;
+    cursor: pointer;
+    float: right;
+    margin-top: -2px;
+  }
   .history-clear:hover { background: rgba(122,21,21,0.1); }
-  @media (max-width: 500px) { .history-entry { grid-template-columns: 1fr; gap: 2px; } }
+  @media (max-width: 500px) {
+    .history-entry { grid-template-columns: 1fr; gap: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -239,122 +296,175 @@
 <div class="top-bar">
   <a class="back-link" href="index.html">← Party Overview</a>
   <div class="sync-bar">
-    <span class="sync-status offline" id="sync-status">Connecting…</span>
+    <span class="sync-status offline" id="sync-status">Connecting...</span>
+    <button class="save-btn" onclick="saveToFirestore()">Save</button>
   </div>
 </div>
-
-<div class="setup-banner">All fields are editable — click any value and type to fill in your character</div>
 
 <div class="page">
 
   <div class="header">
     <div>
-      <input class="editable name-field" id="f-name" value="" placeholder="Character Name">
-      <div class="char-sub">Class · Level · Alignment</div>
+      <input class="editable name-field" id="f-name" value="Dracula">
+      <div class="char-sub">Dragonborn Fighter · Level 3 · Chaotic Good</div>
     </div>
     <table class="meta-table">
-      <tr><td>Class & Level</td><td><input class="editable" id="f-class" value="" placeholder="Fighter 1" style="width:100px;text-align:right;font-weight:600;"></td></tr>
-      <tr><td>Race</td><td><input class="editable" id="f-race" value="" placeholder="Human" style="width:100px;text-align:right;font-weight:600;"></td></tr>
-      <tr><td>Background</td><td><input class="editable" id="f-bg" value="" placeholder="Soldier" style="width:100px;text-align:right;font-weight:600;"></td></tr>
-      <tr><td>Alignment</td><td><input class="editable" id="f-align" value="" placeholder="Neutral Good" style="width:100px;text-align:right;font-weight:600;"></td></tr>
-      <tr><td>Player</td><td><input class="editable" id="f-player" value="" placeholder="Name" style="width:100px;text-align:right;font-weight:600;"></td></tr>
-      <tr><td>Prof. Bonus</td><td><input class="editable" id="f-prof" value="" placeholder="+2" style="width:100px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Class & Level</td><td><input class="editable" id="f-class" value="Fighter 3" style="width:100px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Race</td><td><input class="editable" id="f-race" value="Dragonborn" style="width:100px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Background</td><td><input class="editable" id="f-bg" value="Geto" style="width:100px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Alignment</td><td><input class="editable" id="f-align" value="Chaotic Good" style="width:100px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Player</td><td><input class="editable" id="f-player" value="1" style="width:100px;text-align:right;font-weight:600;"></td></tr>
+      <tr><td>Prof. Bonus</td><td><input class="editable" id="f-prof" value="+2" style="width:100px;text-align:right;font-weight:600;"></td></tr>
     </table>
   </div>
 
   <div class="combat-row">
-    <div class="cs"><input class="editable big" id="f-ac" value="" placeholder="—"><span class="lbl">Armor Class</span></div>
-    <div class="cs"><input class="editable big" id="f-init" value="" placeholder="—"><span class="lbl">Initiative</span></div>
-    <div class="cs"><input class="editable big" id="f-speed" value="" placeholder="30"><span class="lbl">Speed ft</span></div>
+    <div class="cs"><input class="editable big" id="f-ac" value="12"><span class="lbl">Armor Class</span></div>
+    <div class="cs"><input class="editable big" id="f-init" value="+1"><span class="lbl">Initiative</span></div>
+    <div class="cs"><input class="editable big" id="f-speed" value="30"><span class="lbl">Speed ft</span></div>
     <div class="cs">
       <div style="display:flex;align-items:center;justify-content:center;gap:3px;">
-        <input class="editable big" id="f-curhp" value="" placeholder="—" style="color:var(--green);">
+        <input class="editable big" id="f-curhp" value="22" style="color:var(--green);">
         <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--ink-light);">/</span>
-        <input class="editable big" id="f-maxhp" value="" placeholder="—" style="color:var(--green);">
+        <input class="editable big" id="f-maxhp" value="22" style="color:var(--green);">
       </div>
       <span class="lbl">Current / Max HP</span>
     </div>
-    <div class="cs"><input class="editable big" id="f-hd" value="" placeholder="1d8"><span class="lbl">Hit Dice</span></div>
-    <div class="cs"><input class="editable big" id="f-pp" value="" placeholder="—"><span class="lbl">Passive Perc.</span></div>
-    <div class="cs"><input class="editable big" id="f-gold" value="" placeholder="0" style="color:var(--gold);"><span class="lbl">Gold GP</span></div>
-    <div class="cs"><input class="editable big" id="f-carry" value="" placeholder="—" style="color:var(--ink-light);"><span class="lbl">Carry lbs</span></div>
+    <div class="cs"><input class="editable big" id="f-hd" value="1d10"><span class="lbl">Hit Dice</span></div>
+    <div class="cs"><input class="editable big" id="f-pp" value="9"><span class="lbl">Passive Perc.</span></div>
+    <div class="cs"><input class="editable big" id="f-gold" value="82" style="color:var(--gold);"><span class="lbl">Gold GP</span></div>
+    <div class="cs"><input class="editable big" id="f-carry" value="330" style="color:var(--ink-light);"><span class="lbl">Carry lbs</span></div>
   </div>
 
   <div class="body-grid">
     <div>
       <div class="st">Ability Scores</div>
       <div class="ability">
-        <div class="ability-top"><span class="ability-name">Strength</span><input class="editable ability-score-ed" id="f-str" value="" placeholder="10"></div>
-        <input class="editable ability-mod-ed" id="f-strmod" value="" placeholder="+0">
-        <div class="ability-saves"><span>Save</span><span>Athletics</span></div>
+        <div class="ability-top"><span class="ability-name">Strength</span><input class="editable ability-score-ed" id="f-str" value="22"></div>
+        <input class="editable ability-mod-ed" id="f-strmod" value="+6">
+        <div class="ability-saves"><span class="prof">Save +8 ●</span><span class="prof">Athletics +8 ●</span></div>
       </div>
       <div class="ability">
-        <div class="ability-top"><span class="ability-name">Dexterity</span><input class="editable ability-score-ed" id="f-dex" value="" placeholder="10"></div>
-        <input class="editable ability-mod-ed" id="f-dexmod" value="" placeholder="+0">
-        <div class="ability-saves"><span>Save</span><span>Acrobatics</span><span>Sleight</span><span>Stealth</span></div>
+        <div class="ability-top"><span class="ability-name">Dexterity</span><input class="editable ability-score-ed" id="f-dex" value="13"></div>
+        <input class="editable ability-mod-ed" id="f-dexmod" value="+1">
+        <div class="ability-saves"><span>Save +1</span><span class="prof">Acrobatics +3 ●</span><span>Sleight +1</span><span>Stealth +1</span></div>
       </div>
       <div class="ability">
-        <div class="ability-top"><span class="ability-name">Constitution</span><input class="editable ability-score-ed" id="f-con" value="" placeholder="10"></div>
-        <input class="editable ability-mod-ed" id="f-conmod" value="" placeholder="+0">
-        <div class="ability-saves"><span>Save</span></div>
+        <div class="ability-top"><span class="ability-name">Constitution</span><input class="editable ability-score-ed" id="f-con" value="10"></div>
+        <input class="editable ability-mod-ed" id="f-conmod" value="+0">
+        <div class="ability-saves"><span class="prof">Save +2 ●</span></div>
       </div>
       <div class="ability">
-        <div class="ability-top"><span class="ability-name">Intelligence</span><input class="editable ability-score-ed" id="f-int" value="" placeholder="10"></div>
-        <input class="editable ability-mod-ed" id="f-intmod" value="" placeholder="+0">
-        <div class="ability-saves"><span>Save</span><span>Arcana</span><span>History</span><span>Invest.</span><span>Nature</span><span>Religion</span></div>
+        <div class="ability-top"><span class="ability-name">Intelligence</span><input class="editable ability-score-ed" id="f-int" value="11"></div>
+        <input class="editable ability-mod-ed" id="f-intmod" value="+0">
+        <div class="ability-saves"><span>Save +0</span><span>Arcana +0</span><span>History +0</span><span>Invest. +0</span><span class="prof">Nature +2 ●</span><span>Religion +0</span></div>
       </div>
       <div class="ability">
-        <div class="ability-top"><span class="ability-name">Wisdom</span><input class="editable ability-score-ed" id="f-wis" value="" placeholder="10"></div>
-        <input class="editable ability-mod-ed" id="f-wismod" value="" placeholder="+0">
-        <div class="ability-saves"><span>Save</span><span>Animal</span><span>Insight</span><span>Medicine</span><span>Percep.</span><span>Survival</span></div>
+        <div class="ability-top"><span class="ability-name">Wisdom</span><input class="editable ability-score-ed" id="f-wis" value="8"></div>
+        <input class="editable ability-mod-ed" id="f-wismod" value="−1">
+        <div class="ability-saves"><span>Save −1</span><span>Animal −1</span><span>Insight −1</span><span>Medicine −1</span><span>Percep. −1</span><span class="prof">Survival +1 ●</span></div>
       </div>
       <div class="ability">
-        <div class="ability-top"><span class="ability-name">Charisma</span><input class="editable ability-score-ed" id="f-cha" value="" placeholder="10"></div>
-        <input class="editable ability-mod-ed" id="f-chamod" value="" placeholder="+0">
-        <div class="ability-saves"><span>Save</span><span>Decep.</span><span>Intimid.</span><span>Perform.</span><span>Persuas.</span></div>
+        <div class="ability-top"><span class="ability-name">Charisma</span><input class="editable ability-score-ed" id="f-cha" value="18"></div>
+        <input class="editable ability-mod-ed" id="f-chamod" value="+4">
+        <div class="ability-saves"><span>Save +4</span><span>Decep. +4</span><span class="prof">Intimid. +6 ●</span><span>Perform. +4</span><span>Persuas. +4</span></div>
       </div>
       <div class="st">Proficiencies</div>
-      <textarea class="editable" id="f-profs" style="font-style:normal;min-height:80px;" placeholder="Armor, Weapons, Tools, Languages..."></textarea>
+      <div class="prof-item"><strong>Armor</strong>Heavy, Medium, Light, Shields</div>
+      <div class="prof-item"><strong>Weapons</strong>Martial, Simple</div>
+      <div class="prof-item"><strong>Tools</strong>Tinker's Tools, Woodcarver's Tools</div>
+      <div class="prof-item"><strong>Languages</strong>Common, Draconic</div>
     </div>
 
     <div>
-      <div class="st">Weapons & Attacks</div>
-      <textarea class="editable" id="f-weapons" style="font-style:normal;min-height:130px;font-size:0.78rem;" placeholder="Weapon · Atk Bonus · Damage · Notes&#10;e.g. Longsword · +5 · 1d8+3 slashing · Versatile&#10;e.g. Shortbow · +4 · 1d6+2 piercing · Ranged 80ft"></textarea>
+      <div class="st">Weapons</div>
+      <table class="atk-table">
+        <colgroup><col style="width:30%"><col style="width:16%"><col style="width:28%"><col style="width:26%"></colgroup>
+        <thead><tr><th>Weapon</th><th>Atk</th><th>Damage</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Ash</strong> <span style="font-size:0.64rem;color:var(--gold);">(Bonded)</span></td><td><span class="atk-val">+8</span></td><td>1d4+6 slash</td><td style="font-size:0.68rem;color:var(--ink-light);">Main · Dual wield</td></tr>
+          <tr><td>Handaxe</td><td><span class="atk-val">+8</span></td><td>1d6+6 slash</td><td style="font-size:0.68rem;color:var(--ink-light);">Off-hand · Bonus</td></tr>
+          <tr><td>Longsword</td><td><span class="atk-val">+8</span></td><td>1d8+6 slash</td><td style="font-size:0.68rem;color:var(--ink-light);">Solo · Versatile</td></tr>
+          <tr><td><strong>Skullcrusher</strong></td><td><span class="atk-val">+8</span></td><td>2d6+6 slash</td><td style="font-size:0.68rem;color:var(--ink-light);">Two-handed</td></tr>
+          <tr><td>Longbow</td><td><span class="atk-val">+3</span></td><td>1d8+1 pierce</td><td style="font-size:0.68rem;color:var(--ink-light);">Ranged 150 ft</td></tr>
+          <tr><td>Acid Breath</td><td><span class="atk-val">—</span></td><td>2d6 acid</td><td style="font-size:0.68rem;color:var(--ink-light);">5×30 ft · 1/rest</td></tr>
+        </tbody>
+      </table>
+      <div class="info-box"><strong>Dual Wield Combo</strong>Action: Ash (advantage w/ Extendo Grip) → 1d4+6 | Bonus: Handaxe → 1d6+6. Both add +6 STR.</div>
+      <div class="info-box"><strong>Acid Breath</strong>5×30 ft · DC 10 DEX save · half on success · once per rest</div>
+      <div class="info-box"><strong>Poison Smoke — Stage 1</strong>Fills area with toxic gas. Obscures vision. Scales with Ash bond stages.</div>
 
-      <div class="st" style="margin-top:14px;">Hit Dice Tracker</div>
+      <div class="st">Superiority Dice — 4d8</div>
       <div style="font-size:0.73rem;color:var(--ink-light);margin-bottom:4px;">Click to mark used · recharge on short/long rest</div>
       <div class="dice-track">
+        <div class="die-box" onclick="this.classList.toggle('used')">d8</div>
         <div class="die-box" onclick="this.classList.toggle('used')">d8</div>
         <div class="die-box" onclick="this.classList.toggle('used')">d8</div>
         <div class="die-box" onclick="this.classList.toggle('used')">d8</div>
       </div>
       <button class="die-reset" onclick="document.querySelectorAll('.die-box').forEach(d=>d.classList.remove('used'))">Reset on rest</button>
 
-      <div class="st">Features & Abilities</div>
-      <textarea class="editable" id="f-features" style="font-style:normal;min-height:200px;font-size:0.78rem;" placeholder="Feature Name: Description&#10;e.g. Second Wind: Bonus action, regain 1d10+level HP, once per rest&#10;e.g. Sneak Attack: Extra 2d6 damage when you have advantage"></textarea>
+      <div class="st">Features</div>
+      <ul class="feature-list">
+        <li><strong>Precision Attack</strong>Spend 1 die before attack → add to attack roll.</li>
+        <li><strong>Menacing Attack</strong>On hit, spend 1 die → damage + WIS save or frightened.</li>
+        <li><strong>Pushing Attack</strong>On hit, spend 1 die → damage + STR save or pushed 15 ft.</li>
+        <li><strong>Know Your Enemy</strong>1 min observe → DM compares 2 stats.</li>
+        <li><strong>Second Wind</strong>Bonus action: 1d10+3 HP. Once per rest.</li>
+        <li><strong>Action Surge</strong>Extra action on your turn. Once per rest.</li>
+        <li><strong>Two Weapon Fighting</strong>Add STR mod to off-hand damage.</li>
+        <li><strong>Extendo Grip (Ash Stage 1)</strong>Advantage + reach 10 ft.</li>
+        <li><strong>20 ft Jump</strong>Enhanced jump distance.</li>
+        <li><strong>Clas Attack</strong>Special attack (DM confirmed).</li>
+        <li><strong>Skullcrusher Strike</strong>Trophy from pirate captain boss.</li>
+      </ul>
     </div>
 
     <div>
       <div class="st">Personality</div>
       <span class="trait-label">Traits</span>
-      <textarea class="editable" id="f-traits" placeholder="Fill in from AI summary…"></textarea>
+      <textarea class="editable" id="f-traits">On Smoke — laid back, unbothered, moves at his own pace.</textarea>
       <span class="trait-label">Ideals</span>
-      <textarea class="editable" id="f-ideals" placeholder="Fill in from AI summary…"></textarea>
+      <textarea class="editable" id="f-ideals">Trust actions, not words. Betrayed by promises once — never again.</textarea>
       <span class="trait-label">Bonds</span>
-      <textarea class="editable" id="f-bonds" placeholder="Fill in from AI summary…"></textarea>
+      <textarea class="editable" id="f-bonds">Ash — his daughter's name, carried into every fight.</textarea>
       <span class="trait-label">Flaws</span>
-      <textarea class="editable" id="f-flaws" placeholder="Fill in from AI summary…"></textarea>
+      <textarea class="editable" id="f-flaws">Carries deep guilt for those he couldn't save from Dragon Veil.</textarea>
 
       <div class="st">Equipment</div>
-      <textarea class="editable" id="f-equipment" style="font-style:normal;min-height:100px;" placeholder="List your items here..."></textarea>
-      <div class="gold-box"><strong>Gold</strong><input class="editable" id="f-gold2" value="" placeholder="0"> GP</div>
+      <ul class="equip-list">
+        <li>Arrow ×20</li><li>Backpack</li><li>Bedroll</li><li>Cart</li>
+        <li>Clothes, common</li><li>Incense ×5</li><li>Leather armor</li>
+        <li>Mess kit</li><li>Pouch</li><li>Rations ×10</li>
+        <li>Rope, hempen</li><li>Tinderbox</li><li>Torch ×10</li>
+        <li>Vestements</li><li>Waterskin</li><li>Obsidian Stone</li>
+        <li><strong>Magic Pipe</strong> ⚠️ USE NEXT SESSION</li>
+        <li><strong>Rod of Falsehood</strong> — grows on nearby lies</li>
+        <li><strong>Sticky Wickets ×3</strong> — 200 lbs, 20 ft, single use</li>
+        <li><strong>Gnome Costume</strong></li>
+        <li>Club ×1</li><li>Scimitar ×1</li>
+      </ul>
+      <div class="gold-box"><strong>Gold</strong><input class="editable" id="f-gold2" value="82"> GP</div>
+      <div style="margin-top:6px;font-size:0.7rem;color:var(--ink-light);padding:3px 6px;border:1px dashed var(--border-light);border-radius:2px;">Shrine Stamp 123</div>
     </div>
   </div>
 
   <div class="footer">
     <div>
       <div class="st" style="margin-top:0">Backstory</div>
-      <textarea class="editable" id="f-backstory" style="font-style:normal;min-height:120px;font-size:0.82rem;" placeholder="Your character's history, motivations, and secrets..."></textarea>
+      <div class="backstory-note">
+        Black Dragonborn from Dragon Veil — distorted by the Giants.<br>
+        Weedgrower &amp; tool maker before taking up arms.<br><br>
+        Fled as a refugee. Pirates offered safe passage — revealed themselves as enemies. Dracula eliminated their captain, took <strong>Skullcrusher</strong> as a trophy.<br><br>
+        <em>In progress:</em> Learning swordsmithing. Needs 2 more lessons.
+      </div>
+      <div class="st">Ash — Bonded Weapon</div>
+      <div class="ash-box">
+        <em style="color:var(--ink-light);">Named after his lost daughter.</em><br><br>
+        <strong style="color:var(--red);">Stage 1 (Active):</strong> Extendo Grip — advantage, reach 10 ft. 1d4+6.<br>
+        <span style="color:var(--ink-light);"><strong>Stage 2 (Locked):</strong> Sweeping attacks. 1d6+6.</span><br>
+        <span style="color:var(--ink-light);"><strong>Stage 3 (Locked):</strong> Full bond. 1d8+6.</span>
+      </div>
     </div>
     <div>
       <div class="st" style="margin-top:0">Death Saves</div>
@@ -378,8 +488,15 @@
       </div>
       <div class="st">Inspiration</div>
       <div id="insp" onclick="this.style.background=this.style.background?'':'var(--gold)'" title="Toggle inspiration"></div>
-      <div class="st" style="margin-top:12px;">Session Notes</div>
-      <textarea class="editable" id="f-notes" style="font-style:normal;min-height:60px;" placeholder="Notes from this session..."></textarea>
+      <div class="st">Session Notes</div>
+      <textarea class="editable" id="f-notes" style="font-style:normal;min-height:70px;" placeholder="Notes..."></textarea>
+      <div class="st" style="margin-top:12px;">Level 4 Preview</div>
+      <div style="font-size:0.74rem;color:var(--ink-light);line-height:1.75;">
+        ● ASI — +2 one stat or +1 two stats<br>
+        ● Recommend: +2 CON or Tough feat<br>
+        ● HP becomes 28 (avg)<br>
+        ● Extra Battle Master maneuver
+      </div>
     </div>
   </div>
 
@@ -399,9 +516,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-// Read slot from URL: sheet-template.html?slot=player2
 const params = new URLSearchParams(window.location.search);
 const PLAYER_ID = params.get('slot') || 'player1';
+document.title = 'Character Sheet · ' + PLAYER_ID.replace('player', 'Player ');
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -411,8 +528,7 @@ const FIELDS = [
   'f-ac','f-init','f-speed','f-curhp','f-maxhp','f-hd','f-pp','f-gold','f-carry',
   'f-str','f-strmod','f-dex','f-dexmod','f-con','f-conmod',
   'f-int','f-intmod','f-wis','f-wismod','f-cha','f-chamod',
-  'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2',
-  'f-weapons','f-features','f-equipment','f-profs','f-backstory'
+  'f-traits','f-ideals','f-bonds','f-flaws','f-notes','f-gold2'
 ];
 
 function setStatus(type, text) {
@@ -468,9 +584,7 @@ const FIELD_LABELS = {
   'f-int':'INT','f-intmod':'INT Modifier','f-wis':'WIS','f-wismod':'WIS Modifier',
   'f-cha':'CHA','f-chamod':'CHA Modifier','f-traits':'Personality Traits',
   'f-ideals':'Ideals','f-bonds':'Bonds','f-flaws':'Flaws',
-  'f-notes':'Session Notes','f-gold2':'Gold (Equipment)',
-  'f-weapons':'Weapons','f-features':'Features','f-equipment':'Equipment',
-  'f-profs':'Proficiencies','f-backstory':'Backstory'
+  'f-notes':'Session Notes','f-gold2':'Gold (Equipment)'
 };
 const HISTORY_KEY = 'edit-history-sheet-' + PLAYER_ID;
 const MAX_HISTORY = 100;

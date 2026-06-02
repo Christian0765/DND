@@ -657,72 +657,7 @@
 </div>
 
 <div class="party-grid" id="party-grid">
-
-  <!-- PLAYER 1: DRACULA -->
-  <a class="player-card" href="sheet-1.html" id="card-1">
-    <div class="card-role">Player 1</div>
-    <div class="card-name" id="p1-name">Dracula</div>
-    <div class="card-class" id="p1-class">Dragonborn Fighter · Lv 3</div>
-    <div class="card-stats">
-      <div class="stat-box"><span class="sv hp" id="p1-hp">22</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv" id="p1-ac">12</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp" id="p1-gp">82</span><span class="sl">GP</span></div>
-    </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p1-bar" style="width:100%"></div></div>
-    <div class="card-link">View Sheet →</div>
-  </a>
-
-  <!-- PLAYER 2 -->
-  <a class="player-card empty" href="sheet-2.html" id="card-2">
-    <div class="card-role">Player 2</div>
-    <div class="card-name" id="p2-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
-    <div class="card-class" id="p2-class">— awaiting character —</div>
-    <div class="empty-badge" id="p2-badge">Sheet not yet filled</div>
-    <div class="card-stats">
-      <div class="stat-box"><span class="sv hp" id="p2-hp">—</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv" id="p2-ac">—</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp" id="p2-gp">—</span><span class="sl">GP</span></div>
-    </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p2-bar" style="width:0%"></div></div>
-    <div class="card-link">View Sheet →</div>
-  </a>
-
-  <!-- PLAYER 3 -->
-  <a class="player-card empty" href="sheet-3.html" id="card-3">
-    <div class="card-role">Player 3</div>
-    <div class="card-name" id="p3-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
-    <div class="card-class" id="p3-class">— awaiting character —</div>
-    <div class="empty-badge" id="p3-badge">Sheet not yet filled</div>
-    <div class="card-stats">
-      <div class="stat-box"><span class="sv hp" id="p3-hp">—</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv" id="p3-ac">—</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp" id="p3-gp">—</span><span class="sl">GP</span></div>
-    </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p3-bar" style="width:0%"></div></div>
-    <div class="card-link">View Sheet →</div>
-  </a>
-
-  <!-- PLAYER 4 -->
-  <a class="player-card empty" href="sheet-4.html" id="card-4">
-    <div class="card-role">Player 4</div>
-    <div class="card-name" id="p4-name" style="color:var(--ink-light);font-size:1.1rem;">Unnamed</div>
-    <div class="card-class" id="p4-class">— awaiting character —</div>
-    <div class="empty-badge" id="p4-badge">Sheet not yet filled</div>
-    <div class="card-stats">
-      <div class="stat-box"><span class="sv hp" id="p4-hp">—</span><span class="sl">HP</span></div>
-      <div class="stat-box"><span class="sv" id="p4-ac">—</span><span class="sl">AC</span></div>
-      <div class="stat-box"><span class="sv gp" id="p4-gp">—</span><span class="sl">GP</span></div>
-    </div>
-    <div class="hp-bar-wrap"><div class="hp-bar" id="p4-bar" style="width:0%"></div></div>
-    <div class="card-link">View Sheet →</div>
-  </a>
-
-  <!-- CREATE CHARACTER -->
-  <div class="add-player-card" onclick="openCreateModal()">
-    <div class="add-icon">+</div>
-    <div class="add-label">Create Character</div>
-  </div>
-
+  <!-- populated dynamically by startPartyListeners() -->
 </div>
 
 <!-- CREATE CHARACTER MODAL -->
@@ -924,16 +859,24 @@ function copyAIPrompt() {
 }
 
 function downloadTemplate() {
-  const slot = prompt('Which player slot? Enter: player1, player2, player3, or player4', 'player2');
-  if (!slot) return;
-  fetch('sheet-template.html')
+  const slotNum = prompt(
+    'Which player slot?\n\nEnter a number (e.g. 2 for Player 2).\nCheck the party grid to see which slots are already taken.',
+    '2'
+  );
+  if (!slotNum) return;
+  const slotId = 'player' + slotNum.trim();
+
+  fetch('sheet.html')
     .then(r => r.text())
     .then(html => {
-      const patched = html.replace("const PLAYER_ID = 'player1';", `const PLAYER_ID = '${slot}';`);
-      const blob = new Blob([patched], {type: 'text/html'});
+      const patched = html.replace(
+        "const PLAYER_ID = params.get('slot') || 'player1';",
+        `const PLAYER_ID = '${slotId}'; // pre-set slot`
+      );
+      const blob = new Blob([patched], { type: 'text/html' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `character-${slot}.html`;
+      a.download = 'character-' + slotId + '.html';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -956,34 +899,75 @@ window.addEventListener('DOMContentLoaded', () => {
   try {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    [1,2,3,4].forEach(n => {
-      db.collection('characters').doc('player'+n).onSnapshot(doc => {
-        if (!doc.exists) return;
-        const d = doc.data();
-        if (d['f-name'] && d['f-name'].trim()) {
-          const nameEl = document.getElementById('p'+n+'-name');
-          nameEl.textContent = d['f-name'];
-          nameEl.style.cssText = '';
-          document.getElementById('card-'+n).classList.remove('empty');
-          const badge = document.getElementById('p'+n+'-badge');
-          if (badge) badge.style.display = 'none';
-        }
-        const cls = [d['f-class'], d['f-race']].filter(Boolean).join(' · ');
-        if (cls) document.getElementById('p'+n+'-class').textContent = cls;
-        const curhp = d['f-curhp'] || '—';
-        const maxhp = d['f-maxhp'] || '';
-        document.getElementById('p'+n+'-hp').textContent = curhp;
-        document.getElementById('p'+n+'-ac').textContent = d['f-ac'] || '—';
-        document.getElementById('p'+n+'-gp').textContent = d['f-gold'] || '—';
-        if (curhp !== '—' && maxhp) {
-          const pct = Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0;
-          const bar = document.getElementById('p'+n+'-bar');
-          bar.style.width = pct + '%';
-          bar.className = 'hp-bar' + (pct < 25 ? ' low' : pct < 50 ? ' mid' : '');
-        }
+
+    function startPartyListeners() {
+      db.collection('characters').onSnapshot(snapshot => {
+        const characters = {};
+        snapshot.forEach(doc => { characters[doc.id] = doc.data(); });
+        renderPartyGrid(characters);
       });
-    });
-  } catch(e) { /* Firebase unavailable — cards show static defaults */ }
+    }
+
+    function renderPartyGrid(characters) {
+      const grid = document.getElementById('party-grid');
+
+      const slots = Object.keys(characters).sort((a, b) => {
+        const na = parseInt(a.replace('player', '')) || 999;
+        const nb = parseInt(b.replace('player', '')) || 999;
+        return na - nb;
+      });
+
+      let html = '';
+
+      slots.forEach(slot => {
+        const d = characters[slot];
+        const name   = (d['f-name']   || '').trim();
+        const cls    = (d['f-class']  || '').trim();
+        const race   = (d['f-race']   || '').trim();
+        const curhp  = d['f-curhp']  || '—';
+        const maxhp  = d['f-maxhp']  || '';
+        const ac     = d['f-ac']     || '—';
+        const gp     = d['f-gold']   || '—';
+        const slotLabel = slot.replace('player', 'Player ');
+
+        const hasName = name.length > 0;
+        const pct = (curhp !== '—' && maxhp)
+          ? Math.min(100, Math.round((+curhp / +maxhp) * 100)) || 0
+          : 0;
+        const barCls = pct < 25 ? ' low' : pct < 50 ? ' mid' : '';
+        const clsLine = [cls, race].filter(Boolean).join(' · ') || '— awaiting character —';
+
+        html += `
+          <a class="player-card${hasName ? '' : ' empty'}" href="sheet.html?slot=${slot}">
+            <div class="card-role">${slotLabel}</div>
+            <div class="card-name" ${hasName ? '' : 'style="color:var(--ink-light);font-size:1.1rem;"'}>
+              ${hasName ? name : 'Unnamed'}
+            </div>
+            <div class="card-class">${clsLine}</div>
+            ${!hasName ? '<div class="empty-badge">Sheet not yet filled</div>' : ''}
+            <div class="card-stats">
+              <div class="stat-box"><span class="sv hp">${curhp}</span><span class="sl">HP</span></div>
+              <div class="stat-box"><span class="sv">${ac}</span><span class="sl">AC</span></div>
+              <div class="stat-box"><span class="sv gp">${gp}</span><span class="sl">GP</span></div>
+            </div>
+            <div class="hp-bar-wrap">
+              <div class="hp-bar${barCls}" style="width:${hasName ? pct : 0}%"></div>
+            </div>
+            <div class="card-link">View Sheet →</div>
+          </a>`;
+      });
+
+      html += `
+        <div class="add-player-card" onclick="openCreateModal()">
+          <div class="add-icon">+</div>
+          <div class="add-label">Create Character</div>
+        </div>`;
+
+      grid.innerHTML = html;
+    }
+
+    startPartyListeners();
+  } catch(e) { /* Firebase unavailable */ }
 })();
 </script>
 </body>
