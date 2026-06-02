@@ -847,7 +847,9 @@ function processRequestFile(file) {
     const doc = parser.parseFromString(e.target.result, 'text/html');
     const get = id => {
       const el = doc.getElementById(id);
-      return el ? (el.value || el.textContent || '').trim() : '';
+      if (!el) return '';
+      if (el.tagName === 'TEXTAREA') return (el.textContent || '').trim();
+      return (el.getAttribute('value') || el.textContent || '').trim();
     };
     const data = {
       name: get('f-name') || 'Unknown',
@@ -922,13 +924,16 @@ function copyAIPrompt() {
 }
 
 function downloadTemplate() {
+  const slot = prompt('Which player slot? Enter: player1, player2, player3, or player4', 'player2');
+  if (!slot) return;
   fetch('sheet-template.html')
     .then(r => r.text())
     .then(html => {
-      const blob = new Blob([html], {type: 'text/html'});
+      const patched = html.replace("const PLAYER_ID = 'player1';", `const PLAYER_ID = '${slot}';`);
+      const blob = new Blob([patched], {type: 'text/html'});
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'my-character.html';
+      a.download = `character-${slot}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

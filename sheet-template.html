@@ -399,8 +399,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
-// Set this to 'player1', 'player2', 'player3', or 'player4'
-const PLAYER_ID = 'player1';
+// Read slot from URL: sheet-template.html?slot=player2
+const params = new URLSearchParams(window.location.search);
+const PLAYER_ID = params.get('slot') || 'player1';
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
