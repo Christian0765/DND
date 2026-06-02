@@ -2446,17 +2446,28 @@
       <div class="form-grid">
         <div class="form-field"><label>Character Name *</label><input type="text" id="cf-name" placeholder="e.g. Dracula"></div>
         <div class="form-field"><label>Player Name</label><input type="text" id="cf-player" placeholder="Your name"></div>
-        <div class="form-field"><label>Class &amp; Level</label><input type="text" id="cf-class" placeholder="e.g. Fighter 3"></div>
-        <div class="form-field"><label>Race</label><input type="text" id="cf-race" placeholder="e.g. Dragonborn"></div>
+        <div class="form-field">
+          <label>Class &amp; Level</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="cf-class-name" style="flex:2;"><option value="">Select class...</option></select>
+            <input type="number" id="cf-class-level" min="1" max="20" placeholder="Lvl" style="flex:1;width:60px;">
+          </div>
+          <div id="cf-class-custom-wrap" style="display:none;margin-top:4px;">
+            <input type="text" id="cf-class-custom" placeholder="Type custom class name...">
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Race</label>
+          <select id="cf-race"><option value="">Select race...</option></select>
+          <div id="cf-race-custom-wrap" style="display:none;margin-top:4px;">
+            <input type="text" id="cf-race-custom" placeholder="Type custom race...">
+          </div>
+        </div>
         <div class="form-field">
           <label>Background</label>
-          <select id="f-background" style="font-family:'Crimson Text',serif;font-size:0.9rem;background:rgba(255,255,255,0.85);border:1px solid #bbb;border-radius:2px;color:#1a1209;padding:6px 8px;width:100%;outline:none;">
-            <option value="">— Choose background —</option>
-          </select>
-          <div id="bg-feature-panel" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(0,0,0,0.06);border-radius:4px;border-left:2px solid rgba(201,168,76,0.4);">
-            <div id="bg-feature-name" style="font-family:'Cinzel',serif;font-weight:700;font-size:11px;color:#7a5500;margin-bottom:3px;"></div>
-            <div id="bg-feature-desc" style="font-size:12px;color:#4a3010;line-height:1.4;"></div>
-            <div id="bg-skills" style="font-size:11px;margin-top:5px;color:#6a4a20;font-style:italic;"></div>
+          <select id="cf-background"><option value="">Select background...</option></select>
+          <div id="cf-background-custom-wrap" style="display:none;margin-top:4px;">
+            <input type="text" id="cf-background-custom" placeholder="Type custom background...">
           </div>
         </div>
         <div class="form-field"><label>Alignment</label><input type="text" id="cf-align" placeholder="e.g. Chaotic Good"></div>
@@ -2465,7 +2476,6 @@
       <!-- COMBAT STATS -->
       <div class="form-section-title">Combat Stats</div>
       <div class="form-grid three">
-        <div class="form-field"><label>Level</label><input type="number" id="cf-level" min="1" max="20" placeholder="e.g. 5"></div>
         <div class="form-field"><label>Armor Class</label><input type="text" id="cf-ac" placeholder="e.g. 14"></div>
         <div class="form-field"><label>Initiative</label><input type="text" id="cf-init" placeholder="e.g. +1"></div>
         <div class="form-field"><label>Speed (ft)</label><input type="text" id="cf-speed" placeholder="e.g. 30"></div>
@@ -2534,6 +2544,12 @@
       <div class="form-section-title">Backstory</div>
       <div class="form-grid">
         <div class="form-field full"><label>Backstory</label><textarea id="cf-backstory" placeholder="Your character's history and background..." style="min-height:100px;"></textarea></div>
+      </div>
+
+      <div class="dm-options-row" style="display:none;gap:6px;margin-bottom:12px;">
+        <button class="dm-btn" onclick="addOption('classes','New class name:')">+ Class</button>
+        <button class="dm-btn" onclick="addOption('races','New race name:')">+ Race</button>
+        <button class="dm-btn" onclick="addOption('backgrounds','New background name:')">+ Background</button>
       </div>
 
       <div class="modal-submit-row">
@@ -3697,7 +3713,7 @@ function switchCharMode(mode) {
   document.getElementById('char-mode-choice').style.display  = mode === 'choice'  ? '' : 'none';
   document.getElementById('char-mode-ai').style.display      = mode === 'ai'      ? '' : 'none';
   document.getElementById('char-mode-manual').style.display  = mode === 'manual'  ? '' : 'none';
-  if (mode === 'manual') populateBackgroundDropdown();
+  if (mode === 'manual') { populateBackgroundDropdown(); loadCharacterOptions(); }
 }
 function populateBackgroundDropdown() {
   const sel = document.getElementById('f-background');
@@ -3778,13 +3794,79 @@ function closeCreateModal() {
   document.getElementById('create-modal').classList.remove('open');
 }
 
+async function loadCharacterOptions() {
+  if (!campaignId) return;
+  const ref = db.collection('campaigns').doc(campaignId).collection('config').doc('options');
+  let snap = await ref.get().catch(() => null);
+  if (!snap) return;
+
+  if (!snap.exists) {
+    await ref.set({
+      classes: [
+        'Artificer','Barbarian','Bard','Cleric','Druid',
+        'Fighter','Monk','Paladin','Ranger','Rogue',
+        'Sorcerer','Warlock','Wizard'
+      ],
+      races: [
+        'Dragonborn','Dwarf (Hill)','Dwarf (Mountain)',
+        'Elf (Dark/Drow)','Elf (High)','Elf (Wood)',
+        'Gnome (Forest)','Gnome (Rock)',
+        'Half-Elf','Half-Orc',
+        'Halfling (Lightfoot)','Halfling (Stout)',
+        'Human','Tiefling'
+      ],
+      backgrounds: [
+        'Acolyte','Charlatan','Criminal','Entertainer',
+        'Folk Hero','Guild Artisan','Hermit','Noble',
+        'Outlander','Sage','Sailor','Soldier','Urchin'
+      ]
+    });
+    snap = await ref.get().catch(() => null);
+    if (!snap) return;
+  }
+
+  const { classes = [], races = [], backgrounds = [] } = snap.data();
+  populateDropdown('cf-class-name', classes);
+  populateDropdown('cf-race',       races);
+  populateDropdown('cf-background', backgrounds);
+
+  // Show DM-only add buttons
+  const dmRow = document.querySelector('.dm-options-row');
+  if (dmRow) dmRow.style.display = _isDM ? 'flex' : 'none';
+}
+
+function populateDropdown(id, options) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const prev = sel.value;
+  const sorted = [...options].sort((a, b) => a.localeCompare(b));
+  sel.innerHTML =
+    '<option value="">Select...</option>' +
+    sorted.map(o => `<option value="${escHtml(o)}">${escHtml(o)}</option>`).join('') +
+    '<option value="custom">Other (type below)…</option>';
+  if (prev) sel.value = prev; // restore selection after re-render
+  sel.onchange = () => {
+    const wrap = document.getElementById(id + '-custom-wrap');
+    if (wrap) wrap.style.display = sel.value === 'custom' ? 'block' : 'none';
+  };
+}
+
+async function addOption(type, promptLabel) {
+  const value = prompt(promptLabel)?.trim();
+  if (!value) return;
+  await db.collection('campaigns').doc(campaignId)
+    .collection('config').doc('options')
+    .update({ [type]: firebase.firestore.FieldValue.arrayUnion(value) });
+  await loadCharacterOptions();
+}
+
 // Map from sheet field IDs to form field IDs
 const CF_MAP = {
   'f-name':    'cf-name',
-  'f-class':   'cf-class',
-  'f-level':   'cf-level',
+  'f-class':   'cf-class-name',
+  'f-level':   'cf-class-level',
   'f-race':    'cf-race',
-  'f-bg':      'f-background',
+  'f-bg':      'cf-background',
   'f-align':   'cf-align',
   'f-player':  'cf-player',
   'f-prof':    'cf-prof',
@@ -3978,22 +4060,42 @@ function handleSheetFile(file) {
 async function submitCharacter() {
   const btn = document.getElementById('submit-char-btn');
   const msgEl = document.getElementById('submit-msg');
+
   const name = document.getElementById('cf-name').value.trim();
   if (!name) {
     msgEl.textContent = 'Character name is required.';
     msgEl.className = 'modal-msg error';
     return;
   }
-  const charClass = document.getElementById('cf-class').value.trim();
-  if (!charClass) {
-    msgEl.textContent = 'Class & Level is required.';
+
+  // Build class string from dropdown + level
+  const classNameSel = document.getElementById('cf-class-name')?.value;
+  const className = classNameSel === 'custom'
+    ? document.getElementById('cf-class-custom')?.value?.trim()
+    : classNameSel;
+  if (!className) {
+    msgEl.textContent = 'Class is required.';
     msgEl.className = 'modal-msg error';
     return;
   }
-  // Warn if the sheet looks too sparse (only name+class filled, nothing else)
+  const classLevel = document.getElementById('cf-class-level')?.value?.trim() || '1';
+  const fClass = `${className} ${classLevel}`;
+
+  // Build race
+  const raceVal = document.getElementById('cf-race')?.value;
+  const raceName = raceVal === 'custom'
+    ? document.getElementById('cf-race-custom')?.value?.trim()
+    : raceVal;
+
+  // Build background
+  const bgVal = document.getElementById('cf-background')?.value;
+  const bgName = bgVal === 'custom'
+    ? document.getElementById('cf-background-custom')?.value?.trim()
+    : bgVal;
+
+  // Warn if sheet looks too sparse
   const FIELDS_MAP = {
-    'f-name':   'cf-name',   'f-class':  'cf-class',  'f-level':  'cf-level',
-    'f-race':   'cf-race',   'f-align':  'cf-align',
+    'f-name':   'cf-name',   'f-align':  'cf-align',
     'f-player': 'cf-player', 'f-prof':   'cf-prof',   'f-ac':     'cf-ac',
     'f-init':   'cf-init',   'f-speed':  'cf-speed',  'f-curhp':  'cf-curhp',
     'f-maxhp':  'cf-maxhp',  'f-hd':     'cf-hd',     'f-pp':     'cf-pp',
@@ -4009,7 +4111,7 @@ async function submitCharacter() {
   const filledCount = Object.values(FIELDS_MAP).filter(id => {
     const el = document.getElementById(id);
     return el && el.value.trim().length > 0;
-  }).length;
+  }).length + (className ? 1 : 0) + (raceName ? 1 : 0);
   if (filledCount < 5) {
     msgEl.textContent = 'Sheet looks incomplete — please fill in more fields (stats, race, etc.) before submitting.';
     msgEl.className = 'modal-msg error';
@@ -4027,13 +4129,23 @@ async function submitCharacter() {
     const el = document.getElementById(formId);
     data[fieldId] = el ? el.value.trim() : '';
   });
-  const bgEl = document.getElementById('f-background');
-  if (bgEl && bgEl.value) data['f-background'] = bgEl.value;
-  // Derive level from the class string if the Level field was left blank
-  if (!data['f-level']) {
-    const match = (data['f-class'] || '').match(/\s*(\d+)\s*$/);
-    data['f-level'] = match ? match[1] : '1';
-  }
+
+  // Set computed class / race / background
+  data['f-class']      = fClass;
+  data['f-level']      = classLevel;
+  data['f-race']       = raceName  || '';
+  data['f-bg']         = bgName    || '';
+  data['f-background'] = bgName    || ''; // backward compat for migrateToV2
+
+  // Auto-add custom values to Firestore so they appear in future dropdowns
+  const optRef = db.collection('campaigns').doc(campaignId).collection('config').doc('options');
+  if (classNameSel === 'custom' && className)
+    optRef.update({ classes:     firebase.firestore.FieldValue.arrayUnion(className) }).catch(() => {});
+  if (raceVal === 'custom' && raceName)
+    optRef.update({ races:       firebase.firestore.FieldValue.arrayUnion(raceName)  }).catch(() => {});
+  if (bgVal === 'custom' && bgName)
+    optRef.update({ backgrounds: firebase.firestore.FieldValue.arrayUnion(bgName)   }).catch(() => {});
+
   data.submittedBy = _currentUser.uid;
   data.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
   data.status = 'pending';

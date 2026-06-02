@@ -6972,7 +6972,7 @@ async function migrateToV2(oldData, docRef) {
       totalLevel: classLevel,
       race:       oldData['f-race']   || '',
       subrace:    '',
-      background: oldData['f-bg']     || '',
+      background: oldData['f-bg'] || oldData['f-background'] || '',
       alignment:  oldData['f-align']  || '',
       profBonus:         parseInt(oldData['f-prof'])  || 2,
       ac:                parseInt(oldData['f-ac'])    || 10,
