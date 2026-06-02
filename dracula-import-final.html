@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seed Dracula — pendingCharacters</title>
+<style>
+  :root {
+    --gold: #c4920a;
+    --gold-light: #e8d5a8;
+    --bg: #0d0802;
+    --text: #c4920a;
+    --green: #4a9a2a;
+    --red: #8a1a1a;
+    --border: #3a2800;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 32px;
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+  h2 {
+    font-family: serif;
+    font-size: 1.4rem;
+    color: var(--gold-light);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    letter-spacing: 0.08em;
+  }
+  .section {
+    background: rgba(154,112,0,0.07);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--gold-light);
+    margin-bottom: 8px;
+  }
+  .row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 3px; }
+  .key { color: #7a5a18; min-width: 130px; font-size: 0.8rem; }
+  .val { color: var(--gold-light); }
+  .val.long { opacity: 0.75; font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
+  .status-box {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    min-height: 52px;
+    font-size: 0.88rem;
+  }
+  .status-box.idle   { border-color: #3a2800; color: #7a5a18; }
+  .status-box.auth   { border-color: #2a5a00; color: #5a9a2a; }
+  .status-box.error  { border-color: #5a1a1a; color: #c04040; }
+  .status-box.ok     { border-color: #2a5a00; color: var(--green); }
+  .status-box.busy   { border-color: #3a3a00; color: #8a8a20; }
+  button {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background: #1a0e04;
+    color: var(--gold-light);
+    border: 1px solid var(--gold);
+    padding: 10px 28px;
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+  }
+  button:hover:not(:disabled) { background: #2a1a06; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .warn {
+    font-size: 0.78rem;
+    color: #8a6a20;
+    border-left: 2px solid #5a4010;
+    padding-left: 10px;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<h2>⚔ Seed Dracula → pendingCharacters</h2>
+
+<div class="section">
+  <div class="section-title">Target Document</div>
+  <div class="row"><span class="key">Campaign</span><span class="val">ltExHmpN6sB1fqboKpzY</span></div>
+  <div class="row"><span class="key">Collection</span><span class="val">pendingCharacters</span></div>
+  <div class="row"><span class="key">Document ID</span><span class="val">player1</span></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Character Data Preview</div>
+  <div class="row"><span class="key">f-name</span><span class="val">Dracula</span></div>
+  <div class="row"><span class="key">f-class</span><span class="val">Fighter 3</span></div>
+  <div class="row"><span class="key">f-race</span><span class="val">Dragonborn</span></div>
+  <div class="row"><span class="key">f-bg</span><span class="val">Geto</span></div>
+  <div class="row"><span class="key">f-align</span><span class="val">Chaotic Good</span></div>
+  <div class="row"><span class="key">f-str / mod</span><span class="val">22 / +6</span></div>
+  <div class="row"><span class="key">f-dex / mod</span><span class="val">13 / +1</span></div>
+  <div class="row"><span class="key">f-con / mod</span><span class="val">10 / +0</span></div>
+  <div class="row"><span class="key">f-int / mod</span><span class="val">11 / +0</span></div>
+  <div class="row"><span class="key">f-wis / mod</span><span class="val">8 / -1</span></div>
+  <div class="row"><span class="key">f-cha / mod</span><span class="val">18 / +4</span></div>
+  <div class="row"><span class="key">f-curhp / maxhp</span><span class="val">23 / 22</span></div>
+  <div class="row"><span class="key">f-ac</span><span class="val">12</span></div>
+  <div class="row"><span class="key">f-gold</span><span class="val">82</span></div>
+  <div class="row"><span class="key">f-weapons</span><span class="val long">JSON array — 7 weapons</span></div>
+  <div class="row"><span class="key">f-equipment</span><span class="val long">Leather Armor, Arrow x20… (17 items)</span></div>
+  <div class="row"><span class="key">f-features</span><span class="val long">13 features</span></div>
+  <div class="row"><span class="key">f-profs</span><span class="val long">Armor / Weapons / Tools / Languages / Skills</span></div>
+  <div class="row"><span class="key">f-backstory</span><span class="val long">Black Dragonborn from Dragon Veil…</span></div>
+  <div class="row"><span class="key">f-traits / ideals</span><span class="val long">On Smoke… / Trust actions…</span></div>
+  <div class="row"><span class="key">f-bonds / flaws</span><span class="val long">Ash… / Carries deep guilt…</span></div>
+</div>
+
+<div id="status" class="status-box idle">Checking authentication…</div>
+
+<button id="write-btn" onclick="writeToFirestore()" disabled>⬆ Write to pendingCharacters</button>
+
+<div class="warn">
+  ⚠ After writing, open the campaign page → DM Panel → Pending Characters.<br>
+  The character will appear as <strong>player1</strong>.<br>
+  Approving it auto-assigns a slot. If <code>player1</code> is already taken the slot
+  will be <code>player2</code> etc. — check which slot is used before loading
+  <code>sheet.html?player=SLOT&amp;c=ltExHmpN6sB1fqboKpzY</code>.
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+
+const CAMPAIGN_ID = 'ltExHmpN6sB1fqboKpzY';
+const DOC_ID      = 'player1';
+
+const DRACULA = {
+  // ── Identity ──────────────────────────────────────────
+  'f-name':    'Dracula',
+  'f-player':  'Christian',
+  'f-class':   'Fighter 3',
+  'f-race':    'Dragonborn',
+  'f-bg':      'Geto',
+  'f-align':   'Chaotic Good',
+  'f-level':   '3',
+
+  // ── Combat stats ──────────────────────────────────────
+  'f-prof':    '+2',
+  'f-ac':      '12',
+  'f-init':    '+9',
+  'f-speed':   '30 ft',
+  'f-curhp':   '23',
+  'f-maxhp':   '22',
+  'f-hd':      '1d10',
+  'f-pp':      '9',
+  'f-gold':    '82',
+  'f-carry':   '330',
+
+  // ── Ability scores ────────────────────────────────────
+  'f-str':     '22',  'f-strmod': '+6',
+  'f-dex':     '13',  'f-dexmod': '+1',
+  'f-con':     '10',  'f-conmod': '+0',
+  'f-int':     '11',  'f-intmod': '+0',
+  'f-wis':     '8',   'f-wismod': '-1',   // ASCII hyphen — not em-dash
+  'f-cha':     '18',  'f-chamod': '+4',
+
+  // ── Personality ───────────────────────────────────────
+  'f-traits':  'On Smoke — laid back, unbothered, moves at his own pace.',
+  'f-ideals':  'Trust actions, not words. Betrayed by promises once — never again.',
+  'f-bonds':   'Ash — his daughter\'s name, carried into every fight.',
+  'f-flaws':   'Carries deep guilt for those he couldn\'t save from Dragon Veil.',
+  'f-notes':   '',
+
+  // ── Proficiencies (one category per line, "Label: item, item" format) ──
+  'f-profs': [
+    'Armor: Heavy, Medium, Light, Shields',
+    'Weapons: Martial, Simple',
+    'Tools: Tinker\'s Tools, Woodcarver\'s Tools',
+    'Languages: Common, Draconic',
+    'Skills: Athletics, Acrobatics, Intimidation, Survival, Nature',
+  ].join('\n'),
+
+  // ── Features (one per line — "Name: description" for those with colons) ──
+  'f-features': [
+    'Precision Attack: Spend 1 superiority die before attack, add to roll',
+    'Menacing Attack: On hit, spend 1 die; damage + WIS save or frightened',
+    'Pushing Attack: On hit, spend 1 die; damage + STR save or pushed 15 ft',
+    'Know Your Enemy: 1 min observe, DM compares 2 stats',
+    'Second Wind: Bonus action — 1d10+3 HP, once per rest',
+    'Action Surge: Extra action on your turn, once per rest',
+    'Two Weapon Fighting: Add STR mod to off-hand damage',
+    'Extendo Grip (Ash Stage 1): Advantage + reach 10 ft',
+    'Acid Breath: 5×30 ft, DC 10 DEX save, 2d6 acid, 1/rest',
+    '20 ft Jump: Enhanced jump distance',
+    'Clas Attack: Special attack (DM confirmed)',
+    'Skullcrusher Strike: Trophy from pirate captain boss',
+    'Superiority Dice: 4d8 (recharge on short/long rest)',
+  ].join('\n'),
+
+  // ── Weapons — JSON array so _migrateWeapons creates individual docs ──
+  'f-weapons': JSON.stringify([
+    { id:'weapon-ash',         name:'Ash (Bonded)',  icon:'⚔', atkBonus:8, dmgDice:'1d4', dmgBonus:6, dmgType:'slashing',     range:'10 ft', notes:'Dual wield, reach 10 ft, advantage' },
+    { id:'weapon-handaxe',     name:'Handaxe',       icon:'🪓', atkBonus:8, dmgDice:'1d6', dmgBonus:6, dmgType:'slashing',     range:'5 ft',  notes:'Off-hand bonus action' },
+    { id:'weapon-longsword',   name:'Longsword',     icon:'⚔', atkBonus:8, dmgDice:'1d8', dmgBonus:6, dmgType:'slashing',     range:'5 ft',  notes:'Solo, versatile' },
+    { id:'weapon-skullcrusher',name:'Skullcrusher',  icon:'💀', atkBonus:8, dmgDice:'2d6', dmgBonus:6, dmgType:'slashing',     range:'5 ft',  notes:'Two-handed, pirate captain trophy' },
+    { id:'weapon-longbow',     name:'Longbow',       icon:'🏹', atkBonus:3, dmgDice:'1d8', dmgBonus:1, dmgType:'piercing',     range:'150 ft',notes:'Ranged' },
+    { id:'weapon-club',        name:'Club',          icon:'🪵', atkBonus:8, dmgDice:'1d4', dmgBonus:6, dmgType:'bludgeoning',  range:'5 ft',  notes:'' },
+    { id:'weapon-scimitar',    name:'Scimitar',      icon:'⚔', atkBonus:8, dmgDice:'1d6', dmgBonus:6, dmgType:'slashing',     range:'5 ft',  notes:'' },
+  ]),
+
+  // ── Equipment (plain text, one item per line) ─────────
+  'f-equipment': [
+    'Leather Armor',
+    'Arrow x20',
+    'Rope, Hempen',
+    'Tinderbox',
+    'Torch x10',
+    'Incense x5',
+    'Rations x10',
+    'Backpack',
+    'Bedroll',
+    'Cart',
+    'Clothes, Common',
+    'Mess Kit',
+    'Pouch',
+    'Sticky Wickets x3',
+    'Gnome Costume',
+    'Waterskin',
+    'Vestments',
+  ].join('\n'),
+
+  // ── Backstory ─────────────────────────────────────────
+  'f-backstory': [
+    'Black Dragonborn from Dragon Veil — distorted by the Giants. Weedgrower and tool maker before taking up arms.',
+    '',
+    'Fled as a refugee. Pirates offered safe passage — revealed themselves as enemies. Dracula eliminated their captain and took Skullcrusher as a trophy.',
+    '',
+    'Ash — his bonded weapon, named after his lost daughter. Stage 1 active: Extendo Grip (advantage, reach 10 ft, 1d4+6). Stages 2 and 3 locked.',
+    '',
+    'In progress: Learning swordsmithing. Needs 2 more lessons.',
+    '',
+    'Level 4 Preview: ASI (+2 CON or Tough feat recommended). HP becomes 28 avg. Extra Battle Master maneuver.',
+  ].join('\n'),
+
+  // ── Submission metadata ───────────────────────────────
+  status:      'pending',
+  schemaVersion: 1,  // force re-migration so all v2 structured fields update
+};
+
+const statusEl  = document.getElementById('status');
+const writeBtn  = document.getElementById('write-btn');
+
+function setStatus(cls, msg) {
+  statusEl.className = 'status-box ' + cls;
+  statusEl.textContent = msg;
+}
+
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    setStatus('error', '✗ Not logged in. Open the campaign page (index.html), sign in with Google, then come back here.');
+    writeBtn.disabled = true;
+  } else {
+    setStatus('auth', '✓ Authenticated as ' + (user.email || user.uid) + ' — ready to write.');
+    writeBtn.disabled = false;
+  }
+});
+
+async function writeToFirestore() {
+  const user = auth.currentUser;
+  if (!user) { setStatus('error', '✗ Not logged in.'); return; }
+
+  writeBtn.disabled = true;
+  setStatus('busy', '⟳ Writing to Firestore…');
+
+  const data = Object.assign({}, DRACULA, {
+    submittedBy: user.uid,
+    submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+
+  try {
+    await db.collection('campaigns').doc(CAMPAIGN_ID)
+            .collection('pendingCharacters').doc(DOC_ID)
+            .set(data);
+
+    setStatus('ok', [
+      '✓ Done! pendingCharacters/player1 written.',
+      '',
+      'Next steps:',
+      '1. Open the campaign page and open DM Panel → Pending Characters.',
+      '2. You should see a pending card for "player1".',
+      '3. Click Preview to verify the data looks correct.',
+      '4. Click Approve — the character lands at an auto-assigned slot',
+      '   (player1 if unused, otherwise player2 etc.).',
+      '5. Open sheet.html?player=SLOT&c=' + CAMPAIGN_ID,
+      '   and verify all 12 fields populated on the sheet.',
+    ].join('\n'));
+    writeBtn.textContent = '✓ Written';
+  } catch (e) {
+    setStatus('error', '✗ Write failed: ' + e.message + '\n\nMake sure you are the DM or a member of this campaign.');
+    writeBtn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
